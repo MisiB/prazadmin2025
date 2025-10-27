@@ -1,0 +1,28 @@
+ //Add this function  in vendor\dcblogdev\laravel-microsoftgraph\src\MsGraph.php
+   
+    /*APPROVAL FLOW CONNECTOR*/
+    public function emailapprovalconnect($leaveapprovalitemuuid=null, $leaveapproverid=null, $storesapprovalitemuuid=null, $storesapproverid=null,$status=null)
+    {
+        $approverid= ($leaveapproverid!=null)?$leaveapproverid :$storesapproverid;
+        $approvalitemuuid=($leaveapprovalitemuuid!='N')?$leaveapprovalitemuuid :$storesapprovalitemuuid;
+        $itemtype=($leaveapprovalitemuuid!='N')?'leaverequest' :'storesrequisition';
+        $redirecturi=$itemtype==='leaverequest'
+            ? route('leaverequest.email.auth.approval',[
+                'approvalrecordid'=>$approvalitemuuid,
+                'approvalitemuuid'=>$approvalitemuuid]) 
+            : ( ($itemtype==='storesrequisition' && $status==='N')
+            ? route('storesrequisition.email.auth.approval',[
+                'approvalrecordid'=>$approvalitemuuid,
+                'approvalitemuuid'=>$approvalitemuuid])
+            :( ($itemtype==='storesrequisition' && $status==='V')
+            ? route('storesrequisition.email.auth.verification',[
+                'approvalrecordid'=>$approvalitemuuid,
+                'approvalitemuuid'=>$approvalitemuuid])
+            : ( ($itemtype==='storesrequisition' && $status==='D')
+            ? route('storesrequisition.email.auth.acceptance',[
+                'approvalrecordid'=>$approvalitemuuid,
+                'approvalitemuuid'=>$approvalitemuuid
+            ]): config('msgraph.msgraphLandingUri'))));
+        // Redirect to the new Livewire login component, passing the redirect URL
+        return redirect($redirecturi);
+    }   

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800px" height="600px" viewBox="0 0 800 600" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <!-- Background Circle -->
+        <circle fill="#FFFFFF" opacity="0.1" cx="400" cy="300" r="250"/>
+        
+        <!-- Decorative Elements -->
+        <circle fill="#FFFFFF" opacity="0.2" cx="200" cy="150" r="20"/>
+        <circle fill="#FFFFFF" opacity="0.15" cx="600" cy="450" r="30"/>
+        <circle fill="#FFFFFF" opacity="0.25" cx="500" cy="200" r="15"/>
+        
+        <!-- Main Shield Icon -->
+        <path d="M400,150 L500,200 L500,350 C500,400 450,450 400,475 C350,450 300,400 300,350 L300,200 Z" 
+              fill="#FFFFFF" opacity="0.9"/>
+        
+        <!-- Lock Icon Inside Shield -->
+        <path d="M375,300 L425,300 L425,350 L375,350 Z M365,300 L365,275 C365,250 380,235 400,235 C420,235 435,250 435,275 L435,300" 
+              stroke="#FFFFFF" stroke-width="10" opacity="0.9" stroke-linecap="round"/>
+    </g>
+</svg>
