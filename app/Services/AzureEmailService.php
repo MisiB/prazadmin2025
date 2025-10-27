@@ -18,9 +18,9 @@ class AzureEmailService implements iAzureEmailServiceInterface
 
     public function __construct()
     {
-        $this->clientId = config('services.msgraph.client_id');
-        $this->tenantId = config('services.msgraph.tenant_id');
-        $this->clientSecret = config('services.msgraph.client_secret');
+        $this->clientId = config('services.msgraph.client_id') ?? '';
+        $this->tenantId = config('services.msgraph.tenant_id') ?? '';
+        $this->clientSecret = config('services.msgraph.client_secret') ?? '';
 
         // Configure GuzzleHttp client with SSL options for local development
         $this->client = new \GuzzleHttp\Client([
