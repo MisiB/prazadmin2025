@@ -6,6 +6,7 @@ use Livewire\Component;
 use App\Interfaces\repositories\ibanktransactionInterface;
 use Illuminate\Support\Collection;
 use Mary\Traits\Toast;
+
 class Searchtransactions extends Component
 {
     use Toast;
@@ -13,15 +14,25 @@ class Searchtransactions extends Component
     protected $repo;
     public $transactionmodal = false;
     public $transaction = null;
+    public $transactions ;
+    public $customer;
     public function boot(ibanktransactionInterface $repo)
     {
         $this->repo = $repo;
+    }
+
+    public function mount($customer=null)
+    {
+        $this->customer = $customer;
+        $this->transactions = new Collection();
     }
     public function searchtransactions()
     {
         if($this->search)
         {
-            return $this->repo->internalsearch($this->search);
+            $transactions = $this->repo->internalsearch($this->search);
+            $this->transactions = $transactions;
+            return $transactions;
            
         }
         return new Collection();
@@ -40,6 +51,21 @@ class Searchtransactions extends Component
        }else{
         $this->error($response['message']);
        }
+    }
+
+    public function claimTransaction($id)
+    {
+        $transaction = $this->transactions->where('id', $id)->first();
+       
+        $response= $this->repo->claim([
+            'sourcereference' => $transaction->sourcereference,
+            'regnumber' => $this->customer->regnumber
+        ]);
+        if($response['status']=="SUCCESS"){
+            $this->success($response['message']);
+        }else{
+            $this->error($response['message']);
+        }
     }
     public function unblockTransaction($id)
     {

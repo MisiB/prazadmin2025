@@ -2,460 +2,281 @@
 
 namespace App\implementation\repositories;
 
-use App\Enums\ApiResponse;
+
 use App\Interfaces\repositories\iworkshopInterface;
 use App\Models\Workshop;
 use App\Models\workshoporder;
-use App\Models\WorkshopDelegate;
-use App\Models\Invoice;
-use App\Models\Currency;
-use App\Models\Exchangerate;
+use App\Models\WorkshopInvoice;
 use App\Models\Customer;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Collection;
+use App\Models\WorkshopDelegate;
+use Illuminate\Support\Facades\DB;
 
 
 class _workshopRepository implements iworkshopInterface
 {
-    
-    protected $workshop;
-    protected $workshopOrder;
-    protected $workshopDelegate;
-    protected $invoice;
-    protected $currency;
-    protected $exchangerate;
-    protected $customer;
-
-    public function __construct(
-        Workshop $workshop,
-        workshoporder $workshopOrder,
-        WorkshopDelegate $workshopDelegate,
-        Invoice $invoice,
-        Currency $currency,
-        Exchangerate $exchangerate,
-        Customer $customer
-    ) {
-        $this->workshop = $workshop;
-        $this->workshopOrder = $workshopOrder;
-        $this->workshopDelegate = $workshopDelegate;
-        $this->invoice = $invoice;
-        $this->currency = $currency;
-        $this->exchangerate = $exchangerate;
-        $this->customer = $customer;
-    }
-
-    public function getAllWorkshops()
+    protected $model;
+    protected $ordermodel;
+    protected $invoicemodel;
+    public  $customermodel;
+    protected $delegatemodel;
+ 
+    public function __construct(Workshop $model,workshoporder $ordermodel,WorkshopInvoice $invoicemodel,Customer $customermodel,WorkshopDelegate $delegatemodel)
     {
-        try {
-            return $this->workshop->with('currency')->get();
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
+        $this->model = $model;
+        $this->ordermodel = $ordermodel;
+        $this->invoicemodel = $invoicemodel;
+        $this->customermodel = $customermodel;
+        $this->delegatemodel = $delegatemodel;
+    }
+    public function getallworkshops($search=null){
+     
+        return $this->model->orderBy('created_at','desc')->when($search, function($query) use ($search){
+            $query->where('title','like','%'.$search.'%');
+        })->paginate(10);
+
+    }
+    public function getworkshopinvoices($workshop_id,$status=null,$currency_id=null){
+        $invoices= $this->invoicemodel->where('workshop_id',$workshop_id)->when($status, function($query) use ($status){
+            $query->where('status',$status);
+        })->when($currency_id, function($query) use ($currency_id){
+            $query->where('currency_id',$currency_id);
+        })->get();
+        return $invoices;
+    }
+   public function getworkshopbyid($id){
+
+        return $this->model->with('orders')->with('delegates')->with('invoices')->find($id);
+
+   }
+   public function updateworkshop($id,$data){
+    try{
+        if($data['document']){
+            $document = $data['document']->store('workshop-documents','public');
+            $data['document'] = $document;
         }
+        unset($data['document']);
+        $this->model->find($id)->update($data);
+        return ['status'=>'success','message'=>'Workshop updated successfully'];
+    }catch(\Exception $e){
+        return ['status'=>'error','message'=>$e->getMessage()];
     }
 
-    public function getWorkshopById($id)
-    {
-        try {
-            $workshop = $this->workshop->find($id);
-            return $workshop ? $workshop : ApiResponse::NOT_FOUND;
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
+   }
+   public function createworkshop($data){
+    try{
+    $documenturl = $data['document']->store('workshop-documents','public');
+      unset($data['document']);
+            $data['document_url'] = $documenturl;
+            $this->model->create($data);
+            return ['status'=>'success','message'=>'Workshop created successfully'];
+        }catch(\Exception $e){
+            return ['status'=>'error','message'=>$e->getMessage()];
         }
-    }
-
-    public function getWorkshopWithDetails($id)
-    {
-        try {
-            return $this->workshop->with(['orders.customer', 'currency'])
-                ->where('id', $id)
-                ->first();
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
+   }
+   public function deleteworkshop($id){
+    try{
+        $workshop = $this->model->with('orders')->first();
+        if($workshop->orders->count() > 0){
+            return ['status'=>'error','message'=>'Workshop has orders and cannot be deleted'];
         }
+        $workshop->delete();
+        return ['status'=>'success','message'=>'Workshop deleted successfully'];
+    }catch(\Exception $e){
+        return ['status'=>'error','message'=>$e->getMessage()];
     }
 
-    public function createWorkshop(array $data)
-    {
-        try {
-            $document_url = null;
-            if (isset($data['document'])) {
-                $document_url = $data['document']->store('workshop-documents', 'public');
-                unset($data['document']);
+   }
+   public function getopenworkshops(){
+    return $this->model->with('currency')->where('status','PUBLISHED')->where('end_date','>=',now())->orderBy('start_date','asc')->get();
+
+   }
+   public function viewworkshop($id){
+    return $this->model->with('orders')->find($id);
+   }
+   public function getworkshopinvoicebyid($id){
+    return $this->invoicemodel->with('customer','currency','workshop','workshoporder')->find($id);
+   }
+   public function createorder($data){
+    $check  = $this->ordermodel->where('customer_id',$data['customer_id'])->where('workshop_id',$data['workshop_id'])->first();
+    if($check){
+        return ['status'=>'error','message'=>'Order already exists'];
+    }
+    $ordernumber = "ORD-".date('Ymd')."-".rand(1000,9999)."-".$data['customer_id'];
+    $invoicenumber = "INV-".date('Ymd')."-".rand(1000,9999)."-".$data['customer_id'];
+    $customer = $this->customermodel->find($data['customer_id']);
+    try{
+    DB::beginTransaction();
+    $order = $this->ordermodel->create([
+        'customer_id' => $data['customer_id'],
+        'workshop_id' => $data['workshop_id'],
+        'currency_id' => $data['currency_id'],
+        'exchangerate_id' => $data['exchangerate_id'],
+        'delegates' => $data['delegates'],
+        'name' => $data['name'],
+        'surname' => $data['surname'],
+        'email' => $data['email'],
+        'phone' => $data['phone'],
+        'amount' => $data['cost'],
+        'ordernumber' => $ordernumber,
+        'invoicenumber' => $invoicenumber,
+        'status' => 'PENDING',
+    ]);
+   /* $invoice = $this->invoicemodel->create([
+        'workshop_id' => $data['workshop_id'],
+        'name' => $data['name'],
+        'surname' => $data['surname'],
+        'email' => $data['email'],
+        'organisation' => $customer->name,
+        'invoicenumber' => $invoicenumber,
+        'delegates' => $data['delegates'],
+        'cost' => $data['cost'],
+        'currency_id' => $data['currency_id'],
+        'account_type' => $customer->type,
+        'customer_id' => $customer->id,
+        'prnumber' => $customer->regnumber,
+        'status' => 'PENDING',
+    ]);*/
+    DB::commit();
+    return ['status'=>'success','message'=>'Order created successfully'];
+    }catch(\Exception $e){
+        DB::rollBack();
+        return ['status'=>'error','message'=>$e->getMessage()];
+    }
+   }
+   public function updateorder($id,$data){
+    try{
+        DB::beginTransaction();
+        $order = $this->ordermodel->find($id);
+        $order->update($data);
+        DB::commit();
+        return ['status'=>'success','message'=>'Order updated successfully'];
+    }catch(\Exception $e){
+        DB::rollBack();
+        return ['status'=>'error','message'=>$e->getMessage()];
+   }
+   }
+   public function deleteorder($id){
+    try{
+        DB::beginTransaction();
+        $order = $this->ordermodel->find($id);
+        $order->delete();
+        DB::commit();
+        return ['status'=>'success','message'=>'Order deleted successfully'];
+    }catch(\Exception $e){
+        DB::rollBack();
+        return ['status'=>'error','message'=>$e->getMessage()];
+    }
+   }
+   public function getorder($id){
+    return $this->ordermodel->with('workshop','customer','currency','exchangerate','invoice','delegatelist')->find($id);
+   }
+   public function getorders($workshop_id){
+    return $this->ordermodel->where('workshop_id',$workshop_id)->get();
+   }
+   public function saveorderdocument($order_id,$data){
+    try{
+        DB::beginTransaction();
+        $order = $this->ordermodel->with('customer')->find($order_id);
+        $order->documenturl = $data['document_url'];
+        $order->save();
+        $invoice = $this->invoicemodel->where('invoicenumber',$order->invoicenumber)->first();
+        if($invoice ==null){
+            $invoice = $this->invoicemodel->create([
+        'workshop_id' => $order->workshop_id,
+        'name' => $order->name,
+        'surname' => $order->surname,
+        'email' => $order->email,
+        'organisation' => $order->customer->name,
+        'invoicenumber' => $order->invoicenumber,
+        'delegates' => $order->delegates,
+        'cost' => $order->amount,
+        'currency_id' => $order->currency_id,
+        'account_type' => $order->customer->type,
+        'customer_id' => $order->customer->id,
+        'prnumber' => $order->customer->regnumber,
+        'status' => 'AWAITING',
+    ]);
+    $order->update(['status' => 'AWAITING']);
+        }
+        DB::commit();
+        return ['status'=>'success','message'=>'Document saved successfully'];
+    }catch(\Exception $e){
+        DB::rollBack();
+        return ['status'=>'error','message'=>$e->getMessage()];
+    }
+   }
+   public function getorderbyid($id){
+    return $this->ordermodel->find($id);
+   }
+
+   public function adddelegate($data){
+    try{
+        DB::beginTransaction();
+        $order = $this->ordermodel->with('delegatelist','customer')->find($data['workshoporder_id']);
+        if($order->delegates <= $order->delegatelist->count()){
+                return ['status'=>'error','message'=>'Maximum delegates reached'];
             }
-
-            $workshop = $this->workshop->create([
-                ...$data,
-                'document_url' => $document_url,
-                'created_by' => Auth::user()->id
-            ]);
-
-            return ['status' => 'success', 'message' => 'Workshop created successfully.', 'data' => $workshop];
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
-        }
+        $delegate = $this->delegatemodel->create([
+            'workshoporder_id' => $order->id,
+            'workshop_id' => $order->workshop_id,
+            'name' => $data['name'],
+            'surname' => $data['surname'],
+            'email' => $data['email'],
+            'phone' => $data['phone'],
+            'designation' => $data['designation'],
+            'national_id' => $data['national_id'],
+            'title' => $data['title'],
+            'gender' => $data['gender'],
+            'type' => $order->customer->type,
+            'company' => $order->customer->name,
+        ]);
+        DB::commit();
+        return ['status'=>'success','message'=>'Delegate added successfully'];
+    }catch(\Exception $e){
+        DB::rollBack();
+        return ['status'=>'error','message'=>$e->getMessage()];
     }
-
-    public function updateWorkshop($id, array $data)
-    {
-        try {
-            $workshop = $this->workshop->findOrFail($id);
-            
-            if (isset($data['editDocument'])) {
-                $documentUrl = $data['editDocument']->store('workshop-documents', 'public');
-                $data['document_url'] = $documentUrl;
-                unset($data['editDocument']);
-            }
-
-            $workshop->update($data);
-            return ['status' => 'success', 'message' => 'Workshop updated successfully.', 'data' => $workshop];
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
-        }
+   }
+   public function updatedelegate($id,$data){
+    try{
+        DB::beginTransaction();
+        $delegate = $this->delegatemodel->find($id);
+        $delegate->update([
+            'name' => $data['name'],
+            'surname' => $data['surname'],
+            'email' => $data['email'],
+            'phone' => $data['phone'],
+            'designation' => $data['designation'],
+            'national_id' => $data['national_id'],
+            'title' => $data['title'],
+            'gender' => $data['gender'],
+        ]);
+        DB::commit();
+        return ['status'=>'success','message'=>'Delegate updated successfully'];
+    }catch(\Exception $e){
+        DB::rollBack();
+        return ['status'=>'error','message'=>$e->getMessage()];
     }
-
-    public function deleteWorkshop($id)
-    {
-        try {
-            $workshop = $this->workshop->find($id);
-            if (!$workshop) {
-                return ['status' => 'error', 'message' => 'Workshop not found'];
-            }
-            
-            $workshop->delete();
-            return ['status' => 'success', 'message' => 'Workshop deleted successfully.'];
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
-        }
+   }
+   public function getordersbyregnumber($regnumber){
+    $customer = $this->customermodel->where('regnumber',$regnumber)->first();
+    if($customer == null){
+        return ['status'=>'error','message'=>'Customer not found'];
     }
-
-    public function getWorkshopOrders($workshop_id)
-    {
-        try {
-            return $this->workshopOrder->with(['currency', 'customer', 'invoice'])
-                ->where('workshop_id', $workshop_id)
-                ->get();
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
-        }
+    $orders = $this->ordermodel->with('workshop','customer','currency','exchangerate','invoice','delegatelist')->where('customer_id',$customer->id)->get();
+    return $orders;
+   }
+   
+   public function deletedelegate($id){
+    try{
+        DB::beginTransaction();
+        $delegate = $this->delegatemodel->find($id);
+        $delegate->delete();
+        DB::commit();
+        return ['status'=>'success','message'=>'Delegate deleted successfully'];
+    }catch(\Exception $e){
+        DB::rollBack();
+        return ['status'=>'error','message'=>$e->getMessage()];
     }
-
-    public function getOrdersByStatus($workshop_id, $status)
-    {
-        try {
-            return $this->workshopOrder->with(['currency', 'customer'])
-                ->where('workshop_id', $workshop_id)
-                ->where('status', $status)
-                ->get();
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
-        }
-    }
-
-    public function createWorkshopOrder(array $data)
-    {
-        try {
-            $ordernumber = 'Order-' . date('Y') . '-' . str_pad($this->workshopOrder->count() + 1, 5, '0', STR_PAD_LEFT);
-            $invoicenumber = 'INVW-' . date('Y') . '-' . str_pad($this->workshopOrder->count() + 1, 5, '0', STR_PAD_LEFT);
-
-            $documenturl = $data['document']->store('workshopspop', 'public');
-            unset($data['document']);
-
-            $order = $this->workshopOrder->create([
-                ...$data,
-                'ordernumber' => $ordernumber,
-                'invoicenumber' => $invoicenumber,
-                'documenturl' => $documenturl,
-                'status' => 'AWAITING'
-            ]);
-
-            // Create corresponding invoice
-            $this->invoice->create([
-                'customer_id' => $data['customer_id'], // Changed from AccountId
-                'inventoryitem_id' => 6,
-                'currency_id' => $data['currency_id'],
-                'invoicenumber' => $invoicenumber,
-                'amount' => $data['amount'],
-                'status' => 'PENDING',
-                'user_id' => Auth::user()->id,
-                'invoicesource' => 'manual',
-                'source_id' => $order->id,
-                'description' => $data['description'] ?? 'Workshop Order',
-                'exchangerate_id' => $data['exchangerate_id']
-            ]);
-
-            return ['status' => 'success', 'message' => 'Order created successfully.', 'data' => $order];
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
-        }
-    }
-
-    public function updateWorkshopOrder($order_id, array $data)
-    {
-        try {
-            $order = $this->workshopOrder->findOrFail($order_id);
-            $order->update($data);
-
-            // Update corresponding invoice to keep amounts in sync
-            $invoice = $this->invoice->where('source_id', $order->id)
-                ->where('inventoryitem_id', 6)
-                ->first();
-            
-            if ($invoice) {
-                $invoice->update([
-                    'currency_id' => $data['currency_id'] ?? $invoice->currency_id,
-                    'amount' => $data['amount'] ?? $invoice->amount, // Ensure amount stays in sync
-                    'exchangerate_id' => $data['exchangerate_id'] ?? $invoice->exchangerate_id
-                ]);
-            }
-
-            return ['status' => 'success', 'message' => 'Order updated successfully.', 'data' => $order];
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
-        }
-    }
-
-    public function deleteWorkshopOrder($orderId)
-    {
-        try {
-            $order = $this->workshopOrder->with('invoice')->findOrFail($orderId);
-            
-            if ($order->invoice && $order->invoice->status !== 'PENDING') {
-                return ['status' => 'error', 'message' => 'Order cannot be deleted as invoice is not in PENDING status'];
-            }
-
-            if ($order->invoice) {
-                $order->invoice->delete();
-            }
-            
-            $order->delete();
-            return ['status' => 'success', 'message' => 'Order deleted successfully.'];
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
-        }
-    }
-
-    public function getWorkshopDelegates($workshop_id)
-    {
-        try {
-            return $this->workshopDelegate->with('workshoporder.customer')
-                ->where('workshop_id', $workshop_id)
-                ->get();
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
-        }
-    }
-
-    public function createDelegate(array $data)
-    {
-        try {
-            $delegate = $this->workshopDelegate->create($data);
-            return ['status' => 'success', 'message' => 'Delegate created successfully.', 'data' => $delegate];
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
-        }
-    }
-
-    public function updateDelegate($delegate_id, array $data)
-    {
-        try {
-            $delegate = $this->workshopDelegate->findOrFail($delegate_id);
-            $delegate->update($data);
-            return ['status' => 'success', 'message' => 'Delegate updated successfully.', 'data' => $delegate];
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
-        }
-    }
-
-    public function deleteDelegate($delegate_id)
-    {
-        try {
-            $delegate = $this->workshopDelegate->findOrFail($delegate_id);
-            $delegate->delete();
-            return ['status' => 'success', 'message' => 'Delegate deleted successfully.'];
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
-        }
-    }
-
-    public function getDelegatesByOrder($order_id)
-    {
-        try {
-            return $this->workshopDelegate->where('workshoporder_id', $order_id)->get();
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
-        }
-    }
-
-    public function getOrderSummaries($workshop_id)
-    {
-        try {
-            $orders = $this->getWorkshopOrders($workshop_id);
-            
-            $awaiting = $orders->where('status', 'AWAITING');
-            $pending = $orders->where('status', 'PENDING');  
-            $paid = $orders->where('status', 'PAID');
-
-            return [
-                'awaiting_count' => $awaiting->sum('delegates'),
-                'pending_count' => $pending->sum('delegates'),
-                'paid_count' => $paid->sum('delegates'),
-                'awaiting_total' => $awaiting->sum('delegates'),
-                'pending_total' => $pending->sum('delegates'),
-                'paid_total' => $paid->sum('delegates'),
-                'total_amount' => $orders->sum('delegates')
-            ];
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
-        }
-    }
-
-    public function exportDelegates($workshop_id)
-    {
-        try {
-            return $this->getWorkshopDelegates($workshop_id);
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
-        }
-    }
-
-    // Additional supporting methods
-    public function getCurrencies()
-    {
-        try {
-            return $this->currency->where('Status', 'Active')->get();
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
-        }
-    }
-
-    public function getStatusList()
-    {
-        return [
-            ['id' => 'PENDING', 'name' => 'Pending'],
-            ['id' => 'PUBLISHED', 'name' => 'Published'],
-            ['id' => 'CANCELLED', 'name' => 'Cancelled'],
-        ];
-    }
-
-    public function getTargetList()
-    {
-        return [
-            ['id' => 'PE', 'name' => 'Procurement entities'],
-            ['id' => 'BIDDER', 'name' => 'Bidders'],
-            ['id' => 'ALL', 'name' => 'ALL'],
-        ];
-    }
-
-    public function getExchangeRates($currency_id)
-    {
-        try {
-            if (!$currency_id) {
-                return new Collection();
-            }
-
-            $rates = $this->exchangerate->where('SecondaryCurrencyId', $currency_id)->get();
-            return $rates->map(function ($rate) {
-                return [
-                    'id' => $rate->id,
-                    'name' => 'Date:' . $rate->created_at . '=> 1:' . $rate->Value
-                ];
-            });
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
-        }
-    }
-
-    public function calculateOrderCost($delegates, $workshop_cost, $exchange_rate)
-    {
-        return ($delegates * $workshop_cost) * $exchange_rate;
-    }
-
-    public function previewDocument($document_url)
-    {
-        return asset('storage/' . $document_url);
-    }
-
-    public function searchAccounts($search)
-    {
-        try {
-            if (empty($search)) {
-                return new Collection();
-            }
-            
-            return $this->customer->where('Name', 'like', '%' . $search . '%')->get();
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
-        }
-    }
-
-    public function checkInvoiceNumberConsistency($workshop_id = null)
-    {
-        try {
-            $query = $this->workshopOrder->with('invoice');
-            
-                if ($workshop_id) {
-                $query->where('workshop_id', $workshop_id);
-            }
-            
-            $orders = $query->get();
-            $issues = [];
-            $fixed = 0;
-            
-            foreach ($orders as $order) {
-                // Check if invoice exists but numbers don't match
-                if ($order->invoice && $order->invoicenumber !== $order->invoice->invoicenumber) {
-                    $issues[] = [
-                        'order_id' => $order->id,
-                        'order_invoicenumber' => $order->invoicenumber,
-                        'invoice_invoicenumber' => $order->invoice->invoicenumber,
-                        'issue' => 'Invoice numbers mismatch'
-                    ];
-                    
-                    // Fix by updating invoice number to match order
-                    $order->invoice->update(['invoicenumber' => $order->invoicenumber]);
-                    $fixed++;
-                }
-                
-                // Check if order has invoicenumber but no invoice record
-                if ($order->invoicenumber && !$order->invoice) {
-                    $issues[] = [
-                        'order_id' => $order->id,
-                        'order_invoicenumber' => $order->invoicenumber,
-                        'invoice_invoicenumber' => null,
-                        'issue' => 'Order has invoice number but no invoice record'
-                    ];
-                }
-                
-                // Check if amounts don't match
-                if ($order->invoice && $order->amount != $order->invoice->amount) {
-                    $issues[] = [
-                        'order_id' => $order->id,
-                        'order_amount' => $order->amount,
-                        'invoice_amount' => $order->invoice->amount,
-                        'issue' => 'Amounts mismatch'
-                    ];
-                    
-                    // Fix amount
-                    $order->invoice->update(['amount' => $order->amount]);
-                    $fixed++;
-                }
-            }
-            
-            return [
-                'status' => 'success', 
-                'message' => "Found " . count($issues) . " issues, fixed {$fixed}",
-                'issues' => $issues,
-                'fixed_count' => $fixed
-            ];
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
-        }
-    }
-
-    public function syncOrderInvoiceAmounts($workshop_id = null)
-    {
-        return $this->checkInvoiceNumberConsistency($workshop_id);
-    }
-    
+   }
 }

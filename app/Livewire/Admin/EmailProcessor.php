@@ -15,7 +15,7 @@ use Prism\Prism\Tool;
 #[Layout('components.layouts.app')]
 class EmailProcessor extends Component
 {
-    public string $supportEmail = "";
+    public string $supportEmail = '';
 
     public int $emailLimit = 100;
 
@@ -48,7 +48,6 @@ class EmailProcessor extends Component
     protected iissuetypeInterface $issueTypeRepo;
 
     protected iissuegroupInterface $issueGroupRepo;
-    
 
     public function boot(
         iissuelogInterface $issueLogRepo,
@@ -70,6 +69,26 @@ class EmailProcessor extends Component
     public function checkAuthentication(): void
     {
         try {
+            // Check if connected first to avoid redirect being returned
+            if (! MsGraph::isConnected()) {
+                $this->isAuthenticated = false;
+                $this->statusMessage = 'Microsoft Graph authentication required.';
+                $this->errorMessage = 'Please authenticate at: '.config('app.url').'/connect';
+
+                return;
+            }
+
+            // Get access token with redirect disabled to avoid redirect object
+            $token = MsGraph::getAccessToken(null, false);
+            if ($token === null || ! is_string($token)) {
+                $this->isAuthenticated = false;
+                $this->statusMessage = 'Microsoft Graph authentication required.';
+                $this->errorMessage = 'Please authenticate at: '.config('app.url').'/connect';
+
+                return;
+            }
+
+            // Try to verify the token by making a simple API call
             MsGraph::get('me');
             $this->isAuthenticated = true;
             $this->statusMessage = 'Microsoft Graph authentication is active.';
@@ -516,12 +535,11 @@ class EmailProcessor extends Component
             return 'Database';
         } elseif (strpos($content, 'network') !== false || strpos($content, 'connection') !== false) {
             return 'Network';
-        }   elseif (strpos($content, 'payment') !== false || strpos($content, 'paynow') !== false) {
+        } elseif (strpos($content, 'payment') !== false || strpos($content, 'paynow') !== false) {
             return 'Finance';
         } elseif (strpos($content, 'registration') !== false || strpos($content, 'approval') !== false) {
             return 'Operations';
-        }
-        else {
+        } else {
             return 'General';
         }
     }

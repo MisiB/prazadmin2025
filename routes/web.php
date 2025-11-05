@@ -37,6 +37,7 @@ Route::middleware('auth')->group(function () {
     Volt::route('/finances/suspensereports', 'admin.finance.suspensereports')->name('admin.finance.suspensereports');
     Volt::route('/finances/banktransactions', 'admin.finance.banktransactions')->name('admin.finance.banktransactions');
     Volt::route('/finances/wallettopups', 'admin.finance.wallettopuprequest')->name('admin.finance.wallettopups');
+    Volt::route('/finances/workshopinvoices', 'admin.finance.workshops')->name('admin.finance.workshops');
     Volt::route('/procurements/tenders', 'admin.procurements.tenders')->name('admin.procurements.tenders');
     Volt::route('/procurements/tendertype', 'admin.procurements.tendertype')->name('admin.procurements.tendertypes');
     Volt::route('/strategies', 'admin.management.strategies')->name('admin.management.strategies');

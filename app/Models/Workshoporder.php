@@ -52,6 +52,8 @@ class Workshoporder extends Model
         return $this->belongsTo(Workshop::class,"workshop_id","id");
     }
 
+   
+
     public function currency():BelongsTo
     {
         return $this->belongsTo(Currency::class,"currency_id","id");

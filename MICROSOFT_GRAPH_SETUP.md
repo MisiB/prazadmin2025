@@ -83,3 +83,13 @@ php artisan make:command TestEmailAnalysis
 
 Then use the agent directly with sample email data to verify the AI analysis works correctly.
 
+
+
+
+
+
+
+
+
+
+

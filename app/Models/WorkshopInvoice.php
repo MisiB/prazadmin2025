@@ -59,4 +59,9 @@ class WorkshopInvoice extends Model
     {
         return $this->customer();
     }
+
+    public function workshoporder()
+    {
+        return $this->hasOne(Workshoporder::class, 'invoicenumber', 'invoicenumber');
+    }
 }

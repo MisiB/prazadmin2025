@@ -29,7 +29,7 @@ class _exchangerateRepository implements iexchangerateInterface
         return $this->model->where('secondary_currency_id', $currency_id)->latest()->first();
     }
     public function getexchangeratesbyprimarycurrency($currency_id){
-        return $this->model->with(['primarycurrency', 'secondarycurrency'])->where('secondary_currency_id', $currency_id)->get();
+        return $this->model->with(['primarycurrency', 'secondarycurrency'])->where('secondary_currency_id', $currency_id)->orderBy('created_at', 'desc')->get();
     }
     public function getlatestexchangerate($currency_id=null){
         $currency_id = $currency_id == 'null'? config('generalsettings.defaultcurrency') : $currency_id;

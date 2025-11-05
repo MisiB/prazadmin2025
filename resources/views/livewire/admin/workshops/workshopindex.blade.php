@@ -1,15 +1,12 @@
 <div>
-    <div class="text-sm breadcrumbs">
-        <ul class="flex">
-            <li>
-                <x-button label="Home" link="{{ route('admin.home') }}" class="rounded-none btn-ghost" icon="o-home"/>
-            </li>
-            <li><x-button class="rounded-none border-l-2 border-l-gray-200 btn-ghost"  label="Workshops"/></li>
-        </ul>
-    </div>
+    <x-breadcrumbs :items="$breadcrumbs" 
+    class="bg-base-300 p-3 mt-2 rounded-box overflow-x-auto whitespace-nowrap"
+    link-item-class="text-base" />
 
-    <x-card title="Workshops" separator progress-indicator class="mt-4">
+
+    <x-card title="Workshops" separator progress-indicator class="mt-4 border-2 border-gray-200">
         <x-slot:menu>
+            <x-input wire:model.live="search" placeholder="Search workshops..." />
             <x-button label="Create Workshop" icon="o-plus" wire:click="$set('showCreateModal', true)" class="btn-primary"/>
  
         </x-slot:menu>
@@ -20,7 +17,7 @@
             </div>
         @endif
 
-        <x-table :headers="$headers" :rows="$workshops" separator progress-indicator show-empty-text empty-text="Nothing Here!">
+        <x-table :headers="$headers" :rows="$workshops" separator progress-indicator show-empty-text with-pagination empty-text="Nothing Here!">
             @scope('cell_action', $row)
                 <div class="flex gap-2">
                     <x-button label="View" link="{{ route('admin.workshop.view', $row->id) }}" class="btn btn-xs btn-info"/>
@@ -28,16 +25,18 @@
                         @if($row->document_url)
                         <x-button label="Preview" wire:click="previewDocument('{{ $row->document_url }}')" class="btn btn-xs btn-success"/>
                     @endif
+                    @if($row->status == 'DRAFT' || $row->status == 'PENDING')
                     <x-button label="Delete" class="text-white bg-red-500" wire:click="deleteWorkshop({{ $row->id }})" 
                         wire:confirm="Are you sure you want to delete this workshop?"
                         class="btn btn-xs btn-error"/>
+                    @endif
                 </div>
             @endscope
         </x-table>
     </x-card>
 
     <!-- Create Workshop Modal -->
-    <x-modal wire:model="showCreateModal" title="Create Workshop">
+    <x-modal wire:model="showCreateModal" title="Create Workshop" box-class="max-w-6xl">
         <div class="grid grid-cols-2 gap-4">
             <x-input label="Title" wire:model="title"/>
             <x-select label="Target" wire:model="target" placeholder="select target" :options="$targetlist"/>
@@ -77,8 +76,8 @@
          
         </div>
         <div class="grid grid-cols-2 gap-4">    
-            <x-input type="date" label="Start Date" wire:model="start_date"/>
-            <x-input type="date" label="End Date" wire:model="end_date"/>
+            <x-input type="date" label="Start Date" wire:model="startDate"/>
+            <x-input type="date" label="End Date" wire:model="endDate"/>
         </div>
         <div class="grid grid-cols-2 gap-4">    
             <x-input label="Location" wire:model="location"/>

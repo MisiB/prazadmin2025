@@ -16,5 +16,7 @@ interface invoiceInterface
     public function updateInvoice($data);
     public function deleteInvoice($invoicenumber);
     public function settleInvoice($invoicenumber,$receiptnumber=null);
+
+    public function settleworkshopinvoice($invoicenumber);
 }
    

@@ -41,4 +41,14 @@ class Workshop extends Model
      {
          return $this->hasMany(workshoporder::class,"workshop_id","id");
      }
+
+     public function delegates():HasMany
+     {
+         return $this->hasMany(WorkshopDelegate::class,"workshop_id","id");
+     }
+
+     public function invoices():HasMany
+     {
+         return $this->hasMany(WorkshopInvoice::class,"workshop_id","id");
+     }
 }

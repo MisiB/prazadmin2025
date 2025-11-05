@@ -2,17 +2,21 @@
 
 namespace App\Livewire\Admin\Workshops;
 
-use App\implementation\services\_workshopService;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Mary\Traits\Toast;
-
+use App\Interfaces\services\iworkshopService;
+use App\Interfaces\repositories\icurrencyInterface;
+use Livewire\WithPagination;
+use Illuminate\Support\Facades\Auth;
 class Workshopindex extends Component
 {
     use Toast;
     use WithFileUploads;
+    use WithPagination;
 
     protected $workshopService;
+    protected $currencyService;
 
     public $title;
     public $target;
@@ -21,6 +25,7 @@ class Workshopindex extends Component
     public $location;
     public $limit;
     public $status;
+    public $search;
     public $currency;
     public $cost;
     public $document;
@@ -30,7 +35,7 @@ class Workshopindex extends Component
     public $showPreviewModal = false;
     public $previewUrl = null;
     public $editingWorkshop = null;
-
+    public $breadcrumbs=[];
     protected $rules = [
         'title' => 'required|string|max:255',
         'target' => 'required|string',
@@ -44,9 +49,18 @@ class Workshopindex extends Component
         'document' => 'nullable|file|max:10240|mimes:pdf,doc,docx'
     ];
 
-    public function boot(_workshopService $workshopService)
+    public function boot(iworkshopService $workshopService, icurrencyInterface $currencyService)
     {
         $this->workshopService = $workshopService;
+        $this->currencyService = $currencyService;
+    }
+
+    public function mount()
+    {
+        $this->breadcrumbs = [
+            ['label' => 'Home', 'link' => route('admin.home')],
+            ['label' => 'Workshops']
+        ];
     }
 
     public function headers():array
@@ -66,12 +80,13 @@ class Workshopindex extends Component
 
     public function workshops()
     {
-        return $this->workshopService->getAllWorkshops();
+
+        return $this->workshopService->getallworkshops($this->search);
     }
 
     public function currencies()
     {
-        return $this->workshopService->getCurrencies();
+        return $this->currencyService->getcurrencies()->where('status','ACTIVE');
     }
 
     public function statuslist():array
@@ -98,6 +113,7 @@ class Workshopindex extends Component
             'limit' => $this->limit,
             'status' => $this->status,
             'cost' => $this->cost,
+            'created_by' => Auth::user()->id,
             'document' => $this->document
         ];
 
@@ -141,7 +157,7 @@ class Workshopindex extends Component
             'status' => 'required',
             'cost' => 'required|numeric|min:0',
             'currency'=>'required',
-            'editDocument' => 'nullable|file|max:10240|mimes:pdf,doc,docx'
+            'document' => 'nullable|file|max:10240|mimes:pdf,doc,docx'
         ]);
 
         $data = [
@@ -154,13 +170,14 @@ class Workshopindex extends Component
             'limit' => $this->limit,
             'status' => $this->status,
             'cost' => $this->cost,
-            'editDocument' => $this->editDocument
+            'document' => $this->document
         ];
+        
 
         $result = $this->workshopService->updateWorkshop($this->editingWorkshop->id, $data);
         
         if ($result['status'] === 'success') {
-            $this->reset(['title', 'target', 'startDate', 'endDate', 'location', 'currency', 'limit', 'status', 'cost', 'editingWorkshop', 'editDocument']);
+            $this->reset(['title', 'target', 'startDate', 'endDate', 'location', 'currency', 'limit', 'status', 'cost', 'editingWorkshop', 'document']);
             $this->showEditModal = false;
             $this->success('message', $result['message']);
         } else {
@@ -179,9 +196,9 @@ class Workshopindex extends Component
         }
     }
 
-    public function previewDocument($documentUrl)
+    public function previewDocument($workshop)
     {
-        $this->previewUrl = $this->workshopService->previewDocument($documentUrl);
+        $this->previewUrl = $workshop->document_url;
         $this->showPreviewModal = true;
     }
 

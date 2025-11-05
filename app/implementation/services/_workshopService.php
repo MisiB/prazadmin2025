@@ -6,171 +6,85 @@ use App\Interfaces\repositories\iworkshopInterface;
 use App\Interfaces\repositories\icurrencyInterface;
 use App\Interfaces\repositories\iexchangerateInterface;
 use App\Models\Exchangerate;
+use App\Interfaces\services\iworkshopService;
 
-class _workshopService implements iworkshopInterface
+class _workshopService implements iworkshopService
 {
     protected $workshopRepo;
-    protected $currencyRepo;
-    protected $exchangeRateRepo;
-
-    public function __construct(
-        iworkshopInterface $workshopRepo,
-        icurrencyInterface $currencyRepo,
-        iexchangerateInterface $exchangeRateRepo
-    ) {
+    public function __construct(iworkshopInterface $workshopRepo)
+    {
         $this->workshopRepo = $workshopRepo;
-        $this->currencyRepo = $currencyRepo;
-        $this->exchangeRateRepo = $exchangeRateRepo;
     }
-
-    public function getAllWorkshops()
+    public function getallworkshops($search=null)
     {
-        return $this->workshopRepo->getAllWorkshops();
+        return $this->workshopRepo->getallworkshops($search);
     }
-
-    public function getWorkshopById($id)
+    public function getworkshopbyid($id)
     {
-        return $this->workshopRepo->getWorkshopById($id);
+        return $this->workshopRepo->getworkshopbyid($id);
     }
-
-    public function getWorkshopWithDetails($id)
+    public function updateworkshop($id,$data)
     {
-        return $this->workshopRepo->getWorkshopWithDetails($id);
+        return $this->workshopRepo->updateworkshop($id,$data);
     }
-
-    public function createWorkshop(array $data)
+    public function createworkshop($data)
     {
-        return $this->workshopRepo->createWorkshop($data);
+        return $this->workshopRepo->createworkshop($data);
     }
-
-    public function updateWorkshop($id, array $data)
+    public function deleteworkshop($id)
     {
-        return $this->workshopRepo->updateWorkshop($id, $data);
+        return $this->workshopRepo->deleteworkshop($id);
     }
-
-    public function deleteWorkshop($id)
+    public function getopenworkshops()
     {
-        return $this->workshopRepo->deleteWorkshop($id);
+        return $this->workshopRepo->getopenworkshops();
     }
-
-    public function getWorkshopOrders($workshop_id)
+    public function viewworkshop($id)
     {
-        return $this->workshopRepo->getWorkshopOrders($workshop_id);
+        return $this->workshopRepo->viewworkshop($id);
     }
-
-    public function getOrdersByStatus($workshop_id, $status)
+    public function getworkshopinvoices($workshop_id,$status=null,$currency_id=null)
     {
-        return $this->workshopRepo->getOrdersByStatus($workshop_id, $status);
+        return $this->workshopRepo->getworkshopinvoices($workshop_id,$status,$currency_id);
     }
-
-    public function createWorkshopOrder(array $data)
+    public function getworkshopinvoicebyid($id)
     {
-        return $this->workshopRepo->createWorkshopOrder($data);
+        return $this->workshopRepo->getworkshopinvoicebyid($id);
     }
-
-    public function updateWorkshopOrder($order_id, array $data)
+    public function getordersbyregnumber($regnumber)
     {
-        return $this->workshopRepo->updateWorkshopOrder($order_id, $data);
+        return $this->workshopRepo->getordersbyregnumber($regnumber);
     }
-
-    public function deleteWorkshopOrder($order_id)
+    public function getstatuslist()
     {
-        return $this->workshopRepo->deleteWorkshopOrder($order_id);
+        return [['id'=>'DRAFT','name'=>'Draft'],['id'=>'PUBLISHED','name'=>'Published'],['id'=>'CANCELLED','name'=>'Cancelled']];
     }
-
-    public function getWorkshopDelegates($workshop_id)
+    public function gettargetlist()
     {
-        return $this->workshopRepo->getWorkshopDelegates($workshop_id);
+        return [['id'=>'PE','name'=>'PE'],['id'=>'BIDDERS','name'=>'BIDDERS'],['id'=>'ALL','name'=>'ALL']];
     }
-
-    public function createDelegate(array $data)
+    public function createorder($data)
     {
-        return $this->workshopRepo->createDelegate($data);
+        return $this->workshopRepo->createorder($data);
     }
-
-        public function updateDelegate($delegate_id, array $data)
+    public function updateorder($id,$data)
     {
-        return $this->workshopRepo->updateDelegate($delegate_id, $data);
+        return $this->workshopRepo->updateorder($id,$data);
     }
-
-    public function deleteDelegate($delegate_id)
+    public function deleteorder($id)
     {
-        return $this->workshopRepo->deleteDelegate($delegate_id);
+        return $this->workshopRepo->deleteorder($id);
     }
-
-    public function getDelegatesByOrder($order_id)
+    public function getorder($id)
     {
-        return $this->workshopRepo->getDelegatesByOrder($order_id);
+        return $this->workshopRepo->getorder($id);
     }
-
-    public function getOrderSummaries($workshop_id)
+    public function getorders($workshop_id)
     {
-        return $this->workshopRepo->getOrderSummaries($workshop_id);
+        return $this->workshopRepo->getorders($workshop_id);
     }
-
-    public function exportDelegates($workshop_id)
+    public function saveorderdocument($order_id,$data)
     {
-        return $this->workshopRepo->exportDelegates($workshop_id);
-    }
-
-    public function getCurrencies()
-    {
-        return $this->currencyRepo->getcurrencies()->filter(function ($currency) {
-            return in_array(strtoupper($currency->status), ['ACTIVE']);
-        })->values();
-    }
-
-    public function getStatusList()
-    {
-        return [
-            ['id' => 'PENDING', 'name' => 'Pending'],
-            ['id' => 'PUBLISHED', 'name' => 'Published'],
-            ['id' => 'CANCELLED', 'name' => 'Cancelled'],
-        ];
-    }
-
-    public function getTargetList()
-    {
-        return [
-            ['id' => 'PE', 'name' => 'Procurement entities'],
-            ['id' => 'BIDDER', 'name' => 'Bidders'],
-            ['id' => 'ALL', 'name' => 'ALL'],
-        ];
-    }
-
-
-
-    public function getExchangeRates($currency_id)
-{
-    if (!$currency_id) {
-        return collect();
-    }
-
-    $rates = Exchangerate::where('secondary_currency_id', $currency_id)->get();
-    return $rates->map(function ($rate) {
-        return [
-            'id' => $rate->id,
-            'type' => $rate->type,
-            'primary_currency_id' => $rate->primary_currency_id,
-            'secondary_currency_id' => $rate->secondary_currency_id,
-            'value' => $rate->value,
-            'created_at' => $rate->created_at,
-        ];
-    });
-}
-
-    public function calculateOrderCost($delegates, $workshop_cost, $exchange_rate)
-    {
-        return ($delegates * $workshop_cost) * $exchange_rate;
-    }
-
-    public function previewDocument($documentUrl)
-    {
-        return asset('storage/' . $documentUrl);    
-    }
-
-    public function searchAccounts($search)
-    {
-        return $this->workshopRepo->searchAccounts($search);
+        return $this->workshopRepo->saveorderdocument($order_id,$data);
     }
 }

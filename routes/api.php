@@ -13,6 +13,7 @@ use App\Http\Controllers\PayeeController;
 use App\Http\Controllers\PaynowController;
 use App\Http\Controllers\PublicWorkshopController;
 use App\Http\Controllers\WalletController;
+use App\Http\Controllers\WorkshopController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('sendPayment', [BanktransactionController::class, 'create'])->name('sendPayment');
@@ -46,35 +47,9 @@ Route::post('paynow/{uuid}/verify', [PaynowController::class, 'check']);
 
 // Public Workshop API Routes
 Route::prefix('public-workshops')->group(function () {
-    // Workshop information
-    Route::get('/', [PublicWorkshopController::class, 'getPublishedWorkshops'])->name('public-workshop.list');
-    Route::get('/{id}/preview-document', [PublicWorkshopController::class, 'previewDocument'])->name('public-workshop.preview-document');
-
-    // Customer search
-    Route::post('/search-customer', [PublicWorkshopController::class, 'searchCustomer'])->name('public-workshop.search-customer');
-
-    // Workshop orders - put these BEFORE the generic /{id} route
-    Route::get('/{workshopId}/orders/{customerId}', [PublicWorkshopController::class, 'getWorkshopOrder'])->name('public-workshop.get-order');
-    Route::post('/orders', [PublicWorkshopController::class, 'createOrder'])->name('public-workshop.create-order');
-    Route::post('/public-orders', [PublicWorkshopController::class, 'createPublicOrder'])->name('public-workshop.create-public-order');
-    Route::get('/orders/{orderId}/delegate-info', [PublicWorkshopController::class, 'getOrderWithDelegateCount'])->name('public-workshop.order-delegate-info');
-    Route::post('/orders/{orderId}/payment', [PublicWorkshopController::class, 'savePayment'])->name('public-workshop.save-payment');
-    Route::get('/orders/{orderId}/download', [PublicWorkshopController::class, 'downloadOrder'])->name('public-workshop.download-order');
-
-    // Exchange rates
-    Route::post('/exchange-rates', [PublicWorkshopController::class, 'getExchangeRates'])->name('public-workshop.exchange-rates');
-
-    // Delegates
-    Route::get('/orders/{orderId}/delegates', [PublicWorkshopController::class, 'getDelegates'])->name('public-workshop.get-delegates');
-    Route::post('/delegates', [PublicWorkshopController::class, 'createDelegate'])->name('public-workshop.create-delegate');
-    Route::put('/delegates/{delegateId}', [PublicWorkshopController::class, 'updateDelegate'])->name('public-workshop.update-delegate');
-    Route::delete('/delegates/{delegateId}', [PublicWorkshopController::class, 'deleteDelegate'])->name('public-workshop.delete-delegate');
-
-    // Utility
-    Route::post('/calculate-amount', [PublicWorkshopController::class, 'calculateAmount'])->name('public-workshop.calculate-amount');
-
-    // Put the generic /{id} route LAST
-    Route::get('/{id}', [PublicWorkshopController::class, 'getWorkshop'])->name('public-workshop.show');
+     Route::get('/open', [WorkshopController::class, 'getOpenWorkshops'])->name('api.workshops.getopenworkshops');
+     Route::get('/{id}', [WorkshopController::class, 'viewworkshop'])->name('api.workshops.viewworkshop');
+     Route::get('/{regnumber}/orders', [WorkshopController::class, 'getordersbyregnumber'])->name('api.workshops.getordersbyregnumber');
 });
 
 // Issue Ticket API Routes
@@ -128,3 +103,6 @@ Route::prefix('knowledge-base')->group(function () {
     Route::get('/category/{category}', [\App\Http\Controllers\Api\KnowledgeBaseController::class, 'byCategory'])->name('api.kb.category');
     Route::get('/{slug}', [\App\Http\Controllers\Api\KnowledgeBaseController::class, 'show'])->name('api.kb.show');
 });
+
+
+

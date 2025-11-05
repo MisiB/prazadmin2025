@@ -252,14 +252,15 @@ class _suspenseRepository implements isuspenseInterface
             }
         }
         $walletbalance = number_format($totalsuspense - $totalutilized, 2);
-        if ($walletbalance < $amount) {
+        $finalbalance = (float)str_replace(',', '',$walletbalance);       
+        if ($finalbalance < $amount) {
             return ['status' => 'error', 'message' => 'Insufficient balance', 'data' => null];
         }
 
         foreach ($suspenses as $suspense) {
-            $suspensebalance = $suspense->amount - $suspense->suspenseutilizations->sum('amount');
+            $suspensebalance = str_replace(',', '',$suspense->amount) - $suspense->suspenseutilizations->sum('amount');
             // / if suspense balance is less than or equal to amount create  suspenseutilization record and update suspense status to utilized
-
+             //dd($suspensebalance, $amount);
             if ($suspensebalance <= $amount) {
                 $this->suspenseutilizations->create([
                     'amount' => $suspensebalance,

@@ -9,16 +9,21 @@ use App\Interfaces\repositories\iinventoryitemInterface;
 use App\Interfaces\repositories\invoiceInterface;
 use App\Interfaces\repositories\isuspenseInterface;
 use App\Models\Invoice;
+use App\Models\WorkshopInvoice;
+use App\Models\Workshoporder;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use Mary\Traits\Toast;
 
 class _invoiceRepository implements invoiceInterface
 {
+  
     /**
      * Create a new class instance.
      */
     protected $invoice;
-
+    protected $workshopinvoice;
+    protected $workshoporder;
     protected $currencyrepo;
 
     protected $customerrepo;
@@ -29,7 +34,7 @@ class _invoiceRepository implements invoiceInterface
 
     protected $suspenserepo;
 
-    public function __construct(Invoice $invoice, icurrencyInterface $currencyrepo, icustomerInterface $customerrepo, iinventoryitemInterface $inventoryitemrepo, iexchangerateInterface $exchangeraterepo, isuspenseInterface $suspenserepo)
+    public function __construct(Invoice $invoice, WorkshopInvoice $workshopinvoice, Workshoporder $workshoporder, icurrencyInterface $currencyrepo, icustomerInterface $customerrepo, iinventoryitemInterface $inventoryitemrepo, iexchangerateInterface $exchangeraterepo, isuspenseInterface $suspenserepo)
     {
         $this->invoice = $invoice;
         $this->currencyrepo = $currencyrepo;
@@ -37,6 +42,8 @@ class _invoiceRepository implements invoiceInterface
         $this->inventoryitemrepo = $inventoryitemrepo;
         $this->exchangeraterepo = $exchangeraterepo;
         $this->suspenserepo = $suspenserepo;
+        $this->workshopinvoice = $workshopinvoice;
+        $this->workshoporder = $workshoporder;
     }
 
     public function getInvoices($fromDate, $toDate, $status, array $inventoryItems, array $currencyItems)
@@ -253,5 +260,34 @@ class _invoiceRepository implements invoiceInterface
 
         return ['status' => 'success', 'message' => 'Invoice successfully settled', 'data' => $invoice];
 
+    }
+    public function settleworkshopinvoice($invoicenumber){
+        $invoice = $this->workshopinvoice->with('customer', 'currency')->where('invoicenumber', $invoicenumber)->first();
+        if (! $invoice) {
+            return ['status' => 'error', 'message' => 'Invoice not found', 'data' => null];
+        }
+        if ($invoice->status == 'PAID') {
+            return ['status' => 'error', 'message' => 'Invoice already settled', 'data' => null];
+        }
+        $walletbalance = $this->suspenserepo->getwalletbalance($invoice->customer->regnumber, 'NONREFUNDABLE', $invoice->currency->name);
+        $balance = $invoice->cost - str_replace(',', '', $walletbalance);
+        if ($balance > 0) {
+            return ['status' => 'error', 'message' => 'Insufficient wallet please top up your wallet with '.$invoice->currency->name.' '.$balance.', required to settle invoice', 'data' => null];
+        }
+      
+            $receiptnumber = 'RPT'.date('Y').$invoice->id.rand(1000, 99999);
+        
+        $response = $this->suspenserepo->deductwallet($invoice->customer->regnumber, $invoice->id, 'NONREFUNDABLE', $invoice->currency->name, $invoice->cost, $receiptnumber);
+        if ($response['status'] == 'error') {
+            return $response;
+        }
+        $invoice->status = 'PAID';
+        $invoice->save();
+        $order = $this->workshoporder->where('invoicenumber', $invoicenumber)->first();
+        if ($order) {
+            $order->status = 'PAID';
+            $order->save();
+        }
+        return ['status' => 'success', 'message' => 'Invoice successfully settled', 'data' => $invoice];
     }
 }

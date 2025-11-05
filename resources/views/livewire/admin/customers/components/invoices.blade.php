@@ -37,7 +37,7 @@
                               
                             <x-button icon="o-currency-dollar" class="btn-sm btn-success btn-outline" 
                                 wire:click="settle({{ $row->id }})" spinner wire:confirm="You are about to settle  invoice using wallet, Do you wish to proceed"/>
-                                @endif
+                                @endif 
                         </div>
                         @elseif($row->status=="PAID" && $row->invoicesource=="MANUAL")
                         <div class="flex items-center space-x-2">

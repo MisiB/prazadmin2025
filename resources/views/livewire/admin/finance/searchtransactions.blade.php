@@ -38,8 +38,9 @@
                     @endscope
                     @scope('actions',$payload)
                     @if(strtoupper($payload->status) =="PENDING")               
-                    <x-button icon="o-no-symbol" label="BLOCK" wire:click="blockTransaction({{$payload->id}})"  spinner="blockTransaction" wire:confirm="Are you sure you want to block this transaction?"
-                        class="btn btn-sm btn-error"/>
+                    <x-button icon="o-no-symbol" label="BLOCK" wire:click="blockTransaction({{$payload->id}})"  spinner="blockTransaction" wire:confirm="Are you sure you want to block this transaction?" class="btn btn-sm btn-error"/>
+                        <x-button  icon="o-check" label="CLAIM" wire:click="claimTransaction({{$payload->id}})"  spinner="claimTransaction" wire:confirm="Are you sure you want to claim this transaction?" class="btn mt-1 btn-sm btn-success"/>
+               
                         @elseif(strtoupper($payload->status) =="BLOCKED")
                         <x-button icon="o-check" label="UNBLOCK" wire:click="unblockTransaction({{$payload->id}})"  spinner="unblockTransaction" wire:confirm="Are you sure you want to unblock this transaction?" class="btn btn-sm btn-success"/>
                         @elseif(strtoupper($payload->status) =="CLAIMED")
