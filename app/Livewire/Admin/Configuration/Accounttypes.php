@@ -61,6 +61,7 @@ class Accounttypes extends Component
         ]);
         if ($response["status"] == "success") {
             $this->success($response["message"]);
+            $this->modal = false;
         } else {
             $this->error = $response["message"];
         }
@@ -95,6 +96,7 @@ class Accounttypes extends Component
         ]);
         if ($response["status"] == "success") {
             $this->success($response["message"]);
+            $this->modal = false;
         } else {
             $this->error = $response["message"];
         }
