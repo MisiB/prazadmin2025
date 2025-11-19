@@ -4,7 +4,11 @@ namespace App\Interfaces\repositories;
 
 interface isuspenseInterface
 {
-    public function getpendingsuspensewallets();
+    public function getpendingsuspensewalletsquery($search=null);
+
+    public function getpendingsuspensewalletsarray($search=null);
+
+    public function getpendingsuspensewallets($search=null);
 
     public function getpendingsuspense($regnumber, $accounttype, $currency);
 
