@@ -2,10 +2,12 @@
 
 namespace App\Interfaces\repositories;
 
+use Illuminate\Support\Collection;
+
 interface iwallettopupInterface
 {
     
-    public function getwallettopups($year);
+    public function getwallettopups($year):Collection;
     public function getwallettopup($id);
     public function getwallettopupbycustomer($customer_id);
     public function createwallettopup($data);

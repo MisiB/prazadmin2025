@@ -57,57 +57,34 @@ class Wallettopuprequest extends Component
     }
     public function getwallettoprequests()
     {
-     $payload = $this->wallettoprepo->getwallettopups($this->year);
-     
-     // Check if $payload is a query builder or a collection
-     $isCollection = $payload instanceof \Illuminate\Database\Eloquent\Collection;
-     
-     if($this->status == 'REJECTED')
-     {
-        if($isCollection) {
+        $payload = $this->wallettoprepo->getwallettopups($this->year);
+        
+        if($this->status === 'REJECTED')
+        {
             $payload = $payload->where('status', $this->status);
-        } else {
-            $payload = $payload->where('status', $this->status);
-        }
-     }
-     elseif($this->status == 'LINKED')
-     {
-        if($isCollection) {
+        }elseif($this->status === 'LINKED')
+        {
             // For collections, we need to filter manually
             $payload = $payload->where('status', 'APPROVED')
                 ->filter(function($item) {
                     return $item->banktransaction != null;
                 });
-        } else {
-            // For query builder
-            $payload = $payload->where('status', 'APPROVED')
-                ->whereHas('banktransaction', function($query) {
-                    $query->whereNotNull('banktransaction');
-                });
-        }
-     }
-     elseif($this->status == 'NOTLINKED')
-     {
-        if($isCollection) {
+            
+        }elseif($this->status === 'NOTLINKED')
+        {
             // For collections, we need to filter manually
             $payload = $payload->where('status',"APPROVED")
                 ->filter(function($item) {
                     return $item->banktransaction == null;
-                });
-        } else {
-            // For query builder
-            $payload = $payload->where('status', "APPROVED")
-                ->whereHas('banktransaction', function($query) {
-                    $query->whereNull('banktransaction');
-                });
+            });  
         }
-     }
-     elseif($this->status == 'PENDING')
-     {
-        $payload = $payload->where('status', $this->status);
-     }
-     
-     return $payload;
+        elseif($this->status === 'PENDING')
+        {
+            $payload = $payload->where('status', $this->status);
+        }else{
+            $payload=['EMPTY'];
+        }
+        return $payload;
     }
 
     public function makedecision()
@@ -182,6 +159,10 @@ class Wallettopuprequest extends Component
     
     public function render()
     {
-        return view('livewire.admin.finance.wallettopuprequest',['wallettopups'=>$this->getwallettoprequests(),'statuslist'=>$this->statuslist(),'headers'=>$this->headers()]);
+        return view('livewire.admin.finance.wallettopuprequest',[
+            'wallettopups'=>$this->getwallettoprequests(),
+            'statuslist'=>$this->statuslist(),
+            'headers'=>$this->headers()
+        ]);
     }
 }
