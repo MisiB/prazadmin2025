@@ -148,4 +148,3 @@ class Paynowconfig extends Component
         ]);
     }
 }
- 
