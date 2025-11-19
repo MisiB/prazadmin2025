@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Livewire\Admin\Finance;
-
+ 
 use App\Interfaces\repositories\ibankaccountInterface;
 use App\Interfaces\repositories\ibankInterface;
 use App\Interfaces\repositories\icurrencyInterface;
