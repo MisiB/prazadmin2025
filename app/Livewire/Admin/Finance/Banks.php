@@ -88,6 +88,7 @@ class Banks extends Component
             $this->create();
         }
         $this->reset(["name", "email", "status","bankid"]);
+        $this->modal = false;
     }
 
     public function create()
@@ -101,6 +102,7 @@ class Banks extends Component
     }
     public function update()
     {
+        //dd($this->status);
         $response = $this->bankrepo->updateBank($this->bankid, ["name" => $this->name, "email" => $this->email, "status" => $this->status]);
         if ($response["status"] == "success") {
             $this->success($response["message"]);
@@ -145,6 +147,7 @@ class Banks extends Component
             $this->createaccount();
         }
         $this->reset(["accountnumber", "currencyid", "accounttype", "status", "accountid"]);
+        $this->addaccountmodal = false;
     }
     public function createaccount(){
         $response = $this->bankaccountrepo->createBankAccount(["account_number" => $this->accountnumber, "currency_id" => $this->currencyid, "account_type" => $this->accounttype, "account_status" => $this->status, "bank_id" => $this->bankid]);

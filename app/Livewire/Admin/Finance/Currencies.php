@@ -47,6 +47,7 @@ class Currencies extends Component
             $this->create();
         }
         $this->reset(['name', 'status', 'id']);
+        $this->modal = false;
     }
 
     public  function create(){
@@ -68,6 +69,7 @@ class Currencies extends Component
         ]);
         if($response['status'] == "success"){
             $this->success($response['message']);
+            $this->modal = false;
         }else{
             $this->error($response['message']);
         }
