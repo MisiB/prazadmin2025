@@ -40,9 +40,8 @@ class Transactionreport extends Component
             ]
             
         );
-        $data=$this->banktransactionrepo->gettransactionbydaterange(Carbon::parse($this->startdate)->format('Y-m-d'), Carbon::parse($this->enddate)->format('Y-m-d'), $this->bankaccount);
-       
-        $this->transactions = $data;
+        $this->transactions=$this->banktransactionrepo->gettransactionbydaterange(Carbon::parse($this->startdate)->format('Y-m-d'), Carbon::parse($this->enddate)->format('Y-m-d'), $this->bankaccount);
+        $this->modal=false;
     }
     public function headers(): array
     {
@@ -60,9 +59,9 @@ class Transactionreport extends Component
     {
         return view('livewire.admin.finance.transactionreport',[
             'bankaccounts' => $this->getBankAccounts(),
-            "headers" => $this->headers(),
-            "transactions" => $this->transactions
+            "headers" => $this->headers()
         ]);
     }
    
 }
+ 
