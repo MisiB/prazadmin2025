@@ -33,6 +33,22 @@ class Paynowconfig extends Component
         ];
 
     }
+    public function mount()
+    {
+        Currency::each(function ($currency) {
+            $this->currencyMap[] = [
+                'id' => $currency->id,
+                'name' => $currency->name,
+            ];
+        });
+        Bankaccount::each(function ($account) {
+            $this->bankMap[] = [
+                'id' => $account->id,
+                'name' => $account->account_number,
+            ];
+        });
+    }
+
     public function getpaynowintegrations()
     {
         $response = $this->repo->getpaynowintegrations();
@@ -46,20 +62,6 @@ class Paynowconfig extends Component
         $this->type = $response->type;
         $this->bankaccountid = $response->bankaccount->id;
         $this->currencyid = $response->currency->id;
-
-        
-        Currency::each(function ($currency) {
-            $this->currencyMap[] = [
-                'id' => $currency->id,
-                'name' => $currency->name,
-            ];
-        });
-        Bankaccount::each(function ($account) {
-            $this->bankMap[] = [
-                'id' => $account->id,
-                'name' => $account->account_number,
-            ];
-        });
 
         $this->modal = true;
     }
@@ -78,6 +80,7 @@ class Paynowconfig extends Component
             $this->create();
         }
         $this->reset(['key', 'token', 'type', 'bankaccountid', 'currencyid', 'id']);
+        $this->modal = false;
     }
 
     public  function create(){
@@ -105,6 +108,7 @@ class Paynowconfig extends Component
         ]);
         if($response['status'] == "success"){
             $this->success($response['message']);
+            $this->modal = false;
         }else{
             $this->error($response['message']);
         }
