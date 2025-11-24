@@ -31,7 +31,9 @@
             <!-- Row 3: Department -->
             <div class="col-span-1 sm:col-start-1 lg:col-start-3 lg:col-span-4 text-gray-600">Department: NULL</div>
             <div class="col-span-1 sm:col-start-2 lg:col-start-7 lg:col-span-3">
-                <x-button wire:click="download('{{ $requestrecord->attachment_src }}')" class="btn-primary" label="Download Attachment"/>
+                <x-button wire:click="download('{{ $requestrecord->attachment_src }}')" label="Download Attachment"
+                
+                class="bg-gradient-to-bl from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white"/>
             </div> <!-- Empty div to maintain two-column layout -->
 
             <!-- Row 4: Leave Dates -->
