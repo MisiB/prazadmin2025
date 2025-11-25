@@ -17,20 +17,8 @@
         <x-table :headers="$headers" :rows="$types">
             @scope('actions', $type)
             <div class="flex space-x-2">
-                <x-button 
-                    icon="o-pencil" 
-                    wire:click="edit({{ $type->id }})" 
-                    spinner 
-                    class="text-blue-500 btn-outline btn-sm" 
-                />
-
-                <x-button 
-                    icon="o-trash" 
-                    wire:click="delete({{ $type->id }})" 
-                    wire:confirm="Are you sure?" 
-                    spinner 
-                    class="text-red-500 btn-outline btn-sm" 
-                />
+                <x-button icon="o-pencil" wire:click="edit('{{ $type->name }}')" spinner class="text-blue-500 btn-outline btn-sm" />
+                <x-button icon="o-trash" wire:click="delete({{ $type->id }})" wire:confirm="Are you sure?" spinner class="text-red-500 btn-outline btn-sm" />
             </div>
             @endscope
 

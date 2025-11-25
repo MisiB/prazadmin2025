@@ -60,12 +60,11 @@ class _suspenseRepository implements isuspenseInterface
             return ['status' => 'error', 'message' => $e->getMessage()];
         }
     }
-
-    public function getpendingsuspensewallets(?int $perPage = null)
+    public function getpendingsuspensewalletsquery($search=null)
     {
-        $perPage = $perPage ?? $this->perPage;
-
-        return $this->model
+        $query=$this->model
+            ->join('customers', 'suspenses.customer_id', '=', 'customers.id')
+            ->join('suspenseutilizations as su', 'suspenses.id', '=', 'su.suspense_id')
             ->select([
                 'suspenses.id',
                 'suspenses.created_at',
@@ -79,11 +78,16 @@ class _suspenseRepository implements isuspenseInterface
                 DB::raw('COALESCE(SUM(su.amount), 0) as total_utilized'),
                 DB::raw('suspenses.amount - COALESCE(SUM(su.amount), 0) as balance'),
             ])
-            ->join('customers', 'suspenses.customer_id', '=', 'customers.id')
-            ->leftJoin('suspenseutilizations as su', 'suspenses.id', '=', 'su.suspense_id')
             ->where('suspenses.status', 'PENDING')
-            ->where('suspenses.sourcetype', '!=', 'bbf')
-            ->groupBy(
+            ->where('suspenses.sourcetype', '!=', 'bbf');
+            if ($search){ 
+                $query=$query->where(function ($q) use ($search) {
+                    return $q->where('customers.name', 'like', '%'.$search.'%')
+                    ->orWhere('suspenses.accountnumber', 'like', '%'.$search.'%');
+                });
+                
+            }
+            $query=$query->groupBy(
                 'suspenses.id',
                 'suspenses.created_at',
                 'suspenses.sourcetype',
@@ -92,9 +96,34 @@ class _suspenseRepository implements isuspenseInterface
                 'suspenses.amount',
                 'customers.name',
                 'customers.regnumber'
-            )
-            ->orderByDesc('suspenses.created_at')
-            ->paginate($perPage);
+            );
+        return $query;
+    }
+    public function getpendingsuspensewalletsarray($search=null)
+    {
+        $array = [];
+        $results = $this->getpendingsuspensewalletsquery($search)->get();
+        foreach ($results as $row) {
+            $array[] = [
+                'id' => $row->id,
+                'created_at' => $row->created_at,
+                'last_updated_at' => $row->last_updated_at,
+                'sourcetype' => $row->sourcetype,
+                'customer_name' => $row->customer_name,
+                'currency' => $row->currency,
+                'regnumber' => $row->regnumber,
+                'accountnumber' => $row->accountnumber,
+                'amount' => $row->amount,
+                'total_utilized' => $row->total_utilized,
+                'balance' => number_format($row->balance, 2),
+            ];
+        }
+        return $array;
+    }
+    public function getpendingsuspensewallets($search=null)
+    {
+        $results = $this->getpendingsuspensewalletsquery($search)->paginate(20);
+        return $results;
     }
 
     public function getpendingsuspense($regnumber, $accounttype, $currency)
@@ -247,7 +276,6 @@ class _suspenseRepository implements isuspenseInterface
         foreach ($suspenses as $suspense) {
             $suspensebalance = str_replace(',', '',$suspense->amount) - $suspense->suspenseutilizations->sum('amount');
             // / if suspense balance is less than or equal to amount create  suspenseutilization record and update suspense status to utilized
-             //dd($suspensebalance, $amount);
             if ($suspensebalance <= $amount) {
                 $this->suspenseutilizations->create([
                     'amount' => $suspensebalance,

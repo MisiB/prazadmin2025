@@ -34,16 +34,7 @@
             <div class="grid gap-2">
                 <x-input label="Name" wire:model="name" />
                 <x-input label="Email" wire:model="email" />
-                <x-select
-                    label="Status"
-                    wire:model="status"
-                    placeholder="Select a status"
-                    :options="[
-                        ['id' => 'ACTIVE', 'name' => 'Active'],
-                        ['id' => 'INACTIVE', 'name' => 'Inactive'],
-                        ['id' => 'PENDING', 'name' => 'Pending'],
-                    ]"
-                />
+                <x-select label="Status" wire:model="status" placeholder="Select a status" :options="[['id'=>'ACTIVE', 'name' => 'Active'], ['id'=>'PENDING', 'name' => 'Pending']]" />
             </div>
             <x-slot:actions>
                 <x-button label="Cancel" @click="$wire.modal = false" />
@@ -83,21 +74,8 @@
             <div class="grid gap-2">
                 <x-input label="Account Number" wire:model="accountnumber" />
                 <x-select label="Currency" wire:model="currencyid" placeholder="Select a currency" :options="$currencies" />
-                <x-select label="Account Type" wire:model="accounttype" placeholder="Select an account type"
-                    :options="[
-                        ['id' => 'REFUNDABLE', 'name' => 'Refundable'],
-                        ['id' => 'NON-REFUNDABLE', 'name' => 'Non-Refundable'],
-                    ]" />
-                <x-select
-                    label="Status"
-                    wire:model="status"
-                    placeholder="Select a status"
-                    :options="[
-                        ['id' => 'ACTIVE', 'name' => 'Active'],
-                        ['id' => 'INACTIVE', 'name' => 'Inactive'],
-                        ['id' => 'PENDING', 'name' => 'Pending'],
-                    ]"
-                />
+                <x-select label="Account Type" wire:model="accounttype" placeholder="Select an account type" :options="[['id'=>'REFUNDABLE', 'name' => 'Refundable'], ['id'=>'NON-REFUNDABLE', 'name' => 'Non-Refundable']]" />
+                <x-select label="Status" wire:model="status" placeholder="Select a status" :options="[['id'=>'ACTIVE', 'name' => 'Active'], ['id'=>'PENDING', 'name' => 'Pending']]" />
             </div>
             <x-slot:actions>
                 <x-button label="Cancel" @click="$wire.addaccountmodal = false" />

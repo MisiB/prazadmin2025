@@ -2,8 +2,6 @@
 
 namespace App\Notifications;
 
-use App\Interfaces\repositories\ihodstoresrequisitionapprovalInterface;
-use App\Interfaces\repositories\istoresrequisitionInterface;
 use App\Interfaces\services\istoresrequisitionService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;

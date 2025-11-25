@@ -258,9 +258,12 @@ class _banktransactionRepository implements ibanktransactionInterface
 
     public function gettransactionbydaterange($startdate, $enddate, $bankaccount = null)
     {
-        return $this->model->whereBetween('transactiondate', [$startdate, $enddate])->when($bankaccount != null, function ($query) use ($bankaccount) {
-            return $query->where('accountnumber', $bankaccount);
-        })->orderBy('created_at', 'desc')->get();
+        return $this->model->whereBetween('transactiondate', [$startdate, $enddate])
+                    ->when($bankaccount != null, function ($query) use ($bankaccount) {
+                            return $query->where('accountnumber', $bankaccount);
+                    })
+                    ->select('transactiondate','sourcereference','accountnumber', 'currency','amount','status')
+                    ->orderBy('created_at', 'desc')->get();
     }
 
     public function getbankreconciliations($year)

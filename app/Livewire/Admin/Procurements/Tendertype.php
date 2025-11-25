@@ -41,20 +41,17 @@ class Tendertype extends Component
             ['key' => 'name', 'label' => 'Name']
         ];
     }
-
-    public function save()
-    {
-        $this->validate([
-            'name' => 'required'
-        ]);
-
-        if ($this->id) {
-            $this->update();
-        } else {
-            $this->create();
-        }
-
-        $this->resetForm();
+    public function save(){
+      $this->validate([
+        'name'=>'required'
+      ]);
+      if($this->id){
+        $this->update();
+        $this->modal = false;
+      }else{
+        $this->create();
+      }
+      $this->reset('name','id');
     }
 
     public function resetForm()
@@ -62,37 +59,11 @@ class Tendertype extends Component
         $this->reset('name', 'id');
         $this->modal = false;
     }
-
-    public function create()
-    {
-        $response = $this->repo->createtendertype([
-            'name' => $this->name
-        ]);
-
-        $this->toastResponse($response);
-    }
-
-    public function edit($id)
-    {
-        $this->id = $id;
-        $type = $this->repo->gettendertype($id);
-
-        if (!$type) {
-            $this->error("Tender type not found.");
-            return;
-        }
-
-        $this->name = $type->name;
-        $this->modal = true;
-    }
-
-    public function update()
-    {
-        $response = $this->repo->updatetendertype($this->id, [
-            'name' => $this->name
-        ]);
-
-        $this->toastResponse($response);
+    public function edit($name){
+      $tendertype = $this->repo->gettendertype($name);
+      $this->id=$tendertype->id;
+      $this->name = $tendertype->name;
+      $this->modal = true;
     }
 
     public function delete($id)

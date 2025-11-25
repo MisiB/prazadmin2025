@@ -17,23 +17,42 @@ class _leaverequestRepository implements ileaverequestInterface
     {
         return $this->model->all();
     }
-    public function getleaverequestByUuid($leaverequestuuid)
+    public function getleaverequestbyuuid($leaverequestuuid)
     {
         return $this->model->where('leaverequestuuid', $leaverequestuuid)->first();
-    }
-    public function getleaverequestsByUserId($userid)
+    } 
+    public function getleaverequestsbyuserid($userid,$statusfilter=null,$searchuuid=null)
     {
-        return $this->model->with('leavetype','leaverequestapproval')->where('user_id', $userid)->get();
-    }
-    public function getleaverequestByUserIdAndStatus($userid,$status)
+
+        $query = $this->model->with('leavetype','leaverequestapproval')->where('user_id', $userid);
+
+        if ($statusfilter) {
+            $query->where('status', $statusfilter);
+        }
+        
+        if ($searchuuid) {
+            $query->where('leaverequestuuid', $searchuuid);
+        }
+
+        return $query->get();
+    } 
+    public function getfirstleaverequestsbyuserid($userid)
     {
-        return $this->model->where('user_id', $userid)->where('status',$status)->first();
-    }
-    public function getleaverequestByStatus($status)
+        return $this->model->with('leavetype','leaverequestapproval')->where([['user_id','=', $userid], ['status','<>','C']])->orderBy('startdate', 'asc')->first();
+    } 
+    public function getlastleaverequestsbyuserid($userid)
     {
-        return $this->model->where('status',$status)->first();
+        return $this->model->with('leavetype','leaverequestapproval')->where([['user_id','=', $userid], ['status','<>','C']])->orderBy('returndate', 'desc')->first();
+    } 
+    public function getleaverequestbyuseridandstatus($userid,$status)
+    {
+        return $this->model->where('user_id', $userid)->where('status',$status)->get();
     }
-    public function getleaverequestsByLeavetype($leavetypeid)
+    public function getleaverequestbystatus($status)
+    {
+        return $this->model->where('status',$status)->get();
+    }
+    public function getleaverequestsbyleavetype($leavetypeid)
     {
         return $this->model->where('leavetype_id', $leavetypeid)->get();
     }
@@ -44,8 +63,8 @@ class _leaverequestRepository implements ileaverequestInterface
     public function createleaverequest($userid,$data)
     {
         try {
-            $exists=$this->getleaverequestByUserIdAndStatus($userid,'PENDING');
-            if($exists)
+            $exists=$this->getleaverequestbyuseridandstatus($userid,'P');
+            if($exists->count() > 0)
             {
                 return ["status" => "error", "message" => "You already have a pending leave request."];
             }
@@ -59,7 +78,7 @@ class _leaverequestRepository implements ileaverequestInterface
     {
         try
         {
-            $leaverequest = $this->getleaverequest($id);
+            $leaverequest = $this->getleaverequestbyuuid($id);
             if (!$leaverequest) {
                 return ["status" => "error", "message" => "Leave request not found."];
             }

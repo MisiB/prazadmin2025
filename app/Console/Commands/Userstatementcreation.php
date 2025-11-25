@@ -2,11 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Interfaces\ileavestatementInterface;
-use App\Interfaces\ileavetypeInterface;
-use App\Interfaces\iuserInterface;
-use App\Models\Leavetype;
-use App\Models\User;
+use App\Interfaces\repositories\ileavestatementInterface;
+use App\Interfaces\repositories\ileavetypeInterface;
+use App\Interfaces\repositories\iuserInterface;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 
@@ -64,5 +62,7 @@ class Userstatementcreation extends Command
             
             });
         });
+        
+        $this->info('User leavestatement balances initialized');
     }
 }

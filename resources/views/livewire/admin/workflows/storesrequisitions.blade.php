@@ -2,64 +2,64 @@
 
     <x-modulewelcomebanner :breadcrumbs="$breadcrumbs"/>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mt-4">
-        <x-card>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+        <x-card class="border-2 border-blue-200  shadow-sm shadow-blue-200 bg-gradient-to-bl from-white to-gray-200">
             <div class="flex items-center space-x-3">
-                <div class="bg-yellow-200 p-3 rounded-full">
+                <div class="bg-white p-3 rounded-full">
                     <x-icon name="o-clock" class="w-8 h-8 text-blue-600"/>
                 </div>
-                <div class="text-xl font-bold text-gray-700">{{ $totalpending }}</div>
-                <div class="text-sm text-gray-600">Pending</div>
+                <div class="text-4xl font-bold text-gray-600">{{ $totalpending }}</div>
+                <div class="text-sm text-gray-600 tracking-wide">Pending</div>
             </div>
         </x-card>
 
-        <x-card>
+        <x-card class="border-2 border-blue-200  shadow-sm shadow-blue-200 bg-gradient-to-bl from-white to-gray-200">
             <div class="flex items-center space-x-3">
                 <div class="bg-blue-200 p-3 rounded-full">
                     <x-icon name="o-check" class="w-8 h-8 text-green-600"/>
                 </div>
-                <div class="text-xl font-bold text-gray-700">{{ $totalapproved }}</div>
-                <div class="text-sm text-gray-600">Approved</div>
+                <div class="text-4xl font-bold text-gray-600">{{ $totalapproved }}</div>
+                <div class="text-sm text-gray-600 tracking-wide">Approved</div>
             </div>
         </x-card>
 
-        <x-card>
+        <x-card class="border-2 border-blue-200  shadow-sm shadow-blue-200 bg-gradient-to-bl from-white to-gray-200">
             <div class="flex items-center space-x-3">
                 <div class="bg-blue-400 p-3 rounded-full">
                     <x-icon name="o-book-open" class="w-8 h-8 text-yellow-600"/>
                 </div>
-                <div class="text-xl font-bold text-gray-700">{{ $totalopened }}</div>
-                <div class="text-sm text-gray-600">Open</div>
+                <div class="text-4xl font-bold text-gray-600">{{ $totalopened }}</div>
+                <div class="text-sm text-gray-600 tracking-wide">Open</div>
             </div>
         </x-card>
 
-        <x-card>
+        <x-card class="border-2 border-blue-200  shadow-sm shadow-blue-200 bg-gradient-to-bl from-white to-gray-200">
             <div class="flex items-center space-x-3">
                 <div class="bg-green-200 p-3 rounded-full">
                     <x-icon name="m-clipboard-document-list" class="w-8 h-8 text-yellow-600"/>
                 </div>
-                <div class="text-xl font-bold text-gray-700">{{ $totaldelivered }}</div>
-                <div class="text-sm text-gray-600">Delivered</div>
+                <div class="text-4xl font-bold text-gray-600">{{ $totaldelivered }}</div>
+                <div class="text-sm text-gray-600 tracking-wide">Delivered</div>
             </div>
         </x-card>
 
-        <x-card>
+        <x-card class="border-2 border-blue-200  shadow-sm shadow-blue-200 bg-gradient-to-bl from-white to-gray-200">
             <div class="flex items-center space-x-3">
                 <div class="bg-green-700 p-3 rounded-full">
                     <x-icon name="o-hand-thumb-up" class="w-8 h-8 text-white"/>
                 </div>
-                <div class="text-xl font-bold text-gray-700">{{ $totalrecieved }}</div>
-                <div class="text-sm text-gray-600">Received</div>
+                <div class="text-4xl font-bold text-gray-600">{{ $totalrecieved }}</div>
+                <div class="text-sm text-gray-600 tracking-wide">Received</div>
             </div>
         </x-card>
 
-        <x-card>
+        <x-card class="border-2 border-blue-200  shadow-sm shadow-blue-200 bg-gradient-to-bl from-white to-gray-200">
             <div class="flex items-center space-x-3">
                 <div class="bg-red-700 p-3 rounded-full">
                     <x-icon name="c-arrow-left-end-on-rectangle" class="w-8 h-8 text-white"/>
                 </div>
-                <div class="text-xl font-bold text-gray-700">{{ $totalrejected }}</div>
-                <div class="text-sm text-gray-600">Rejected</div>
+                <div class="text-4xl font-bold text-gray-600">{{ $totalrejected }}</div>
+                <div class="text-sm text-gray-600 tracking-wide">Rejected</div>
             </div>
         </x-card>
 
@@ -70,7 +70,8 @@
             <x-slot:menu>
                 <x-input placeholder="Search by emailed reference..." wire:model.live.debounce="searchuuid"/>
                 <x-select wire:model.live.debounce="statusfilter" placeholder="Filter by status" :options="$statuslist" option-label="name" option-value="id" />
-                <x-button icon="o-plus" label="Add Stores Requisition" class="btn-primary" wire:click="addrequisitionmodal=true"/>
+                <x-button icon="o-plus" label="Add Stores Requisition" wire:click="addrequisitionmodal=true"
+                class="bg-gradient-to-bl from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white"/>
             </x-slot:menu>
 
             <x-table :headers="$headersforpending" :rows="$storesrequisitions">
@@ -194,7 +195,8 @@
                 <div></div>
             </div>
             <x-slot:actions>
-                <x-button label="Send" type="submit" class="btn-primary" spinner="sendrequisition" /> 
+                <x-button label="Send" type="submit" spinner="sendrequisition"
+                class="bg-gradient-to-bl from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white" /> 
             </x-slot:actions>
         </x-form>
     </x-modal> 
@@ -232,7 +234,8 @@
                 @endforeach
             </div>            
             <x-slot:actions>
-                <x-button label="Proceed" type="submit" class="btn-primary" spinner="acceptrequisition" /> 
+                <x-button label="Proceed" type="submit" spinner="acceptrequisition" 
+                class="bg-gradient-to-bl from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white"/> 
             </x-slot:actions>
         </x-form>
     </x-modal> 
@@ -250,7 +253,8 @@
                 @endforeach
             </div>            
             <x-slot:actions>
-                <x-button label="Recall" type="submit" class="btn-primary" spinner="recallrequisition" /> 
+                <x-button label="Recall" type="submit" spinner="recallrequisition"
+                class="bg-gradient-to-bl from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white" /> 
             </x-slot:actions>
         </x-form>
     </x-modal>

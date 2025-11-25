@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Livewire\Admin\Finance;
-
+ 
 use App\Interfaces\repositories\ibankaccountInterface;
 use App\Interfaces\repositories\ibankInterface;
 use App\Interfaces\repositories\icurrencyInterface;
@@ -88,7 +88,7 @@ class Banks extends Component
         } else {
             $this->create($status);
         }
-        $this->reset(["name", "email", "status","bankid",]);
+        $this->reset(["name", "email", "status","bankid"]);
         $this->modal = false;
     }
 
@@ -111,11 +111,8 @@ class Banks extends Component
     }
     public function update(string $status)
     {
-        $response = $this->bankrepo->updateBank($this->bankid, [
-            "name" => $this->name,
-            "email" => $this->email,
-            "status" => $status
-        ]);
+        //dd($this->status);
+        $response = $this->bankrepo->updateBank($this->bankid, ["name" => $this->name, "email" => $this->email, "status" => $this->status]);
         if ($response["status"] == "success") {
             $this->success($response["message"]);
         } else {
@@ -160,6 +157,7 @@ class Banks extends Component
             $this->createaccount($status);
         }
         $this->reset(["accountnumber", "currencyid", "accounttype", "status", "accountid"]);
+        $this->addaccountmodal = false;
     }
     public function createaccount(string $status){
         $response = $this->bankaccountrepo->createBankAccount([
