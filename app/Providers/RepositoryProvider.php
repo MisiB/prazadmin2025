@@ -113,6 +113,9 @@ use App\implementation\repositories\_programmeRepository;
 use App\Interfaces\repositories\iTargetmatrixInterface;
 use App\implementation\repositories\_targetmatrixRepository;
 use App\implementation\repositories\_individualworkplanRepository;
+use App\implementation\services\_leaverequestService;
+use App\Interfaces\services\ileaverequestService;
+
 class RepositoryProvider extends ServiceProvider
 {
     /**
@@ -186,5 +189,6 @@ class RepositoryProvider extends ServiceProvider
         $this->app->bind(iprogrammeInterface::class, _programmeRepository::class);
         $this->app->bind(iTargetmatrixInterface::class, _targetmatrixRepository::class);
         $this->app->bind(individualworkplanInterface::class, _individualworkplanRepository::class);
+        $this->app->bind(ileaverequestService::class, _leaverequestService::class);
     }
 }

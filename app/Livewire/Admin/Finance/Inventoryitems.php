@@ -5,7 +5,7 @@ namespace App\Livewire\Admin\Finance;
 use App\Interfaces\repositories\iinventoryitemInterface;
 use Livewire\Component;
 use Mary\Traits\Toast;
-
+ 
 class Inventoryitems extends Component
 {
     use Toast;

@@ -477,7 +477,8 @@
             </div>            
             <x-slot:actions>
                 <x-button label="Decline" type="button" class="btn-secondary" />
-                <x-button label="Submit" type="submit" class="btn-primary" spinner="deliverrequisition" /> 
+                <x-button label="Submit" type="submit" spinner="deliverrequisition"
+                class="bg-gradient-to-bl from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white" /> 
             </x-slot:actions>
         </x-form>
     </x-modal> 

@@ -27,7 +27,7 @@
         </x-table>
     </x-card>
  
-    <x-modal wire:model="modal"  title="{{ $id ? 'Edit Inventory' : 'New Inventory' }}" persistent> 
+    <x-modal wire:model="modal"  title="{{ $id ? 'Edit Config' : 'New Config' }}" persistent> 
         <x-form wire:submit="{{ $id ? 'update' : 'save' }}">
             <div class="grid gap-2">
                 <x-input label="Key" wire:model="key" />

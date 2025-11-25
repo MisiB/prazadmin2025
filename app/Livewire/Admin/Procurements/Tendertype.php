@@ -41,6 +41,7 @@ class Tendertype extends Component
       ]);
       if($this->id){
         $this->update();
+        $this->modal = false;
       }else{
         $this->create();
       }
@@ -57,9 +58,11 @@ class Tendertype extends Component
         $this->error($response['message']);
       }
     }
-    public function edit($id){
-      $this->id = $id;
-      $this->name = $this->repo->gettendertype($id)->name;
+    public function edit($name){
+      $tendertype = $this->repo->gettendertype($name);
+      $this->id=$tendertype->id;
+      $this->name = $tendertype->name;
+      $this->modal = true;
     }
    
     public function update(){

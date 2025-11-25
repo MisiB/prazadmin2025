@@ -1,10 +1,9 @@
 <?php
 
 namespace App\Livewire\Admin\Workflows;
- 
-use App\Interfaces\repositories\ileavestatementInterface;
-use App\Interfaces\repositories\ileavetypeInterface;
+
 use App\Interfaces\repositories\iuserInterface;
+use App\Interfaces\services\ileaverequestService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\File;
 use Livewire\Component;
@@ -14,18 +13,17 @@ use Mary\Traits\Toast;
 class Leavestatements extends Component
 {
     use WithFileUploads, Toast;
-    protected $leavestatementrepo, $userrepo, $leavetyperepo;
+    protected $leaverequestService;
+    protected $userrepo;
     public $breadcrumbs = [];
     public $exportmodal = false;
     public $importmodal = false;
     public $leavetypeid;
     public $updatedexportfile;
 
-    public function boot(ileavestatementInterface $repo, iuserInterface $userrepo, ileavetypeInterface $leavetyperepo)
+    public function boot(ileaverequestService $leaverequestService)
     {
-        $this->leavestatementrepo = $repo;
-        $this->userrepo = $userrepo;
-        $this->leavetyperepo = $leavetyperepo;  
+        $this->leaverequestService=$leaverequestService;
     }
 
     public function mount()
@@ -39,16 +37,42 @@ class Leavestatements extends Component
     public function headers(): array
     {
         return [
-            ['label' => 'User', 'key' => 'user.name'],
-            ['label' => 'Leave Type', 'key' => 'leaveType.name'],
-            ['label' => 'Year', 'key' => 'year'],
-            ['label' => 'Month', 'key' => 'month'],
-            ['label' => 'Available Days', 'key' => 'days']
+            ['label' => 'User', 'key' => 'username'],
+            ['label' => 'Vacation Leave', 'key' => 'vacationleave'],
+            ['label' => 'Annual Leave', 'key' => 'annualleave'],
+            ['label' => 'Study Leave', 'key' => 'studyleave'],
+            ['label' => 'Sick Leave', 'key' => 'sickleave'],
+            ['label' => 'Maternity Leave', 'key' => 'maternityleave'],
+            ['label' => 'Compassionate Leave', 'key' => 'compassionateleave'],
+            ['label' => 'Year', 'key' => 'year']
         ];
     }
     public function getleavestatements()
     {
-        return $this->leavestatementrepo->getleavestatements();
+        $leavestatements = [];
+        $this->leaverequestService->getusers()->each(function ($user) use (&$leavestatements) {
+
+            $leavetypebalancedetails=[];
+            $this->leaverequestService->getleavetypes()->each(function($leavetype) use (&$user,&$leavetypebalancedetails) {
+                $statementdays=$this->leaverequestService->getleavestatementbyuserandleavetype($user->id, $leavetype->id)->days??0;
+                $leavetypebalancedetails[] = [
+                    'leavetype' => $leavetype->name,
+                    'balance' => (float)$leavetype->ceiling - (float)$statementdays,
+                ];
+                
+            });
+            $keys = collect($leavetypebalancedetails)->pluck('leavetype')->all();
+            $values = collect($leavetypebalancedetails)->pluck('balance')->all();
+            $leavedetailmapping = array_combine($keys, $values);
+
+            $leavestatements[]= [
+                'username' => $user->name . ' ' . $user->surname,
+                'leavetypes'=> $leavedetailmapping,
+                'year'=>$this->leaverequestService->getleavestatementByUser($user->id)->first()->year??'-'
+            ];
+        });
+        
+        return $leavestatements;
     }
 
     public function import()
@@ -64,15 +88,19 @@ class Leavestatements extends Component
         $importsarray=array_slice($importsarray,1);
         
         collect($importsarray)->each(function($statementcsvstr) {
-            //["0"=>"Employee Name","1"=>"Employee Surname", "2"=>"Employee Email" "3"=>"Leave Type", "4"=>"Year", "5"=>"Month", "6"=>"Utilized Days"];
+            /**
+             * 
+             * ["0"=>"Employee Name","1"=>"Employee Surname", "2"=>"Employee Email" "3"=>"Leave Type", "4"=>"Year", "5"=>"Month", "6"=>"Utilized Days"];
+             * 
+             * */
             $statement=str_getcsv($statementcsvstr, ",");
-            $user=$this->userrepo->getuserbyemail($statement[2]);
-            $exists=$this->leavestatementrepo->getleavestatementByUserIdAndLeaveName($user->id,$statement[3]);
+            $user=$this->leaverequestService->getuserbyemail($statement[2]);
+            $exists=$this->leaverequestService->getleavestatementbyuseridandleavename($user->id,$statement[3]);
             if(!$exists)
             {
-                $response=$this->leavestatementrepo->createleavestatement([
+                $response=$this->leaverequestService->createleavestatement([
                     'user_id' => $user->id,
-                    'leavetype_id' => $this->leavetyperepo->getleavetypeByName($statement[3])->id,
+                    'leavetype_id' => $this->leaverequestService->getleavetypebyname($statement[3])->id,
                     'year' => Carbon::now()->format('Y'),
                     'month'=> Carbon::now()->format('M'),
                     'days' => ($statement[6]!=null)?$statement[6]:0
@@ -81,7 +109,7 @@ class Leavestatements extends Component
             }
             else
             {
-                $response=$this->leavestatementrepo->updateleavestatement($exists->id, ['days' => $statement[6]]);
+                $response=$this->leaverequestService->updateleavestatement($exists->id, ['days' => $statement[6]]);
                 $this->toast('success',$response['message']);
             } 
         });
@@ -102,22 +130,23 @@ class Leavestatements extends Component
             "year"=>"Year", 
             "month"=>"Month", 
             "days"=>"Utilized Days"
-    ];
-        $this->userrepo->getall()->each(function($user) use (&$statements)
+        ];
+        //$this->userrepo->getall()->each(function($user) use (&$statements)
+        $this->leaverequestService->getusers()->each(function($user) use (&$statements)
         {
-            $exists=$this->leavestatementrepo->getleavestatementByUserAndLeaveType($user->id, $this->leavetypeid);
+            $exists=$this->leaverequestService->getleavestatementbyuserandleavetype($user->id, $this->leavetypeid);
            
             $statements[]=[
                 'username' => $user->name,
                 'usersurname'=> $user->surname,
                 'useremail' => $user->email,
-                'leavetypename' => $this->leavetyperepo->getleavetype($this->leavetypeid)->name,
+                'leavetypename' => $this->leaverequestService->getleavetype($this->leavetypeid)->name,
                 'year' => Carbon::now()->format('Y'),
                 'month' => Carbon::now()->format('m'),
                 'days' =>  $exists ? $exists->days: ""
             ];
         });
-        $filename=$this->leavetyperepo->getleavetype($this->leavetypeid)->name.'_leave_statements.csv';
+        $filename=$this->leaverequestService->getleavetype($this->leavetypeid)->name.'_leave_statements.csv';
         $file=fopen($filename,'w');
         collect($statements)->each(function($statement) use (&$file)
         {

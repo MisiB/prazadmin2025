@@ -5,6 +5,7 @@ namespace App\implementation\repositories;
 use App\Interfaces\repositories\isuspenseInterface;
 use App\Interfaces\repositories\iwallettopupInterface;
 use App\Models\Wallettopup;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
 class _wallettopupRepository implements iwallettopupInterface
@@ -20,9 +21,9 @@ class _wallettopupRepository implements iwallettopupInterface
         $this->suspenserepo = $suspenserepo;
     }
 
-    public function getwallettopups($year)
+    public function getwallettopups($year):Collection
     {
-        return $this->model->with('customer','currency','initiator','approver')->where('year', $year)->get();
+        return $this->model->with('customer','currency','initiator','approver','banktransaction')->where('year', $year)->get();
     }
 
     public function getwallettopup($id)

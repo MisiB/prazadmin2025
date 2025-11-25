@@ -2,8 +2,8 @@
 
 namespace App\Notifications;
 
-use App\Interfaces\ileaverequestapprovalInterface;
-use App\Interfaces\ileavetypeInterface;
+use App\Interfaces\repositories\ileaverequestapprovalInterface;
+use App\Interfaces\repositories\ileavetypeInterface;
 use App\Models\Leaverequest;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;

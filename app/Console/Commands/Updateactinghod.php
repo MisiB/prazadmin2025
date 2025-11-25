@@ -37,7 +37,7 @@ class Updateactinghod extends Command
                 $acting_hod=$userrepo->getuser($requestrecord->actinghod_id);
                 $acting_hod->removeRole($hodrole);//'Acting HOD' Role
                 $hod=$userrepo->getuser($requestrecord->user_id);
-                //$hod->notify(new LeaverequestSubmitted($requestrecord, $leavetyperepo, $leaverequestapprovalrepo ));
+                $hod->notify(new LeaverequestSubmitted($requestrecord, $leavetyperepo, $leaverequestapprovalrepo ));
             }
         });
     }

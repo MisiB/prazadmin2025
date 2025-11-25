@@ -117,6 +117,7 @@ class Modules extends Component
             $this->success('Module created successfully.');
             $this->reset(['name', 'icon', 'id', 'accounttype', 'default_permission']);
             $this->error = null;
+            $this->modal = false;
         } elseif ($response['status'] == "error") {
             $this->error = $response['message'];
         } else {

@@ -4,13 +4,21 @@ namespace App\Livewire\Admin\Finance\Reports;
 
 use App\Interfaces\repositories\isuspenseInterface;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class Suspensereports extends Component
 {
+    use WithPagination;
     protected $suspenseRepository;
+    public $search=null;
     public function boot(isuspenseInterface $suspenseRepository)
     {
         $this->suspenseRepository = $suspenseRepository;
+    }
+    public function updatedSearch()
+    {
+        // No need to do anything. Livewire will re-render automatically.
+        $this->resetPage();
     }
     public function headers():array{
         return [
@@ -22,14 +30,22 @@ class Suspensereports extends Component
             ['key'=>'balance','label'=>'Balance'],
         ];
     }
-    public function rows():array{
-        return $this->suspenseRepository->getpendingsuspensewallets();
+    public function getrowsarray(){
+        return $this->suspenseRepository->getpendingsuspensewalletsarray($this->search);
+    }
+    public function getrows(){
+        return $this->suspenseRepository->getpendingsuspensewallets($this->search);
     }
     public function render()
     {
+        
+        $rows=$this->getrows();
+        $rowsarray=$this->getrowsarray();
         return view('livewire.admin.finance.reports.suspensereports',[
             'headers'=>$this->headers(),
-            'rows'=>$this->rows()
+            'rows'=>$rows,
+            'rowsarray'=>$rowsarray
         ]);
     }
 }
+ 
