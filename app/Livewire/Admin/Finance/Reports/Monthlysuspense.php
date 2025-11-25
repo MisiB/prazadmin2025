@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin\Finance\Reports;
 
 use App\Interfaces\repositories\isuspenseInterface;
+use Illuminate\Support\Carbon;
 use Livewire\Component;
 
 class Monthlysuspense extends Component
@@ -10,9 +11,12 @@ class Monthlysuspense extends Component
     protected $suspenseRepository;
     public $month;
     public $year;
-    public function mount(){
-        $this->month = date('m')-1;
-        $this->year = date('Y');
+
+    public function mount(): void
+    {
+        $previousMonth = Carbon::now()->subMonth();
+        $this->month = (int) $previousMonth->format('n');
+        $this->year = (int) $previousMonth->format('Y');
     }
     public function boot(isuspenseInterface $suspenseRepository)
     {

@@ -41,6 +41,10 @@ class Workplanreviews extends Component
 
     public $remarks;
 
+    public $activeTab = 'pending'; // Add this property
+
+    public $approvedWorkplans; // Add this property
+
     public function boot(
         individualworkplanInterface $individualworkplanrepo,
         istrategyInterface $strategyrepo,
@@ -55,6 +59,8 @@ class Workplanreviews extends Component
     {
         $this->year = Carbon::now()->year;
         $this->workplans = new Collection;
+        $this->approvedWorkplans = new Collection(); // Add this
+        $this->activeTab = 'pending'; // Add this
         $this->breadcrumbs = [
             [
                 'label' => 'Home',
@@ -86,13 +92,67 @@ class Workplanreviews extends Component
         );
 
         $this->workplans = collect($workplans);
+        
+        // Also fetch approved workplans
+        $department_id = Auth::user()->department->department_id;
+        $approvedWorkplans = $this->individualworkplanrepo->getapprovedworkplansbydepartment(
+            $department_id,
+            $this->strategy_id,
+            $this->year
+        );
+        $this->approvedWorkplans = collect($approvedWorkplans);
+        
         $this->modal = false;
+    }
+
+    public function getapprovedworkplans()
+    {
+        $this->validate([
+            'strategy_id' => 'required',
+            'year' => 'required',
+        ]);
+
+        $department_id = Auth::user()->department->department_id;
+        
+        $approvedWorkplans = $this->individualworkplanrepo->getapprovedworkplansbydepartment(
+            $department_id,
+            $this->strategy_id,
+            $this->year
+        );
+
+        $this->approvedWorkplans = collect($approvedWorkplans);
+        $this->modal = false;
+    }
+
+    public function switchTab($tab)
+    {
+        $this->activeTab = $tab;
+        if ($tab === 'approved' && $this->strategy_id && $this->year) {
+            $this->getapprovedworkplans();
+        }
     }
 
     public function reviewworkplan($id)
     {
         $this->workplanId = $id;
+        
+        // Try to find in pending workplans first
         $this->selectedWorkplan = $this->workplans->where('id', $id)->first();
+        
+        // If not found, try approved workplans
+        if (!$this->selectedWorkplan) {
+            $this->selectedWorkplan = $this->approvedWorkplans->where('id', $id)->first();
+        }
+        
+        // If still not found, load directly from repository
+        if (!$this->selectedWorkplan) {
+            $workplan = $this->individualworkplanrepo->getindividualworkplan($id);
+            if ($workplan) {
+                $workplan->load('user', 'targetmatrix.target.indicator.departmentoutput.output.outcome.programme');
+                $this->selectedWorkplan = $workplan;
+            }
+        }
+        
         $this->remarks = '';
         $this->reviewModal = true;
     }

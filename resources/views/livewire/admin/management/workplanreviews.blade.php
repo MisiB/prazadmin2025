@@ -7,38 +7,87 @@
             <x-button label="Get Workplans" wire:click="modal=true" class="btn-primary" />
         </x-slot:menu>
 
-        @if(isset($workplans) && $workplans->count() > 0)
-        <x-table :headers="$headers" :rows="$workplans">
-            @scope('cell_user.name', $workplan)
-                {{ $workplan->user->name }} {{ $workplan->user->surname }}
-            @endscope
-            
-            @scope('cell_status', $workplan)
-                <x-badge :value="$workplan->status" 
-                    :class="$workplan->status == 'APPROVED' ? 'badge-success' : 'badge-warning'"/>
-            @endscope
-            
-            @scope('cell_weightage', $workplan)
-                {{ $workplan->weightage }}%
-            @endscope
-            
-            @scope('cell_actions', $workplan)
-                <div class="flex gap-2 justify-end">
-                    <x-button icon="o-eye" 
-                        class="btn-info btn-ghost btn-sm" 
-                        wire:click="reviewworkplan({{ $workplan->id }})" 
-                        tooltip="Review Workplan" />
-                    <x-button icon="o-check-circle" 
-                        class="btn-success btn-ghost btn-sm" 
-                        wire:click="approveworkplan({{ $workplan->id }})" 
-                        wire:confirm="Are you sure you want to approve this workplan?"
-                        tooltip="Approve Workplan" />
-                </div>
-            @endscope
-        </x-table>
-        @else
-            <x-alert class="alert-info" icon="o-information-circle" 
-                title="No pending workplans found. Click 'Get Workplans' to search." />
+        <!-- Tabs -->
+        <div class="tabs tabs-boxed mb-4">
+            <button 
+                wire:click="switchTab('pending')" 
+                class="tab {{ $activeTab === 'pending' ? 'tab-active' : '' }}">
+                Pending Reviews
+            </button>
+            <button 
+                wire:click="switchTab('approved')" 
+                class="tab {{ $activeTab === 'approved' ? 'tab-active' : '' }}">
+                Approved Workplans
+            </button>
+        </div>
+
+        <!-- Pending Workplans Tab -->
+        @if($activeTab === 'pending')
+            @if(isset($workplans) && $workplans->count() > 0)
+            <x-table :headers="$headers" :rows="$workplans">
+                @scope('cell_user.name', $workplan)
+                    {{ $workplan->user->name }} {{ $workplan->user->surname }}
+                @endscope
+                
+                @scope('cell_status', $workplan)
+                    <x-badge :value="$workplan->status" 
+                        :class="$workplan->status == 'APPROVED' ? 'badge-success' : 'badge-warning'"/>
+                @endscope
+                
+                @scope('cell_weightage', $workplan)
+                    {{ $workplan->weightage }}%
+                @endscope
+                
+                @scope('cell_actions', $workplan)
+                    <div class="flex gap-2 justify-end">
+                        <x-button icon="o-eye" 
+                            class="btn-info btn-ghost btn-sm" 
+                            wire:click="reviewworkplan({{ $workplan->id }})" 
+                            tooltip="Review Workplan" />
+                        <x-button icon="o-check-circle" 
+                            class="btn-success btn-ghost btn-sm" 
+                            wire:click="approveworkplan({{ $workplan->id }})" 
+                            wire:confirm="Are you sure you want to approve this workplan?"
+                            tooltip="Approve Workplan" />
+                    </div>
+                @endscope
+            </x-table>
+            @else
+                <x-alert class="alert-info" icon="o-information-circle" 
+                    title="No pending workplans found. Click 'Get Workplans' to search." />
+            @endif
+        @endif
+
+        <!-- Approved Workplans Tab -->
+        @if($activeTab === 'approved')
+            @if(isset($approvedWorkplans) && $approvedWorkplans->count() > 0)
+            <x-table :headers="$headers" :rows="$approvedWorkplans">
+                @scope('cell_user.name', $workplan)
+                    {{ $workplan->user->name }} {{ $workplan->user->surname }}
+                @endscope
+                
+                @scope('cell_status', $workplan)
+                    <x-badge :value="$workplan->status" 
+                        :class="$workplan->status == 'APPROVED' ? 'badge-success' : 'badge-warning'"/>
+                @endscope
+                
+                @scope('cell_weightage', $workplan)
+                    {{ $workplan->weightage }}%
+                @endscope
+                
+                @scope('cell_actions', $workplan)
+                    <div class="flex gap-2 justify-end">
+                        <x-button icon="o-eye" 
+                            class="btn-info btn-ghost btn-sm" 
+                            wire:click="reviewworkplan({{ $workplan->id }})" 
+                            tooltip="View Workplan" />
+                    </div>
+                @endscope
+            </x-table>
+            @else
+                <x-alert class="alert-info" icon="o-information-circle" 
+                    title="No approved workplans found. Click 'Get Workplans' to search." />
+            @endif
         @endif
     </x-card>
 
@@ -192,12 +241,14 @@
             <x-button label="Close" 
                 wire:click="$wire.closeReviewModal()" 
                 class="btn-outline" />
+            @if($selectedWorkplan->status !== 'APPROVED')
             <x-button icon="o-check-circle" 
                 label="Approve Workplan" 
                 wire:click="approveworkplan({{ $selectedWorkplan->id }})"
                 wire:confirm="Are you sure you want to approve this workplan?"
                 class="btn-success"
                 spinner="approveworkplan" />
+            @endif
         </x-slot:actions>
     </x-modal>
     @endif

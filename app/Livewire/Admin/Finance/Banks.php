@@ -82,26 +82,40 @@ class Banks extends Component
             'email' => 'required',
             'status' => 'required'
         ]);
+        $status = strtoupper($this->status);
         if ($this->bankid) {
-            $this->update();
+            $this->update($status);
         } else {
-            $this->create();
+            $this->create($status);
         }
-        $this->reset(["name", "email", "status","bankid"]);
+        $this->reset(["name", "email", "status","bankid",]);
+        $this->modal = false;
     }
 
-    public function create()
+    public function create(string $status)
     {
-        $response = $this->bankrepo->createBank(["name" => $this->name, "email" => $this->email, "status" => $this->status, "uuid" => Str::uuid(), "token" => Str::uuid(), "salt" => Str::uuid(),"user_id" => Auth::user()->id]);
+        $response = $this->bankrepo->createBank([
+            "name" => $this->name,
+            "email" => $this->email,
+            "status" => $status,
+            "uuid" => Str::uuid(),
+            "token" => Str::uuid(),
+            "salt" => Str::uuid(),
+            "user_id" => Auth::user()->id
+        ]);
         if ($response["status"] == "success") {
             $this->success($response["message"]);
         } else {
             $this->errormessage = $response["message"];
         }
     }
-    public function update()
+    public function update(string $status)
     {
-        $response = $this->bankrepo->updateBank($this->bankid, ["name" => $this->name, "email" => $this->email, "status" => $this->status]);
+        $response = $this->bankrepo->updateBank($this->bankid, [
+            "name" => $this->name,
+            "email" => $this->email,
+            "status" => $status
+        ]);
         if ($response["status"] == "success") {
             $this->success($response["message"]);
         } else {
@@ -139,15 +153,22 @@ class Banks extends Component
             'accounttype' => 'required',
             'status' => 'required'
         ]);
+        $status = strtoupper($this->status);
         if ($this->accountid) {
-            $this->updateaccount();
+            $this->updateaccount($status);
         } else {
-            $this->createaccount();
+            $this->createaccount($status);
         }
         $this->reset(["accountnumber", "currencyid", "accounttype", "status", "accountid"]);
     }
-    public function createaccount(){
-        $response = $this->bankaccountrepo->createBankAccount(["account_number" => $this->accountnumber, "currency_id" => $this->currencyid, "account_type" => $this->accounttype, "account_status" => $this->status, "bank_id" => $this->bankid]);
+    public function createaccount(string $status){
+        $response = $this->bankaccountrepo->createBankAccount([
+            "account_number" => $this->accountnumber,
+            "currency_id" => $this->currencyid,
+            "account_type" => $this->accounttype,
+            "account_status" => $status,
+            "bank_id" => $this->bankid
+        ]);
         if ($response["status"] == "success") {
             $this->success($response["message"]);
            $this->getbankaccounts($this->bankid);
@@ -155,8 +176,13 @@ class Banks extends Component
             $this->errormessage = $response["message"];
         }
     }
-    public function updateaccount(){
-        $response = $this->bankaccountrepo->updateBankAccount($this->accountid, ["account_number" => $this->accountnumber, "currency_id" => $this->currencyid, "account_type" => $this->accounttype, "account_status" => $this->status]);
+    public function updateaccount(string $status){
+        $response = $this->bankaccountrepo->updateBankAccount($this->accountid, [
+            "account_number" => $this->accountnumber,
+            "currency_id" => $this->currencyid,
+            "account_type" => $this->accounttype,
+            "account_status" => $status
+        ]);
         if ($response["status"] == "success") {
             $this->success($response["message"]);
             $this->getbankaccounts($this->bankid);

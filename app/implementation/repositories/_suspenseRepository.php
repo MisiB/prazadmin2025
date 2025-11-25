@@ -25,6 +25,8 @@ class _suspenseRepository implements isuspenseInterface
 
     protected $currency;
 
+    protected $perPage = 50;
+
     public function __construct(Suspense $model, Suspenseutilization $suspenseutilizations, Monthlysuspensereport $monthlysuspense, Customer $customer, Currency $currency)
     {
         $this->model = $model;
@@ -59,9 +61,11 @@ class _suspenseRepository implements isuspenseInterface
         }
     }
 
-    public function getpendingsuspensewallets()
+    public function getpendingsuspensewallets(?int $perPage = null)
     {
-        $query = $this->model
+        $perPage = $perPage ?? $this->perPage;
+
+        return $this->model
             ->select([
                 'suspenses.id',
                 'suspenses.created_at',
@@ -88,28 +92,9 @@ class _suspenseRepository implements isuspenseInterface
                 'suspenses.amount',
                 'customers.name',
                 'customers.regnumber'
-            );
-
-        $results = $query->get();
-
-        $array = [];
-        foreach ($results as $row) {
-            $array[] = [
-                'id' => $row->id,
-                'created_at' => $row->created_at,
-                'last_updated_at' => $row->last_updated_at,
-                'sourcetype' => $row->sourcetype,
-                'customer_name' => $row->customer_name,
-                'currency' => $row->currency,
-                'regnumber' => $row->regnumber,
-                'accountnumber' => $row->accountnumber,
-                'amount' => $row->amount,
-                'total_utilized' => $row->total_utilized,
-                'balance' => number_format($row->balance, 2),
-            ];
-        }
-
-        return $array;
+            )
+            ->orderByDesc('suspenses.created_at')
+            ->paginate($perPage);
     }
 
     public function getpendingsuspense($regnumber, $accounttype, $currency)
@@ -146,7 +131,9 @@ class _suspenseRepository implements isuspenseInterface
     public function getmonthlysuspensewallets($month, $year)
     {
         return $this->monthlysuspense
-            ->whereRaw('MONTH(created_at) = ? AND YEAR(created_at) = ?', [$month, $year])
+            ->where('month', $month)
+            ->where('year', $year)
+            ->orderBy('accountnumber')
             ->get();
     }
 
