@@ -25,6 +25,8 @@ class _suspenseRepository implements isuspenseInterface
 
     protected $currency;
 
+    protected $perPage = 50;
+
     public function __construct(Suspense $model, Suspenseutilization $suspenseutilizations, Monthlysuspensereport $monthlysuspense, Customer $customer, Currency $currency)
     {
         $this->model = $model;
@@ -158,7 +160,9 @@ class _suspenseRepository implements isuspenseInterface
     public function getmonthlysuspensewallets($month, $year)
     {
         return $this->monthlysuspense
-            ->whereRaw('MONTH(created_at) = ? AND YEAR(created_at) = ?', [$month, $year])
+            ->where('month', $month)
+            ->where('year', $year)
+            ->orderBy('accountnumber')
             ->get();
     }
 

@@ -40,27 +40,53 @@ class _roleRepository implements iroleRepository
             return ["status" => "error", "message" => $e->getMessage()];
         }
     }
-    public function createrole(array $role){
+    public function createrole(array $role): array
+    {
         try {
-            return $this->model->create($role);
-        } catch (\Exception $e) {
-            return ["status" => "error", "message" => $e->getMessage()];
+            $created = $this->model->create($role);
+
+            return ['status' => 'success', 'role' => $created];
+        } catch (\Throwable $e) {
+            return ['status' => 'error', 'message' => $e->getMessage()];
         }
     }
-    public function updaterole(int $id, array $role){
+
+    public function updaterole(int $id, array $role): array
+    {
         try {
-            return $this->model->find($id)->update($role);
-        } catch (\Exception $e) {
-            return ["status" => "error", "message" => $e->getMessage()];
+            $record = $this->model->find($id);
+
+            if (!$record) {
+                return ['status' => 'error', 'message' => 'Role not found.'];
+            }
+
+            $record->update($role);
+
+            return ['status' => 'success', 'role' => $record->refresh()];
+        } catch (\Throwable $e) {
+            return ['status' => 'error', 'message' => $e->getMessage()];
         }
     }
-    public function deleterole(int $id){
+
+    public function deleterole(int $id): array
+    {
         try {
-            return $this->model->find($id)->delete();
-        } catch (\Exception $e) {
-            return ["status" => "error", "message" => $e->getMessage()];
+            $record = $this->model->find($id);
+
+            if (!$record) {
+                return ['status' => 'error', 'message' => 'Role not found.'];
+            }
+
+            $record->delete();
+
+            return ['status' => 'success'];
+        } catch (\Throwable $e) {
+            return ['status' => 'error', 'message' => $e->getMessage()];
         }
     }
+
+
+
     public  function assignpermissions(int $id, array $permissions){
         try {
             $retrievedpermissions = $this->permission->whereIn('id', $permissions)->get()->pluck('name')->toArray();

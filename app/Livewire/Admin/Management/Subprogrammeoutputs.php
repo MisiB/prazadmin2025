@@ -14,6 +14,7 @@ use App\Interfaces\repositories\iprogrammeInterface;
 use App\Interfaces\repositories\ioutcomeInterface;
 use App\Interfaces\repositories\ioutputInterface;
 use App\Interfaces\repositories\idepartmentInterface;
+use App\Interfaces\repositories\iTargetmatrixInterface;
 
 class Subprogrammeoutputs extends Component
 {
@@ -104,10 +105,17 @@ class Subprogrammeoutputs extends Component
             "strategy_id"=>"required",
             "year"=>"required"
         ]);
-      $this->strategy = $this->strategyrepo->getstrategybydepartment($this->strategy_id,Auth::user()->department->department_id,$this->year);
-   
-     
+        
+        $departmentId = Auth::user()->department?->department_id;
+        
+        if (!$departmentId) {
+            $this->error('You are not assigned to a department. Please contact your administrator.');
+            return;
+        }
+        
+        $this->strategy = $this->strategyrepo->getstrategybydepartment($this->strategy_id, $departmentId, $this->year);
     }
+
     public function save(){
     $this->validate([
         "title"=>"required",
@@ -402,10 +410,14 @@ class Subprogrammeoutputs extends Component
         $data = [
             'title'=>$this->title,
             'uom'=>$this->uom,
-            'departmentoutput_id'=>$this->departmentoutput_id,
             'createdby'=>Auth::user()->id,
         ];
+        
         if($this->indicator_id){
+            // When updating, preserve departmentoutput_id if not explicitly set
+            if($this->departmentoutput_id){
+                $data['departmentoutput_id'] = $this->departmentoutput_id;
+            }
             $data['updatedby'] = Auth::user()->id;
             $response = $this->indicatorrepository->updateindicator($this->indicator_id,$data);
             if($response['status']=='success'){
@@ -417,6 +429,8 @@ class Subprogrammeoutputs extends Component
             }
         }
         else{
+            // When creating, departmentoutput_id is required
+            $data['departmentoutput_id'] = $this->departmentoutput_id;
             $response = $this->indicatorrepository->createindicator($data);
             if($response['status']=='success'){
             
@@ -426,14 +440,33 @@ class Subprogrammeoutputs extends Component
                 $this->error($response['message']);
             }
         }
+        $this->reset([
+            'title',
+            'uom',
+            'departmentoutput_id',
+            'id'
+        ]);
+        $this->indicatormodal = false;
     }
-    public function editindicator($id){
+
+      public function editindicator($id){
         $this->indicator_id = $id;
         $indicator = $this->indicatorrepository->getindicator($id);
         if($indicator){
             $this->title = $indicator->title;
             $this->uom = $indicator->uom;
+            $this->departmentoutput_id = $indicator->departmentoutput_id;
             $this->indicatormodal = true;
+        }
+    }
+
+    public function deleteindicator($id){
+        $response = $this->indicatorrepository->deleteindicator($id);
+        if($response['status']=='success'){
+            $this->success($response['message']);
+        }
+        else{
+            $this->error($response['message']);
         }
     }
 
@@ -522,7 +555,93 @@ class Subprogrammeoutputs extends Component
             ['key'=>'variance','label'=>'Allowable Variance'],
             ['key'=>'action','label'=>'']
         ];
+    } 
+    public function headerstargetmatrix():array{
+        return [
+            ['key'=>'month','label'=>'Quarter'],
+            ['key'=>'target','label'=>'Target'],
+            ['key'=>'status','label'=>'Status'],
+            ['key'=>'action','label'=>'']
+        ];
     }
+
+    public function getmonths():array{
+        return [
+            ['id'=>'','name'=>'Select Quarter'],
+            ['id' => 'Q1', 'name' => 'Q1'],
+            ['id' => 'Q2', 'name' => 'Q2'],
+            ['id' => 'Q3', 'name' => 'Q3'],
+            ['id' => 'Q4', 'name' => 'Q4'],
+        ];
+    }
+
+    public function addtargetmatrix($target_id){
+        $this->target_id = $target_id;
+        $this->targetmatrix_id = null;
+        $this->target = null;
+        $this->month = null;
+        $this->targetmatrixmodal = true;
+    }
+
+    public function edittargetmatrix($id){
+        $this->targetmatrix_id = $id;
+        $targetmatrix = $this->targetmatrixrepository->gettargetmatrix($id);
+        if($targetmatrix){
+            $this->target_id = $targetmatrix->target_id;
+            $this->target = $targetmatrix->target;
+            $this->month = $targetmatrix->month;
+            $this->targetmatrixmodal = true;
+        }
+    }
+
+    public function deletetargetmatrix($id){
+        $response = $this->targetmatrixrepository->deletetargetmatrix($id);
+        if($response['status']=='success'){
+            $this->success($response['message']);
+        }
+        else{
+            $this->error($response['message']);
+        }
+    }
+
+    public function savetargetmatrix(){
+        $this->validate([
+            'target'=>'required',
+            'month'=>'required',
+            'target_id'=>'required',
+        ]);
+        $data = [
+            'target_id'=>$this->target_id,
+            'month'=>$this->month,
+            'target'=>$this->target,
+        ];
+        if($this->targetmatrix_id){
+            $response = $this->targetmatrixrepository->updatetargetmatrix($this->targetmatrix_id,$data);
+            if($response['status']=='success'){
+                $this->success($response['message']);
+            }
+            else{
+                $this->error($response['message']);
+            }
+        }
+        else{
+            $response = $this->targetmatrixrepository->createtargetmatrix($data);
+            if($response['status']=='success'){
+                $this->success($response['message']);
+            }
+            else{
+                $this->error($response['message']);
+            }
+        }
+        $this->reset([
+            'target',
+            'month',
+            'target_id',
+            'targetmatrix_id'
+        ]);
+        $this->targetmatrixmodal = false;
+    }
+    
     public function render()
     {
         return view('livewire.admin.management.subprogrammeoutputs',[

@@ -36,6 +36,9 @@ class Suspensereports extends Component
     public function getrows(){
         return $this->suspenseRepository->getpendingsuspensewallets($this->search);
     }
+
+    
+
     public function render()
     {
         

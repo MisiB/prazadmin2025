@@ -34,9 +34,6 @@
                     <div class="flex gap-2">
                         <x-button icon="o-pencil"  class="btn-info btn-ghost btn-sm" wire:click="getworkplan({{ $workplan->id }})" />
                         <x-button icon="o-trash"  class="btn-error btn-ghost btn-sm" wire:click="deleteworkplan({{ $workplan->id }})" wire:confirm="Are you sure you want to delete this workplan?" />
-                        @if($workplan->status == 'PENDING')
-                        <x-button icon="o-check"  class="btn-success btn-ghost btn-sm" wire:click="approveworkplan({{ $workplan->id }})" wire:confirm="Are you sure you want to approve this workplan?" />
-                        @endif
                     </div>
                 </td>
             </tr>
@@ -68,7 +65,7 @@
             </x-slot:actions>
         </x-form>
     </x-modal>
-    <x-modal title="Add Workplan" wire:model="addworkplanmodal" box-class="max-w-5xl">
+    <x-modal title="{{ $id ? 'Edit Workplan' : 'Add Workplan' }}" wire:model="addworkplanmodal" box-class="max-w-5xl">
         <x-hr/>
         <x-form wire:submit.prevent="saveworkplan">
             <div class="grid grid-cols-3 gap-2">
@@ -81,7 +78,7 @@
        
                 <x-select label="Target Matrix" wire:model.live="targetmatrix_id" placeholder="Select Target Matrix" :options="$targetmatrices" option-label="name" option-value="id" />
                 @endif
-                <x-select label="Month" wire:model="month" :options="$monthlist" option-label="name" option-value="id" />
+                <x-select label="Month" wire:model="month" placeholder="Select month" :options="$monthlist" option-label="name" option-value="id" />
                 <x-input label="Output" wire:model="output" type="text" />
                 <x-input label="Indicator" wire:model="indicator" type="text" />
                 <x-input label="Target" wire:model="target" type="number" />
@@ -91,7 +88,7 @@
             </div>
             <x-slot:actions>
                 <x-button label="Close" wire:click="$wire.closeModal()" class="btn-outline" />
-                <x-button label="Add" type="submit" class="btn-primary" spinner="addworkplan" />
+                <x-button label="{{ $id ? 'Update' : 'Add' }}" type="submit" class="btn-primary" spinner="saveworkplan" />
             </x-slot:actions>
         </x-form>
     </x-modal>
