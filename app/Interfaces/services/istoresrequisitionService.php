@@ -64,10 +64,12 @@ interface istoresrequisitionService
 
     public function createhodrequisitionapprovalrecord($data);
 
+    public function createissuerrequisitionapprovalrecord($data);
+
     public function createreceiverrequisitionapprovalrecord($data);
 
     public function createadminrequisitionapprovalrecord($data);
 
-    public function exportdata($status);
+    public function exportdata($status, $startdate=null, $enddate=null);
 }
  

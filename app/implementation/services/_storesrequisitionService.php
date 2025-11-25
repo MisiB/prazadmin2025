@@ -151,6 +151,10 @@ class _storesrequisitionService implements istoresrequisitionService
     {
         return $this->hodstoresrequisitionapprovalrepo->createhodrequisitionapproval($data);
     }
+    public function createissuerrequisitionapprovalrecord($data)
+    {
+        return $this->issuerstoresrequisitionapprovalrepo->createissuerrequisitionapproval($data);
+    }
     public function createreceiverrequisitionapprovalrecord($data)
     {
         return $this->receiverstoresrequisitionapprovalrepo->createreceiverrequisitionapproval($data);
@@ -159,9 +163,9 @@ class _storesrequisitionService implements istoresrequisitionService
     {
         return $this->adminstoresrequisitionapprovalrepo->createadminrequisitionapproval($data);
     }
-    public function exportdata($status)
+    public function exportdata($status, $startdate=null, $enddate=null)
     {
-        return $this->storesrequisitionrepo->exportstoresrequisitionreport($status);
+        return $this->storesrequisitionrepo->exportstoresrequisitionreport($status, $startdate, $enddate);
     }
 }
  

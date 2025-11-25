@@ -2,11 +2,6 @@
 
 namespace App\Livewire\Admin\Workflows\Approvals;
 
-use App\Interfaces\repositories\idepartmentInterface;
-use App\Interfaces\repositories\ihodstoresrequisitionapprovalInterface;
-use App\Interfaces\repositories\iroleRepository;
-use App\Interfaces\repositories\istoresrequisitionInterface;
-use App\Interfaces\repositories\iuserInterface;
 use App\Interfaces\services\istoresrequisitionService;
 use App\Notifications\StoresrequisitionapprovalNotify;
 use Livewire\Attributes\Layout;
@@ -24,8 +19,7 @@ class Storesrequisitionapproval extends Component
     public $comment, $isapproved;
     public $departmentid, $departmentname;
 
-    public function boot(istoresrequisitionInterface $storesrequisitionrepo, iuserInterface $userrepo, ihodstoresrequisitionapprovalInterface $hodstoresrequisitionrepo, iroleRepository $rolerepo, idepartmentInterface $departmentrepo,
-    istoresrequisitionService $storesrequisitionService)
+    public function boot(istoresrequisitionService $storesrequisitionService)
     {
         $this->storesrequisitionService=$storesrequisitionService;
     }

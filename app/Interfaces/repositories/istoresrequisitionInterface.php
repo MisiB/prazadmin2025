@@ -14,5 +14,5 @@ interface istoresrequisitionInterface
     public function createstoresrequisition($data);
     public function updatestoresrequisition($id, $data);
     public function deletestoresrequisition($id);
-    public function exportstoresrequisitionreport($status);
+    public function exportstoresrequisitionreport($status, $startdate=null, $enddate=null);
 }

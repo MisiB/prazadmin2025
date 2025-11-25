@@ -8,17 +8,18 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class LeaverequestApproved extends Notification implements ShouldQueue
+class LeaverequestSubmission extends Notification implements ShouldQueue
 {
     use Queueable;
 
     private $leaverequest, $leaverequestuuid, $approvalrecordid, $approverid;
-    protected $leaverequestService, $leaverequestapprovalrepo;
+    protected $leaverequestapprovalrepo, $leaverequestService;
     /**
      * Create a new notification instance.
      */
     public function __construct(ileaverequestService $leaverequestService, $leaverequestuuid)
     {
+        
         $this->leaverequestService=$leaverequestService;
         $this->leaverequest = $leaverequestService->getleaverequestbyuuid($leaverequestuuid);
         $this->leaverequestuuid=$leaverequestuuid;
@@ -37,21 +38,14 @@ class LeaverequestApproved extends Notification implements ShouldQueue
      */ 
     public function toMail($notifiable): MailMessage
     {
-        //approval url
         $leavetype=$this->leaverequestService->getleavetype($this->leaverequest->leavetype_id);
-        $leaveapprovalitemuuid=$this->leaverequestuuid;
-        $leaveapproverid=$this->leaverequestService->getleaverequestapproval($this->leaverequestuuid)->user_id;
-        $storesapprovalitemuuid='N';
-        $storesapproverid='N';
-        $status='N';
-        $finalizationurl=url('approval/'.$leaveapprovalitemuuid.'/'.$leaveapproverid.'/'.$storesapprovalitemuuid.'/'.$storesapproverid.'/'.$status);
 
         return (new MailMessage)
             ->success()
             ->greeting('Good day from PRAZ')
-            ->subject('RE: LEAVE REQUEST APPROVED')
+            ->subject('RE: YOUR LEAVE REQUEST SUBMISSION')
             ->line('')
-            ->line('A '.$leavetype->name.' leave request has been approved for '.$this->leaverequest->user->name.' '.$this->leaverequest->user->surname)
+            ->line('Dear '.$this->leaverequest->user->name.' '.$this->leaverequest->user->surname.' you submitted a new '.$leavetype->name.' leave request')
             ->line('')
             ->line('REF #:'.$this->leaverequest->leaverequestuuid)
             ->line('Thank you for using our application, we are here to serve!')

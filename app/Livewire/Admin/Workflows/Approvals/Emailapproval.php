@@ -2,12 +2,7 @@
 
 namespace App\Livewire\Admin\Workflows\Approvals;
 
-use App\Interfaces\repositories\idepartmentInterface;
-use App\Interfaces\repositories\ileaverequestapprovalInterface;
-use App\Interfaces\repositories\ileaverequestInterface;
-use App\Interfaces\repositories\ileavestatementInterface;
-use App\Interfaces\repositories\ileavetypeInterface;
-use App\Interfaces\repositories\iuserInterface;
+use App\Interfaces\services\ileaverequestService;
 use App\Notifications\LeaverequestApproved;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -20,7 +15,8 @@ class Emailapproval extends Component
     use Toast;
     protected $approvalrecordid, $leaverequestuuid;
     protected $leaverequestrepo, $leavestatementrepo, $userrepo, $leaverequestapprovalrepo, $leavetyperepo, $departmentrepo;
-
+    protected $leaverequestService;
+    protected $hodrole='Acting HOD';
     public $requestrecord;
     public $approvalrecord;
     public $leavetyperecord;
@@ -33,38 +29,38 @@ class Emailapproval extends Component
     public $departmentid;
     public $departmentname;
 
-    public function boot(ileaverequestInterface $leaverequestrepo, ileaverequestapprovalInterface $leaverequestapprovalrepo, ileavestatementInterface $leavestatementrepo, iuserInterface $userrepo, ileavetypeInterface $leavetyperepo, idepartmentInterface $departmentrepo)
+    public function boot(ileaverequestService $leaverequestService)
     {
-        $this->leaverequestrepo=$leaverequestrepo;
-        $this->leaverequestapprovalrepo=$leaverequestapprovalrepo;
-        $this->leavestatementrepo=$leavestatementrepo;
-        $this->userrepo=$userrepo;
-        $this->leavetyperepo=$leavetyperepo;
-        $this->departmentrepo=$departmentrepo;
+        $this->leaverequestService=$leaverequestService;
     } 
     public function mount($approvalrecordid, $approvalitemuuid)
     { 
         $this->approvalrecordid=$approvalrecordid;
         $this->leaverequestuuid=$approvalitemuuid;
         //Get leave record and appplication record 
-        $this->requestrecord= $this->leaverequestrepo->getleaverequestByUuid($this->leaverequestuuid);
-        $this->approvalrecord= $this->leaverequestapprovalrepo->getleaverequestapproval($this->leaverequestuuid);
-        $this->leavetyperecord=$this->leavetyperepo->getleavetype($this->requestrecord->leavetype_id);
-        $this->userstatement=$this->leavestatementrepo->getleavestatementByUserAndLeaveType($this->requestrecord->user_id, $this->requestrecord->leavetype_id);
-        $this->approver=$this->userrepo->getuser($this->requestrecord->actinghod_id);
-        $this->employee=$this->userrepo->getuser($this->requestrecord->user_id);
-        $this->departmentid = $this->userrepo->getuserbyemail($this->employee->email)->department;
-        $this->departmentname= $this->departmentrepo->getdepartment($this->departmentid)->first()->name;    
+        $this->requestrecord= $this->leaverequestService->getleaverequestbyuuid($this->leaverequestuuid);
+        $this->approvalrecord= $this->leaverequestService->getleaverequestapproval($this->leaverequestuuid);
+        $this->leavetyperecord=$this->leaverequestService->getleavetype($this->requestrecord->leavetype_id);
+        $this->userstatement=$this->leaverequestService->getleavestatementbyuserandleavetype($this->requestrecord->user_id, $this->requestrecord->leavetype_id);
+        $this->approver=$this->leaverequestService->getuser($this->approvalrecord->user_id);
+        $this->employee=$this->leaverequestService->getuser($this->requestrecord->user_id);
+        $this->departmentid = $this->leaverequestService->getuserdepartmentid($this->employee->email);
+        $this->departmentname= $this->leaverequestService->getuserdepartmentname($this->departmentid);    
     }
 
     public function getAttachmentSrc()
     {    
-        $documentpath=$this->requestrecord->attachment_src;  
-        if(!Storage::exists($documentpath))
-        { 
-            abort(404,'Document not found');
-        }   
-        return Storage::url($documentpath);
+        $documentpath=$this->requestrecord->attachment_src; 
+        if(!empty($documentpath) )
+        {
+            if(!Storage::exists($documentpath))
+            { 
+                abort(404,'Document not found');
+            }   
+            return Storage::url($documentpath);
+        }
+        return $documentpath;
+
     }
 
     public function processApplication()
@@ -78,6 +74,12 @@ class Emailapproval extends Component
 
     public function approveApplication( bool $approved)
     {   
+        $actinghoduser=null;
+        if(!$this->approver->hasRole('Acting HOD'))
+        {
+            $this->toast("warning", "Access denied due to HOD's return"); 
+            return $this->redirect(route('admin.workflows.leaverequests'));
+        }
         //Updates application action
         ($approved===true) ? $this->approvalrecord->update(['action'=>'A']): $this->approvalrecord->update(['action'=>'R']);
         //Updates application
@@ -86,35 +88,47 @@ class Emailapproval extends Component
             'comment'=>$this->comment
         ]);
         $this->approvalrecord->save();
-        //Updates leave request
-        ($this->approvalrecord->action==='A')? $this->requestrecord->update(['status'=>'A']): $this->requestrecord->update(['status'=>'R']);
-        $this->requestrecord->save();
-        //Update leave statement
-        if($this->approvalrecord->action==='A'){
+        if($this->requestrecord->actinghod_id!=null)
+        {
+            $actinghoduser=$this->leaverequestService->getuser($this->requestrecord->actinghod_id);
+        }
+
+        //Updating the leave request and statement
+        if($this->requestrecord->status==='P'&& $this->approvalrecord->action==='A')
+        {
             $this->userstatement->update([
                 'days'=>(int)$this->userstatement->days + (int)$this->requestrecord->daysappliedfor,
             ]);
             $this->userstatement->save();
             $this->updateHOD();
-        }
-        if($this->approvalrecord->action==='R'){
+            $this->requestrecord->update(['status'=>'A']);
+            $this->requestrecord->save();
+            if($actinghoduser!=null){$actinghoduser->assignRole($this->hodrole);}
+        }elseif($this->requestrecord->status==='A'&& $this->approvalrecord->action==='R'){
             $this->userstatement->update([
                 'days'=>(int)$this->userstatement->days - (int)$this->requestrecord->daysappliedfor,
             ]);
             $this->userstatement->save();
+            $this->requestrecord->update(['status'=>'C']);
+            $this->requestrecord->save();
+            if($actinghoduser!=null){$actinghoduser->removeRole($this->hodrole);}
+        }else{
+            $this->requestrecord->update(['status'=>'R']);
+            $this->requestrecord->save();
         }
-        $appliedleaverecord=$this->leaverequestrepo->getleaverequestByUuid($this->approvalrecord->leaverequest_uuid);
-        $initiator=$this->userrepo->getuser($appliedleaverecord->user_id);
-        $initiator->notify(new LeaverequestApproved($appliedleaverecord, $this->leavetyperepo, $this->leaverequestapprovalrepo));
+
+        $appliedleaverecord=$this->leaverequestService->getleaverequestbyuuid($this->approvalrecord->leaverequest_uuid);
+        $initiator=$this->leaverequestService->getuser($appliedleaverecord->user_id);
+        $initiator->notify(new LeaverequestApproved($this->leaverequestService, $this->approvalrecord->leaverequest_uuid));
         $this->comment=null;
         $this->toast('success', 'Application finalized successfully by your decision'); 
-        return $this->redirect(route('admin.workflows.leaverequests'), navigate:true);
+        return $this->redirect(route('admin.workflows.leaverequests'));
     }
 
     public function updateHOD()
     {
         if($this->requestrecord->actinghod_id!=null){
-            $hod=$this->userrepo->getuser($this->requestrecord->actinghod_id);
+            $hod=$this->leaverequestService->getuser($this->requestrecord->actinghod_id);
             $hod->assignRole('Acting HOD');
             $hod->save();
         }
@@ -123,8 +137,8 @@ class Emailapproval extends Component
     #[Layout('layouts.plain')]
     public function render()
     {
-        return view('livewire.admin.emailapproval',[
-            'attachmenturl' => $this->getAttachmentSrc()
+        return view('livewire.admin.workflows.approvals.emailapproval',[
+            'attachmenturl' => $this->getAttachmentSrc()??''
         ]);
     }
 }

@@ -3,62 +3,62 @@
     <x-modulewelcomebanner :breadcrumbs="$breadcrumbs"/>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mt-4">
-        <x-card>
+        <x-card class="border-2 border-blue-200  shadow-sm shadow-blue-200 bg-gradient-to-bl from-white to-gray-200">
             <div class="flex items-center space-x-3">
                 <div class="bg-yellow-200 p-3 rounded-full">
                     <x-icon name="o-clock" class="w-8 h-8 text-blue-600"/>
                 </div>
-                <div class="text-xl font-bold text-gray-700">{{ $totalawaitingapproval }}</div>
+                <div class="text-4xl font-bold text-gray-700">{{ $totalawaitingapproval }}</div>
                 <div class="text-sm text-gray-600">Awaiting Approval</div>
             </div>
         </x-card>
 
-        <x-card>
+        <x-card class="border-2 border-blue-200  shadow-sm shadow-blue-200 bg-gradient-to-bl from-white to-gray-200">
             <div class="flex items-center space-x-3">
                 <div class="bg-blue-300 p-3 rounded-full">
                     <x-icon name="o-book-open" class="w-8 h-8 text-yellow-600"/>
                 </div>
-                <div class="text-xl font-bold text-gray-700">{{ $totalawaitingissuing }}</div>
+                <div class="text-4xl font-bold text-gray-700">{{ $totalawaitingissuing }}</div>
                 <div class="text-sm text-gray-600">Awaiting Issuing</div>
             </div>
         </x-card>
 
-        <x-card>
+        <x-card class="border-2 border-blue-200  shadow-sm shadow-blue-200 bg-gradient-to-bl from-white to-gray-200">
             <div class="flex items-center space-x-3">
                 <div class="bg-blue-400 p-3 rounded-full">
                     <x-icon name="o-book-open" class="w-8 h-8 text-yellow-600"/>
                 </div>
-                <div class="text-xl font-bold text-gray-700">{{$totalawaitingclearance}}</div>
+                <div class="text-4xl font-bold text-gray-700">{{$totalawaitingclearance}}</div>
                 <div class="text-sm text-gray-600">Awaiting Admin Clearance</div>
             </div>
         </x-card>
 
-        <x-card>
+        <x-card class="border-2 border-blue-200  shadow-sm shadow-blue-200 bg-gradient-to-bl from-white to-gray-200">
             <div class="flex items-center space-x-3">
                 <div class="bg-green-200 p-3 rounded-full">
                     <x-icon name="m-clipboard-document-list" class="w-8 h-8 text-yellow-600"/>
                 </div>
-                <div class="text-xl font-bold text-gray-700">{{ $totaldelivered }}</div>
+                <div class="text-4xl font-bold text-gray-700">{{ $totaldelivered }}</div>
                 <div class="text-sm text-gray-600">Delivered</div>
             </div>
         </x-card>
 
-        <x-card>
+        <x-card class="border-2 border-blue-200  shadow-sm shadow-blue-200 bg-gradient-to-bl from-white to-gray-200">
             <div class="flex items-center space-x-3">
                 <div class="bg-green-700 p-3 rounded-full">
                     <x-icon name="o-hand-thumb-up" class="w-8 h-8 text-white"/>
                 </div>
-                <div class="text-xl font-bold text-gray-700">{{ $totalrecieved }}</div>
+                <div class="text-4xl font-bold text-gray-700">{{ $totalrecieved }}</div>
                 <div class="text-sm text-gray-600">Accepted Requisitions</div>
             </div>
         </x-card>
 
-        <x-card>
+        <x-card class="border-2 border-blue-200  shadow-sm shadow-blue-200 bg-gradient-to-bl from-white to-gray-200">
             <div class="flex items-center space-x-3">
                 <div class="bg-red-700 p-3 rounded-full">
                     <x-icon name="c-arrow-left-end-on-rectangle" class="w-8 h-8 text-white"/>
                 </div>
-                <div class="text-xl font-bold text-gray-700">{{ $totalrejected }}</div>
+                <div class="text-4xl font-bold text-gray-700">{{ $totalrejected }}</div>
                 <div class="text-sm text-gray-600">Rejected</div>
             </div>
         </x-card>
@@ -77,6 +77,7 @@
         
                 <div>
                     <x-card title="Stores Requisitions Awaiting Approvals" separator class="mt-5 border-2 border-gray-200">
+                        {{$storesrequisitionsawaitingapproval->links()}}
                         <x-table :headers="$headersforapproved" :rows="$storesrequisitionsawaitingapproval">
                             @scope('cell_itembanner', $storesrequisition)
                                 <img src="{{asset('images/img_placeholder.jpg')}}" alt="" class="w-[60px] h-auto">
@@ -86,19 +87,19 @@
                             @endscope
                             @scope('cell_status', $storesrequisition)
                                 @if($storesrequisition->status=='P')
-                                    <span class="badge badge-warning">Pending</span>
+                                    <span class="badge bg-gradient-to-b from-yellow-200 to-yellow-500 text-white">Pending</span>
                                 @elseif($storesrequisition->status=='A')
-                                    <span class="badge badge-warning">Approved</span>                                    
+                                    <span class="badge bg-gradient-to-b from-green-200 to-green-400 text-white">Approved</span>                                    
                                 @elseif($storesrequisition->status=='O')
-                                    <span class="badge badge-warning">Opened</span>
+                                    <span class="badge bg-gradient-to-b from-blue-300 to-blue-400 text-white">Opened</span>
                                 @elseif($storesrequisition->status=='V')
-                                    <span class="badge badge-warning">Verification</span>
+                                    <span class="badge bg-gradient-to-b from-blue-400 to-blue-600 text-white">Verification</span>
                                 @elseif($storesrequisition->status=='D')
-                                    <span class="badge badge-warning">Delivered</span>
+                                    <span class="badge bg-gradient-to-b from-blue-500 to-blue-800 text-white">Delivered</span>
                                 @elseif($storesrequisition->status=='C')
-                                    <span class="badge badge-success">Received</span>
+                                    <span class="badge bg-gradient-to-b from-green-500 to-green-800 text-white">Received</span>
                                 @else
-                                    <span class="badge badge-error">Rejected</span>
+                                    <span class="badge bg-gradient-to-b from-red-400 to-red-800 text-white">Rejected</span>
                                 @endif
                             @endscope 
                             @scope('cell_initiator',$storesrequisition)   
@@ -155,7 +156,7 @@
                         <x-slot:menu>
                             <x-select wire:model.live="statussearch" placeholder="Filter by status" :options="$statuslist" option-label="name" option-value="id" />                
                         </x-slot:menu>
-
+                        {{$storesrequisitionsawaitingdelivery->links()}}
                         <x-table :headers="$headersforapproved" :rows="$storesrequisitionsawaitingdelivery">
                             @scope('cell_itembanner', $storesrequisition)
                                 <img src="{{asset('images/img_placeholder.jpg')}}" alt="" class="w-[60px] h-auto">
@@ -164,18 +165,20 @@
                                 <span>{{collect(json_decode($storesrequisition->requisitionitems,true))->count()}}</span>
                             @endscope                
                             @scope('cell_status', $storesrequisition)
-                                @if($storesrequisition->status=='A')
-                                    <span class="badge badge-warning">Approved</span>
+                                @if($storesrequisition->status=='P')
+                                    <span class="badge bg-gradient-to-b from-yellow-200 to-yellow-500 text-white">Pending</span>
+                                @elseif($storesrequisition->status=='A')
+                                    <span class="badge bg-gradient-to-b from-green-200 to-green-400 text-white">Approved</span>                                    
                                 @elseif($storesrequisition->status=='O')
-                                    <span class="badge badge-warning">Opened</span>
+                                    <span class="badge bg-gradient-to-b from-blue-300 to-blue-400 text-white">Opened</span>
                                 @elseif($storesrequisition->status=='V')
-                                    <span class="badge badge-warning">Verification</span>
+                                    <span class="badge bg-gradient-to-b from-blue-400 to-blue-600 text-white">Verification</span>
                                 @elseif($storesrequisition->status=='D')
-                                    <span class="badge badge-warning">Delivered</span>
+                                    <span class="badge bg-gradient-to-b from-blue-500 to-blue-800 text-white">Delivered</span>
                                 @elseif($storesrequisition->status=='C')
-                                    <span class="badge badge-success">Received</span>
+                                    <span class="badge bg-gradient-to-b from-green-500 to-green-800 text-white">Received</span>
                                 @else
-                                    <span class="badge badge-error">Rejected</span>
+                                    <span class="badge bg-gradient-to-b from-red-400 to-red-800 text-white">Rejected</span>
                                 @endif
                             @endscope
                             @scope('cell_initiator',$storesrequisition)   
@@ -185,7 +188,6 @@
                             
                             @scope('actions', $storesrequisition)
                                 <div class="grid grid-flow-col space-x-2">
-                                    
                                     <x-button icon="o-eye" 
                                         wire:click="viewrequisition('{{$storesrequisition->storesrequisition_uuid}}', '{{$storesrequisition->initiator_id}}')" 
                                         spinner class="text-blue-500 btn-outline btn-sm" 
@@ -227,7 +229,7 @@
         
                 <div>
                     <x-card title="Delivered Stores Requisitions" separator class="mt-5 border-2 border-gray-200">
-
+                        {{$storesrequisitionsdelivered->links()}}
                         <x-table :headers="$headersforapproved" :rows="$storesrequisitionsdelivered">
                             @scope('cell_itembanner', $storesrequisition)
                                 <img src="{{asset('images/img_placeholder.jpg')}}" alt="" class="w-[60px] h-auto">
@@ -236,18 +238,20 @@
                                 <span>{{collect(json_decode($storesrequisition->requisitionitems,true))->count()}}</span>
                             @endscope                
                             @scope('cell_status', $storesrequisition)
-                                @if($storesrequisition->status=='A')
-                                    <span class="badge badge-warning">Approved</span>
+                                @if($storesrequisition->status=='P')
+                                    <span class="badge bg-gradient-to-b from-yellow-200 to-yellow-500 text-white">Pending</span>
+                                @elseif($storesrequisition->status=='A')
+                                    <span class="badge bg-gradient-to-b from-green-200 to-green-400 text-white">Approved</span>                                    
                                 @elseif($storesrequisition->status=='O')
-                                    <span class="badge badge-warning">Opened</span>
+                                    <span class="badge bg-gradient-to-b from-blue-300 to-blue-400 text-white">Opened</span>
                                 @elseif($storesrequisition->status=='V')
-                                    <span class="badge badge-warning">Verification</span>
+                                    <span class="badge bg-gradient-to-b from-blue-400 to-blue-600 text-white">Verification</span>
                                 @elseif($storesrequisition->status=='D')
-                                    <span class="badge badge-warning">Delivered</span>
+                                    <span class="badge bg-gradient-to-b from-blue-500 to-blue-800 text-white">Delivered</span>
                                 @elseif($storesrequisition->status=='C')
-                                    <span class="badge badge-success">Received</span>
+                                    <span class="badge bg-gradient-to-b from-green-500 to-green-800 text-white">Received</span>
                                 @else
-                                    <span class="badge badge-error">Rejected</span>
+                                    <span class="badge bg-gradient-to-b from-red-400 to-red-800 text-white">Rejected</span>
                                 @endif
                             @endscope
                             @scope('cell_initiator',$storesrequisition)   
@@ -294,7 +298,7 @@
         
                 <div>
                     <x-card title="Accepted Stores Requisitions" separator class="mt-5 border-2 border-gray-200">
-
+                        {{$storesrequisitionsrecieved->links()}}
                         <x-table :headers="$headersforapproved" :rows="$storesrequisitionsrecieved">
                             @scope('cell_itembanner', $storesrequisition)
                                 <img src="{{asset('images/img_placeholder.jpg')}}" alt="" class="w-[60px] h-auto">
@@ -303,18 +307,20 @@
                                 <span>{{collect(json_decode($storesrequisition->requisitionitems,true))->count()}}</span>
                             @endscope                
                             @scope('cell_status', $storesrequisition)
-                                @if($storesrequisition->status=='A')
-                                    <span class="badge badge-warning">Approved</span>
+                                @if($storesrequisition->status=='P')
+                                    <span class="badge bg-gradient-to-b from-yellow-200 to-yellow-500 text-white">Pending</span>
+                                @elseif($storesrequisition->status=='A')
+                                    <span class="badge bg-gradient-to-b from-green-200 to-green-400 text-white">Approved</span>                                    
                                 @elseif($storesrequisition->status=='O')
-                                    <span class="badge badge-warning">Opened</span>
+                                    <span class="badge bg-gradient-to-b from-blue-300 to-blue-400 text-white">Opened</span>
                                 @elseif($storesrequisition->status=='V')
-                                    <span class="badge badge-warning">Verification</span>
+                                    <span class="badge bg-gradient-to-b from-blue-400 to-blue-600 text-white">Verification</span>
                                 @elseif($storesrequisition->status=='D')
-                                    <span class="badge badge-warning">Delivered</span>
+                                    <span class="badge bg-gradient-to-b from-blue-500 to-blue-800 text-white">Delivered</span>
                                 @elseif($storesrequisition->status=='C')
-                                    <span class="badge badge-success">Received</span>
+                                    <span class="badge bg-gradient-to-b from-green-500 to-green-800 text-white">Received</span>
                                 @else
-                                    <span class="badge badge-error">Rejected</span>
+                                    <span class="badge bg-gradient-to-b from-red-400 to-red-800 text-white">Rejected</span>
                                 @endif
                             @endscope
                             @scope('cell_initiator',$storesrequisition)   
@@ -361,7 +367,7 @@
         
                 <div>
                     <x-card title="Received Stores Requisitions" separator class="mt-5 border-2 border-gray-200">
-
+                        {{$storesrequisitionsrejected->links()}}
                         <x-table :headers="$headersforapproved" :rows="$storesrequisitionsrejected">
                             @scope('cell_itembanner', $storesrequisition)
                                 <img src="{{asset('images/img_placeholder.jpg')}}" alt="" class="w-[60px] h-auto">
@@ -371,17 +377,19 @@
                             @endscope
                             @scope('cell_status', $storesrequisition)
                                 @if($storesrequisition->status=='P')
-                                    <span class="badge badge-warning">Pending</span>
+                                    <span class="badge bg-gradient-to-b from-yellow-200 to-yellow-500 text-white">Pending</span>
                                 @elseif($storesrequisition->status=='A')
-                                    <span class="badge badge-success">Approved</span>
+                                    <span class="badge bg-gradient-to-b from-green-200 to-green-400 text-white">Approved</span>                                    
                                 @elseif($storesrequisition->status=='O')
-                                    <span class="badge badge-warning">Opened</span>
+                                    <span class="badge bg-gradient-to-b from-blue-300 to-blue-400 text-white">Opened</span>
+                                @elseif($storesrequisition->status=='V')
+                                    <span class="badge bg-gradient-to-b from-blue-400 to-blue-600 text-white">Verification</span>
                                 @elseif($storesrequisition->status=='D')
-                                    <span class="badge badge-warning">Delivered</span>
+                                    <span class="badge bg-gradient-to-b from-blue-500 to-blue-800 text-white">Delivered</span>
                                 @elseif($storesrequisition->status=='C')
-                                    <span class="badge badge-success">Recieved</span>
+                                    <span class="badge bg-gradient-to-b from-green-500 to-green-800 text-white">Received</span>
                                 @else
-                                    <span class="badge badge-error">Rejected</span>
+                                    <span class="badge bg-gradient-to-b from-red-400 to-red-800 text-white">Rejected</span>
                                 @endif
                             @endscope 
                             @scope('cell_initiator',$storesrequisition)   
@@ -412,6 +420,7 @@
  
     <x-modal wire:model="viewrequisitionmodal"  title="STORES REQUISITION VIEW NOTE">
         <div class="grid  gap-4" separator>
+            <div class="text-md text-gray-400 bold">REF: {{$viewuuid}}</div>
             @foreach($viewfields as $itemindex => $field)
             <div class="grid">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">

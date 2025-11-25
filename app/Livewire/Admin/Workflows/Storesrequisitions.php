@@ -2,12 +2,6 @@
 
 namespace App\Livewire\Admin\Workflows;
 
-use App\Interfaces\repositories\idepartmentInterface;
-use App\Interfaces\repositories\ihodstoresrequisitionapprovalInterface;
-use App\Interfaces\repositories\iissuerstoresrequisitionapprovalInterface;
-use App\Interfaces\repositories\ireceiverstoresrequisitionapprovalInterface;
-use App\Interfaces\repositories\istoresrequisitionInterface;
-use App\Interfaces\repositories\iuserInterface;
 use App\Interfaces\services\istoresrequisitionService;
 use App\Notifications\StoresrequisitionacceptanceNotification;
 use App\Notifications\StoresrequisitionapprovalSubmitted;
@@ -15,10 +9,11 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Mary\Traits\Toast;
 use Illuminate\Support\Str;
+use Livewire\WithPagination;
 
 class Storesrequisitions extends Component
 {
-    Use Toast;
+    Use Toast, WithPagination;
 
     protected $storesrequisitionService, $user;
     public $hodassigneesmap=[];
@@ -28,8 +23,9 @@ class Storesrequisitions extends Component
     public $hodid, $adminissuerid;
     public $issuerquantity, $issuercomment;
     public $deliveryrequisitionuuid, $deliveryinitiatorid;
-    public $itemfields = [], $viewfields=[], $deliveryfields=[]; // Number of items in the requisition form
-    public $searchuuid, $storesrequisitions;
+    public $itemfields = [], $viewfields=[], $deliveryfields=[], $viewuuid; // Number of items in the requisition form
+    public $searchuuid;
+    //public $storesrequisitions;
 
     public function boot(istoresrequisitionService $storesrequisitionService)
     {
@@ -60,13 +56,14 @@ class Storesrequisitions extends Component
                 'name'=>$member->name.' '.$member->surname
             ];
         });
-        $this->storesrequisitions=$this->getmystoresrequests();
+        //$this->storesrequisitions=$this->getmystoresrequests();
     }
 
+    /*
     public function updated()
     {
         $this->storesrequisitions=$this->getmystoresrequests();
-    }
+    }*/
 
     public function addrequisitionitem()
     {
@@ -150,6 +147,7 @@ class Storesrequisitions extends Component
     }
     public function viewrequisition($storesrequisitionuuid, $initiatorid)
     {
+        $this->viewuuid=$storesrequisitionuuid;
         $this->viewfields = $this->storesrequisitionService->getstoresrequisitionrequestitems($storesrequisitionuuid);
         $this->viewrequisitionmodal=true;
     }
@@ -168,11 +166,11 @@ class Storesrequisitions extends Component
     {
         //update stores record 
         if(!$this->isaccepted) {
-            $updaterequisitionrecord=$this->storesrequisitionService->updatestoresrequisition($this->deliveryrequisitionuuid, [
+            $updaterequisitionrecord=$this->storesrequisitionService->updatestoresrequisitionrecord($this->deliveryrequisitionuuid, [
                 'status' => 'R'
             ]);
         }else{ 
-            $updaterequisitionrecord=$this->storesrequisitionService->updatestoresrequisition($this->deliveryrequisitionuuid, [
+            $updaterequisitionrecord=$this->storesrequisitionService->updatestoresrequisitionrecord($this->deliveryrequisitionuuid, [
                 'status' => 'C'
             ]);
         }
@@ -224,7 +222,8 @@ class Storesrequisitions extends Component
             'totaldelivered' => $this->getdeliveredstoresrequisitions()->count(),
             'totalrecieved' => $this->getrecievedstoresrequisitions()->count(), 
             'totalrejected'=>$this->getrejectedstoresrequisitions()->count(),
-            'breadcrumbs' => [['label' => 'Home', 'link' => route('admin.home')], ['label' => "Stores Requisition"]]
+            'breadcrumbs' => [['label' => 'Home', 'link' => route('admin.home')], ['label' => "Stores Requisition"]],
+            'storesrequisitions'=>$this->getmystoresrequests()
         ]);
     }
 }

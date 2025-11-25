@@ -2,9 +2,7 @@
 
 namespace App\Notifications;
 
-use App\Interfaces\repositories\ileaverequestapprovalInterface;
-use App\Interfaces\repositories\ileavetypeInterface;
-use App\Models\Leaverequest;
+use App\Interfaces\services\ileaverequestService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -15,16 +13,15 @@ class LeaverequestWithdrawn extends Notification implements ShouldQueue
     use Queueable;
 
     private $leaverequest, $leaverequestuuid, $approvalrecordid, $approverid;
-    protected $leavetyperepo, $leaverequestapprovalrepo;
+    protected $leaverequestService, $leaverequestapprovalrepo;
     /**
      * Create a new notification instance.
      */
-    public function __construct(Leaverequest $leaverequest, ileavetypeInterface $leavetyperepo, ileaverequestapprovalInterface $leaverequestapprovalrepo)
+    public function __construct(ileaverequestService $leaverequestService, $leaverequestuuid)
     {
-        $this->leaverequest = $leaverequest;
-        $this->leavetyperepo=$leavetyperepo;
-        $this->leaverequestapprovalrepo=$leaverequestapprovalrepo;
-        $this->leaverequestuuid=$this->leaverequest->leaverequestuuid;
+        $this->leaverequestService=$leaverequestService;
+        $this->leaverequest = $leaverequestService->getleaverequestbyuuid($leaverequestuuid);
+        $this->leaverequestuuid=$leaverequestuuid;
     }
  
     /**
@@ -41,9 +38,9 @@ class LeaverequestWithdrawn extends Notification implements ShouldQueue
     public function toMail($notifiable): MailMessage
     {
         //approval url
-        $leavetype=$this->leavetyperepo->getleavetype($this->leaverequest->leavetype_id);
+        $leavetype=$this->leaverequestService->getleavetype($this->leaverequest->leavetype_id);
         $leaveapprovalitemuuid=$this->leaverequestuuid;
-        $leaveapproverid=$this->leaverequestapprovalrepo->getleaverequestapproval($this->leaverequestuuid)->user_id;
+        $leaveapproverid=$this->leaverequestService->getleaverequestapproval($this->leaverequestuuid)->user_id;
         $storesapprovalitemuuid='N';
         $storesapproverid='N';
         $status='N';
