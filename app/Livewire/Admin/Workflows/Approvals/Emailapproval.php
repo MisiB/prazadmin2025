@@ -97,7 +97,7 @@ class Emailapproval extends Component
         if($this->requestrecord->status==='P'&& $this->approvalrecord->action==='A')
         {
             $this->userstatement->update([
-                'days'=>(int)$this->userstatement->days + (int)$this->requestrecord->daysappliedfor,
+                'daystaken'=>(float)$this->userstatement->daystaken + (float)$this->requestrecord->daysappliedfor
             ]);
             $this->userstatement->save();
             $this->updateHOD();
@@ -106,7 +106,7 @@ class Emailapproval extends Component
             if($actinghoduser!=null){$actinghoduser->assignRole($this->hodrole);}
         }elseif($this->requestrecord->status==='A'&& $this->approvalrecord->action==='R'){
             $this->userstatement->update([
-                'days'=>(int)$this->userstatement->days - (int)$this->requestrecord->daysappliedfor,
+                'daystaken'=>(float)$this->userstatement->daystaken - (float)$this->requestrecord->daysappliedfor
             ]);
             $this->userstatement->save();
             $this->requestrecord->update(['status'=>'C']);

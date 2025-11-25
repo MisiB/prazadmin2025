@@ -258,12 +258,16 @@ class Leaverequests extends Component
         }
         //Update the leavestatement record
         $leavestatement=$this->leaverequestService->getleavestatementbyuserandleavetype($this->user->id, $leaverequestcopy->leavetype_id);
-        $leavestatementupdate=$this->leaverequestService->updateleavestatement($leavestatement->id, [
-            'days'=>$leavestatement->days-$leaverequestcopy->daysappliedfor,
-        ]);
-        if($leavestatementupdate['status']=='error')
+        if($leaverequestcopy->status==='A')
         {
-            return $this->toast('error', $leavestatementupdate['message']);
+            $leavestatementupdate=$this->leaverequestService->updateleavestatement($leavestatement->id, [
+                'daysattained'=>(float)$leavestatement->daysattained+(float)$leaverequestcopy->daysappliedfor,
+                'daystaken'=>(float)$leavestatement->daystaken-(float)$leaverequestcopy->daysappliedfor
+            ]);
+            if($leavestatementupdate['status']=='error')
+            {
+                return $this->toast('error', $leavestatementupdate['message']);
+            }
         }
 
         //Notify the approver of the recall via email

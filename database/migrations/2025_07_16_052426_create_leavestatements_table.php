@@ -17,7 +17,8 @@ return new class extends Migration
             $table->string("user_id");
             $table->integer("year");
             $table->string("month");
-            $table->string("days");
+            $table->string("daysattained");
+            $table->string("daystaken");
             $table->timestamps();
         });
     }
