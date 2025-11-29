@@ -47,27 +47,34 @@ class _tenderRepository implements itenderInterface
         return $this->tendertype->all();
     }
 
-    public function gettendertype($name)
-    {
-        return $this->tendertype->where('name', $name)->first();
-    }
+    public function gettendertype($id)
+{
+    return $this->tendertype->find($id);
+}
 
-    public function updatetendertype($id, array $data)
-    {
-        try {
-            $exist = $this->tendertype->where('name', $data['name'])->first();
-            if ($exist) {
-                return ['status' => 'error', 'message' => 'Tendertype already exists'];
-            }
-            $this->tendertype->where('id', $id)->update([
-                'name' => $data['name'],
-            ]);
+public function updatetendertype($id, array $data)
+{
+    try {
+        // Ignore current ID when checking duplicates
+        $exist = $this->tendertype
+            ->where('name', $data['name'])
+            ->where('id', '!=', $id)
+            ->first();
 
-            return ['status' => 'success', 'message' => 'Tendertype updated successfully'];
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
+        if ($exist) {
+            return ['status' => 'error', 'message' => 'Tendertype already exists'];
         }
+
+        $this->tendertype->where('id', $id)->update([
+            'name' => $data['name'],
+        ]);
+
+        return ['status' => 'success', 'message' => 'Tendertype updated successfully'];
+    } catch (\Exception $e) {
+        return ['status' => 'error', 'message' => $e->getMessage()];
     }
+}
+
 
     public function deletetendertype($id)
     {

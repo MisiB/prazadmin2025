@@ -85,9 +85,23 @@
           
         </x-tab>
         <x-tab name="tricks-tab" label="Proof of Payment">
-            <div>
-                <iframe src="{{ Storage::url($invoice?->workshoporder?->documenturl) }}" class="w-full h-screen" frameborder="0"></iframe>
-               </div>
+            @php
+                $documentUrl = $invoice?->workshoporder?->documenturl;
+                $documentExists = $documentUrl && \Illuminate\Support\Facades\Storage::disk('public')->exists($documentUrl);
+            @endphp
+            @if($documentExists)
+                <div class="w-full h-screen overflow-hidden">
+                    <iframe src="{{ Storage::disk('public')->url($documentUrl) }}" class="w-full h-full" frameborder="0"></iframe>
+                </div>
+            @else
+                <div class="flex items-center justify-center h-96">
+                    <div class="text-center">
+                        <div class="text-6xl font-light text-gray-400 mb-4">404</div>
+                        <div class="text-xl text-gray-500 font-medium">NOT FOUND</div>
+                        <p class="text-gray-400 mt-4">Proof of payment document is not available</p>
+                    </div>
+                </div>
+            @endif
         </x-tab>
         <x-tab name="musics-tab" label="Bank Transactions">
             @if($invoice?->customer)

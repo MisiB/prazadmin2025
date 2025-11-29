@@ -137,4 +137,17 @@ class _individualworkplanRepository implements individualworkplanInterface
             return ['status' => 'error', 'message' => $e->getMessage()];
         }
     }
+
+    public function getapprovedworkplansbydepartment($department_id, $strategy_id, $year)
+    {
+        return $this->individualworkplan
+            ->with('user', 'targetmatrix.target.indicator.departmentoutput.output.outcome.programme')
+            ->whereHas('user.department', function ($query) use ($department_id) {
+                $query->where('department_id', $department_id);
+            })
+            ->where('strategy_id', $strategy_id)
+            ->where('year', $year)
+            ->where('status', 'APPROVED')
+            ->get();
+    }
 }

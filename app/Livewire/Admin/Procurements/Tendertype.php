@@ -9,30 +9,36 @@ use Mary\Traits\Toast;
 
 class Tendertype extends Component
 {
-    use WithPagination,Toast;
-    protected $repo;
+    use WithPagination, Toast;
+
     public $name;
     public $id;
     public $modal = false;
     public $breadcrumbs = [];
+    protected $repo;
 
-    public function mount(){
+    public function mount()
+    {
         $this->breadcrumbs = [
             ['label' => 'Home', 'link' => route('admin.home')],
             ['label' => 'Tender Types']
         ];
     }
+
     public function boot(itenderInterface $repo)
     {
         $this->repo = $repo;
     }
 
-    public function gettypes(){
+    public function gettypes()
+    {
         return $this->repo->gettendertypes();
     }
-    public function headers():array{
+
+    public function headers(): array
+    {
         return [
-            ['key'=>'name','label'=>'Name']
+            ['key' => 'name', 'label' => 'Name']
         ];
     }
     public function save(){
@@ -48,15 +54,10 @@ class Tendertype extends Component
       $this->reset('name','id');
     }
 
-    public function create(){
-      $response = $this->repo->createtendertype([
-        'name'=>$this->name
-      ]);
-      if($response['status']=="success"){
-         $this->success($response['message']);
-      }else{
-        $this->error($response['message']);
-      }
+    public function resetForm()
+    {
+        $this->reset('name', 'id');
+        $this->modal = false;
     }
     public function edit($name){
       $tendertype = $this->repo->gettendertype($name);
@@ -64,30 +65,27 @@ class Tendertype extends Component
       $this->name = $tendertype->name;
       $this->modal = true;
     }
-   
-    public function update(){
-      $response = $this->repo->updatetendertype($this->id, [
-        'name'=>$this->name
-      ]);
-      if($response['status']=="success"){
-         $this->success($response['message']);
-      }else{
-        $this->error($response['message']);
-      }
+
+    public function delete($id)
+    {
+        $response = $this->repo->deletetendertype($id);
+        $this->toastResponse($response);
     }
-    public function delete($id){
-      $response = $this->repo->deletetendertype($id);
-      if($response['status']=="success"){
-         $this->success($response['message']);
-      }else{
-        $this->error($response['message']);
-      }
+
+    private function toastResponse($response)
+    {
+        if ($response['status'] === "success") {
+            $this->success($response['message']);
+        } else {
+            $this->error($response['message']);
+        }
     }
+
     public function render()
     {
-        return view('livewire.admin.procurements.tendertype',[
-            'types'=>$this->gettypes(),
-            'headers'=>$this->headers()
+        return view('livewire.admin.procurements.tendertype', [
+            'types' => $this->gettypes(),
+            'headers' => $this->headers()
         ]);
     }
 }

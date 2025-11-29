@@ -206,7 +206,7 @@
 <x-modal wire:model="targetmatrixmodal" title="{{ $targetmatrix_id ? 'Edit Target Matrix' : 'Add Target Matrix' }}">
     <x-form wire:submit="savetargetmatrix">
         <div class="grid gap-2">
-            <x-select label="Month" wire:model="month" :options="$monthlist" option-label="name" option-value="id" />
+            <x-select label="Month" wire:model="month" placeholder="Select month" :options="$monthlist" option-label="name" option-value="id" />
             <x-input label="Target" wire:model="target" type="number" />
         </div>
         <x-slot:actions>
