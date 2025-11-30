@@ -8,7 +8,7 @@ interface ipurchaseerequisitionInterface
     public function getpurchaseerequisitions($year);
     public function getpurchaseerequisition($id);
     public function getpurchaseerequisitionbyuuid($uuid);
-    public function getpurchaseerequisitionbydepartment($year,$department_id);
+    public function getpurchaseerequisitionbydepartment($year,$department_id,$search = null);
     public function createpurchaseerequisition($data);
     public function updatepurchaseerequisition($id,$data);
     public function deletepurchaseerequisition($id);

@@ -4,7 +4,7 @@
     link-item-class="text-base" />
     <x-card title="Purchase Requisitions" separator class="mt-5 border-2 border-gray-200">
         <x-slot:menu>
-            <x-input type="text" wire:model="search" placeholder="Search..."/>
+            <x-input type="text" wire:model.live.debounce.300ms="search" placeholder="Search..."/>
             <x-button icon="o-plus" class="btn-primary" label="New" @click="$wire.modal=true"/>
         </x-slot:menu>
         <x-table :headers="$headers" :rows="$purchaserequisitions" class="table-zebra table-xs">
@@ -37,6 +37,10 @@
                 <x-alert class="alert-error" title="No Purchase Requisitions found."/>
             </x-slot:empty>
         </x-table>
+        
+        <div class="mt-4">
+            {{ $purchaserequisitions->links() }}
+        </div>
     </x-card>
 
  
