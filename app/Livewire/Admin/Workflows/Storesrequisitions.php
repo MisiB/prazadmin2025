@@ -25,7 +25,6 @@ class Storesrequisitions extends Component
     public $deliveryrequisitionuuid, $deliveryinitiatorid;
     public $itemfields = [], $viewfields=[], $deliveryfields=[], $viewuuid; // Number of items in the requisition form
     public $searchuuid;
-    //public $storesrequisitions;
 
     public function boot(istoresrequisitionService $storesrequisitionService)
     {
@@ -56,14 +55,7 @@ class Storesrequisitions extends Component
                 'name'=>$member->name.' '.$member->surname
             ];
         });
-        //$this->storesrequisitions=$this->getmystoresrequests();
     }
-
-    /*
-    public function updated()
-    {
-        $this->storesrequisitions=$this->getmystoresrequests();
-    }*/
 
     public function addrequisitionitem()
     {
@@ -71,6 +63,11 @@ class Storesrequisitions extends Component
             'itemdetail' => '',
             'requiredquantity' => ''
         ];
+    }
+
+    public function removerequisitionitem($itemindex)
+    {
+        array_splice($this->itemfields, $itemindex, 1);
     }
 
     public function headersforpendingrequisitions(): array

@@ -28,7 +28,7 @@ class Accumulatestatement extends Command
      */
     public function handle(ileavetypeInterface $leavetyperepo, ileavestatementInterface $leavestatementrepo)
     {
-        if( Carbon::now()->format('d')==25 && Carbon::now()->format('m')>10)
+        if(Carbon::now()->format('d')==1)
         {
             //Get the list of available leavetypes from the database
             $leavetypes=$leavetyperepo->getleavetypes();

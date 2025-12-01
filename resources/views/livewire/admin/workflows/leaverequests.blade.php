@@ -5,7 +5,7 @@
 
     <x-modulewelcomebanner :breadcrumbs="$breadcrumbs"/>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 my-8">
         <x-card class="border-2 border-blue-200  shadow-sm shadow-blue-200 bg-gradient-to-bl from-white to-gray-200">
             <div class="flex items-center space-x-3">
                 <div class="bg-yellow-200 p-3 rounded-full">
