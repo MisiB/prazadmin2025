@@ -4,6 +4,7 @@ use App\Livewire\Admin\Workflows\Approvals\Emailapproval;
 use App\Livewire\Admin\Workflows\Approvals\Storesrequisitionacceptance;
 use App\Livewire\Admin\Workflows\Approvals\Storesrequisitionapproval;
 use App\Livewire\Admin\Workflows\Approvals\Storesrequisitionverification;
+use App\Livewire\Admin\Workflows\Leaverequests;
 use Dcblogdev\MsGraph\Facades\MsGraph;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -70,7 +71,8 @@ Route::middleware('auth')->group(function () {
     Volt::route('/awaitingdelivery', 'admin.workflows.awaitingdelivary')->name('admin.workflows.awaitingdelivery');
     Volt::route('/finances/revenueposting', 'admin.finance.revenueposting')->name('admin.finance.revenueposting');
     Volt::route('/workflows/leavestatements', 'admin.workflows.leavestatements')->name('admin.workflows.leavestatements');
-    Volt::route('/workflows/leaverequests', 'admin.workflows.leaverequests')->name('admin.workflows.leaverequests');
+    //Volt::route('/workflows/leaverequests', 'admin.workflows.leaverequests')->name('admin.workflows.leaverequests');
+    Route::match(['get','post'],'/workflows/leaverequests', Leaverequests::class)->name('admin.workflows.leaverequests');
     Volt::route('/workflows/storesrequisitions', 'admin.workflows.storesrequisitions')->name('admin.workflows.storesrequisitions');
     Volt::route('/approvals/storesrequisitions', 'admin.workflows.approvals.deptstoresrequisitionapprovals')->name('admin.workflows.approvals.deptstoresrequisitionapprovals');
     Volt::route('/approvals/storesrequisitiondelivery', 'admin.workflows.approvals.storesrequisitiondelivery')->name('admin.workflows.approvals.storesrequisitiondelivery');
@@ -87,13 +89,12 @@ Route::middleware('auth')->group(function () {
     Volt::route('/workshopindex', 'admin.workshops.workshopindex')->name('admin.workshop.index');
     Volt::route('/workshopindex/{id}', 'admin.workshops.workshopview')->name('admin.workshop.view');
 });
-// Email Approval Flows
-Route::get('/approval/{leaveapprovalitemuuid}/{leaveapproverid}/{storesapprovalitemuuid}/{storesapproverid}/{status}', function ($leaveapprovalitemuuid, $leaveapproverid, $storesapprovalitemuuid, $storesapproverid, $status) {
-    $msgraph = new MsGraph;
-
-    return $msgraph::emailapprovalconnect($leaveapprovalitemuuid, $leaveapproverid, $storesapprovalitemuuid, $storesapproverid, $status);
+//Email Approval Flows
+Route::get('/approval/{leaveapprovalitemuuid}/{leaveapproverid}/{storesapprovalitemuuid}/{storesapproverid}/{status}', function($leaveapprovalitemuuid,$leaveapproverid,$storesapprovalitemuuid,$storesapproverid,$status){
+    $msgraph=new MsGraph();
+    return $msgraph::emailapprovalconnect($leaveapprovalitemuuid,$leaveapproverid,$storesapprovalitemuuid,$storesapproverid,$status);
 });
-Volt::route('/leaverequestapproval/{approvalrecordid}/{approvalitemuuid}', Emailapproval::class)->name('leaverequest.email.auth.approval');
-Volt::route('/requisitionapproval/{approvalrecordid}/{approvalitemuuid}', Storesrequisitionapproval::class)->name('storesrequisition.email.auth.approval');
-Volt::route('/requisitionacceptance/{approvalrecordid}/{approvalitemuuid}', Storesrequisitionacceptance::class)->name('storesrequisition.email.auth.acceptance');
-Volt::route('/requisitionverification/{approvalrecordid}/{approvalitemuuid}', Storesrequisitionverification::class)->name('storesrequisition.email.auth.verification');
+Volt::route('/leaverequestapproval/{approvalrecordid}/{approvalitemuuid}',Emailapproval::class)->name('leaverequest.email.auth.approval');
+Volt::route('/requisitionapproval/{approvalrecordid}/{approvalitemuuid}',Storesrequisitionapproval::class)->name('storesrequisition.email.auth.approval');
+Volt::route('/requisitionacceptance/{approvalrecordid}/{approvalitemuuid}',Storesrequisitionacceptance::class)->name('storesrequisition.email.auth.acceptance');
+Volt::route('/requisitionverification/{approvalrecordid}/{approvalitemuuid}',Storesrequisitionverification::class)->name('storesrequisition.email.auth.verification');

@@ -2,18 +2,9 @@
 
 namespace App\Livewire\Admin\Workflows\Approvals;
 
-use App\Interfaces\repositories\idepartmentInterface;
-use App\Interfaces\repositories\ihodstoresrequisitionapprovalInterface;
-use App\Interfaces\repositories\iissuerstoresrequisitionapprovalInterface;
-use App\Interfaces\repositories\ireceiverstoresrequisitionapprovalInterface;
-use App\Interfaces\repositories\istoresrequisitionInterface;
-use App\Interfaces\repositories\iuserInterface;
+
 use App\Interfaces\services\istoresrequisitionService;
 use App\Notifications\StoresrequisitionapprovalNotify;
-use App\Notifications\StoresrequisitionapprovalSubmitted;
-use App\Notifications\StoresrequisitiondeliveryNotification;
-use App\Notifications\StoresrequisitionopeningNotification;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Mary\Traits\Toast;
@@ -33,11 +24,11 @@ class Deptstoresrequisitionapprovals extends Component
     public $hodid, $departmentid=0;
     public $issuerquantity, $adminvalidatorcomment;
     public $deliveryrequisitionuuid, $deliveryinitiatorid;
-    public $itemfields = [], $viewfields=[], $deliveryfields=[]; // Number of items in the requisition form
+    public $itemfields = [], $viewfields=[], $deliveryfields=[], $viewuuid; // Number of items in the requisition form
     public $isapproved=false;
     public $statussearch;
     public $searchuuid;
-    public $storesrequisitionsawaitingdelivery=[];
+    //public $storesrequisitionsawaitingdelivery=[];
 
     public function boot(istoresrequisitionService $storesrequisitionService)
     {
@@ -57,11 +48,13 @@ class Deptstoresrequisitionapprovals extends Component
         {
             return $this->toast('error', $e->getMessage());
         }  
-        $this->storesrequisitionsawaitingdelivery=$this->getstoresrequisitionsawaitingdelivery();
+        //$this->storesrequisitionsawaitingdelivery=$this->getstoresrequisitionsawaitingdelivery();
     
     }
 
-    public function updated(){$this->storesrequisitionsawaitingdelivery=$this->getstoresrequisitionsawaitingdelivery();}
+    public function updated(){
+       //$this->storesrequisitionsawaitingdelivery=$this->getstoresrequisitionsawaitingdelivery();
+    }
 
     public function headersforpendingrequisitions(): array
     { 
@@ -120,6 +113,7 @@ class Deptstoresrequisitionapprovals extends Component
 
     public function viewrequisition($storesrequisitionuuid, $initiatorid)
     {
+        $this->viewuuid=$storesrequisitionuuid;
         $this->viewfields = $this->storesrequisitionService->getstoresrequisitionrequestitems($storesrequisitionuuid);
         $this->viewrequisitionmodal=true;
     }
@@ -179,6 +173,7 @@ class Deptstoresrequisitionapprovals extends Component
             'storesrequisitionsrejected'=>$this->getrejectedstoresrequisitions(),
             'storesrequisitionsawaitingclearance'=>$this->getstoresrequisitionsawaitingclearance(),    
             'breadcrumbs'=>[['label' => 'Home', 'link' => route('admin.home')],['label' => "Stores Requisition Approvals"]],
+            'storesrequisitionsawaitingdelivery'=>$this->getstoresrequisitionsawaitingdelivery()
         ]);
     }
-}         
+}

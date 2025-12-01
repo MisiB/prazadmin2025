@@ -2,16 +2,8 @@
 
 namespace App\Livewire\Admin\Workflows\Approvals;
 
-use App\Interfaces\repositories\iadminstoresrequisitionapprovalInterface;
-use App\Interfaces\repositories\idepartmentInterface;
-use App\Interfaces\repositories\ihodstoresrequisitionapprovalInterface;
-use App\Interfaces\repositories\iissuerstoresrequisitionapprovalInterface;
-use App\Interfaces\repositories\ireceiverstoresrequisitionapprovalInterface;
-use App\Interfaces\repositories\istoresrequisitionInterface;
-use App\Interfaces\repositories\iuserInterface;
+
 use App\Interfaces\services\istoresrequisitionService;
-use App\Notifications\StoresrequisitionapprovalNotify;
-use App\Notifications\StoresrequisitionapprovalSubmitted;
 use App\Notifications\StoresrequisitiondeliveryNotification;
 use App\Notifications\StoresrequisitionopeningNotification;
 use App\Notifications\StoresrequisitionverificationSubmitted;
@@ -33,6 +25,8 @@ class Storesrequisitiondelivery extends Component
     public $issuerquantity, $issuercomment, $adminvalidatorcomment, $isapproved=false;
     public $deliveryrequisitionuuid, $deliveryinitiatorid, $deliveryissuerid, $adminvalidatorid;
     public $itemfields = [], $viewfields=[], $deliveryfields=[]; // Number of items in the requisition form
+    public $exportstarttoenddate;
+    public $dateRangeConfig=[];
 
     public function boot(istoresrequisitionService $storesrequisitionService)
     {
@@ -42,7 +36,7 @@ class Storesrequisitiondelivery extends Component
 
     public function mount()
     {
-        $this->hodid=$this->user->department->reportto;
+        $this->hodid=$this->user->department?->reportto;
         $this->itemfields[] = [
             'itemdetail' => '',
             'requiredquantity' => ''
@@ -54,7 +48,10 @@ class Storesrequisitiondelivery extends Component
             ['id'=>'D', 'name'=>'Delivered'],
             ['id'=>'C', 'name'=>'Received'],
             ['id'=>'R', 'name'=>'Rejected'],
-         ]; 
+         ];        
+         $this->dateRangeConfig=[
+            "mode"=>"range"
+        ];
     }
 
     public function headersforpendingrequisitions(): array
@@ -78,7 +75,7 @@ class Storesrequisitiondelivery extends Component
             ['label' => 'Status', 'key' => 'status'],
             ['label'=>'Actions', 'key' => 'actions']
         ];
-    }
+    } 
     public function getapprovedstoresrequisitions()
     {
         return $this->storesrequisitionService->getapprovedstoresrequisitions($this->departmentid,$this->searchuuid=$this->searchuuid);
@@ -111,7 +108,7 @@ class Storesrequisitiondelivery extends Component
     }
     public function openrequisition($storesrequisitionuuid, $initiatorid)
     {
-        $createissuerrecord=$this->issuerstoresrequisitionapprovalrepo->createissuerrequisitionapproval([
+        $createissuerrecord=$this->storesrequisitionService->createissuerrequisitionapprovalrecord([
             'storesrequisition_uuid'=>$storesrequisitionuuid,
             'user_id'=>$this->user->id
         ]);
@@ -245,12 +242,17 @@ class Storesrequisitiondelivery extends Component
         $this->deliveryrequisitionmodal=false;
         return $this->redirect(route('admin.workflows.approvals.storesrequisitiondelivery'), navigate:true);
     }
-
-
+ 
     /**export stores requisition csv report */
     public function exportstoresrequisitionreport($status)
     {
-        $export=$this->storesrequisitionService->exportdata($status);
+        $this->validate([
+            'exportstarttoenddate'=>'required'
+        ]);
+        $starttoenddatearray=explode(' to ',$this->exportstarttoenddate);
+        $exportstartdate=Carbon::parse($starttoenddatearray[0])->format('Y-m-d');
+        $exportenddate=Carbon::parse($starttoenddatearray[1])->format('Y-m-d');
+        $export=$this->storesrequisitionService->exportdata($status, $exportstartdate, $exportenddate);
         if($export['status']=='error')
         {
             return $this->toast($export['status'], $export['message']);
@@ -287,5 +289,3 @@ class Storesrequisitiondelivery extends Component
     }
 
 }
-
-

@@ -34,15 +34,15 @@ class _leaverequestRepository implements ileaverequestInterface
             $query->where('leaverequestuuid', $searchuuid);
         }
 
-        return $query->get();
+        return $query->orderBy('created_at','desc')->paginate(8);
     } 
     public function getfirstleaverequestsbyuserid($userid)
     {
-        return $this->model->with('leavetype','leaverequestapproval')->where([['user_id','=', $userid], ['status','<>','C']])->orderBy('startdate', 'asc')->first();
+        return $this->model->with('leavetype','leaverequestapproval')->where([['user_id','=', $userid], ['status','<>','C'], ['status','<>','R']])->orderBy('startdate', 'asc')->first();
     } 
     public function getlastleaverequestsbyuserid($userid)
     {
-        return $this->model->with('leavetype','leaverequestapproval')->where([['user_id','=', $userid], ['status','<>','C']])->orderBy('returndate', 'desc')->first();
+        return $this->model->with('leavetype','leaverequestapproval')->where([['user_id','=', $userid], ['status','<>','C'], ['status','<>','R']])->orderBy('returndate', 'desc')->first();
     } 
     public function getleaverequestbyuseridandstatus($userid,$status)
     {

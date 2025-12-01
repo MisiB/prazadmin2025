@@ -73,7 +73,7 @@
                 <x-button icon="o-plus" label="Add Stores Requisition" wire:click="addrequisitionmodal=true"
                 class="bg-gradient-to-bl from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white"/>
             </x-slot:menu>
-
+            {{$storesrequisitions->links()}}
             <x-table :headers="$headersforpending" :rows="$storesrequisitions">
                 @scope('cell_itembanner', $storesrequisition)
                     <img src="{{asset('images/img_placeholder.jpg')}}" alt="" class="w-[60px] h-auto">
@@ -83,17 +83,17 @@
                 @endscope
                 @scope('cell_status', $storesrequisition)
                     @if($storesrequisition->status=='P')
-                        <span class="badge badge-warning">Pending</span>
+                        <span  class="badge bg-gradient-to-b from-yellow-200 to-yellow-500 text-white">Pending</span>
                     @elseif($storesrequisition->status=='A')
-                        <span class="badge badge-success">Approved</span>
+                        <span  class="badge bg-gradient-to-b from-green-200 to-green-400 text-white">Approved</span>
                     @elseif($storesrequisition->status=='O')
-                        <span class="badge badge-warning">Opened</span>
+                        <span class="badge bg-gradient-to-b from-blue-300 to-blue-800 text-white">Opened</span>
                     @elseif($storesrequisition->status=='D')
                         <span class="badge badge-warning">Delivered</span>
                     @elseif($storesrequisition->status=='C')
-                        <span class="badge badge-success">Recieved</span>
+                        <span class="badge bg-gradient-to-b from-green-500 to-green-800 text-white">Recieved</span>
                     @else
-                        <span class="badge badge-error">Rejected</span>
+                        <span class="badge bg-gradient-to-b from-red-400 to-red-800 text-white">Rejected</span>
                     @endif
                 @endscope 
                 @scope('cell_initiator',$storesrequisition)   
@@ -163,9 +163,9 @@
         </x-card>    
     </div>
 
-    <x-modal wire:model="addrequisitionmodal"  title="STORES REQUISITION FORM">
+    <x-modal wire:model="addrequisitionmodal"  title="STORES REQUISITION FORM" box-class="max-w-xl">
         <x-form wire:submit="sendrequisition">
-            <div class="grid  gap-4" separator>
+            <div class="grid gap-2" separator>
                 <div class="grid justify-items-end">
                     <x-button icon="o-plus-small" 
                         wire:click="addrequisitionitem"
@@ -179,7 +179,7 @@
                     <div>
                         Item No.{{$itemindex+1}}
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                         <x-input  wire:model.live="itemfields.{{$itemindex}}.itemdetail" label="Item detail"></x-input>
                         <x-input  wire:model.live="itemfields.{{$itemindex}}.requiredquantity" label=" Required quantity"></x-input>
                     </div>
@@ -201,8 +201,9 @@
         </x-form>
     </x-modal> 
 
-    <x-modal wire:model="viewrequisitionmodal"  title="STORES REQUISITION VIEW NOTE">
-        <div class="grid  gap-4" separator>
+    <x-modal wire:model="viewrequisitionmodal"  title="STORES REQUISITION VIEW NOTE" box-class="max-w-xl">
+        <div class="grid gap-4" separator>
+            <div class="text-md text-gray-400 bold">REF: {{$viewuuid}}</div>
             @foreach($viewfields as $itemindex => $field)
             <div class="grid">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -220,7 +221,7 @@
     </x-modal>  
 
 @haspermission('storesrequisitions.access')
-    <x-modal wire:model="acceptancerequisitionmodal"  title="DELIVERY {{$isaccepted==true?'APPROVAL':'REJECTION'}} FORM">
+    <x-modal wire:model="acceptancerequisitionmodal"  title="DELIVERY {{$isaccepted==true?'APPROVAL':'REJECTION'}} FORM" box-class="max-w-xl">
         <x-form wire:submit="acceptrequisition">        
             <div class="grid  gap-4" separator>
                 @foreach($deliveryfields as $itemindex => $itemfield)
@@ -240,7 +241,7 @@
         </x-form>
     </x-modal> 
 
-    <x-modal wire:model="recallrequisitionmodal"  title="DELIVERY RECALL FORM">
+    <x-modal wire:model="recallrequisitionmodal"  title="DELIVERY RECALL FORM" box-class="max-w-xl">
         <x-form wire:submit="recallrequisition">        
             <div class="grid  gap-4" separator>
                 @foreach($deliveryfields as $itemindex => $itemfield)

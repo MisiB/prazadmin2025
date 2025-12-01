@@ -54,10 +54,11 @@ class Leavestatements extends Component
 
             $leavetypebalancedetails=[];
             $this->leaverequestService->getleavetypes()->each(function($leavetype) use (&$user,&$leavetypebalancedetails) {
-                $statementdays=$this->leaverequestService->getleavestatementbyuserandleavetype($user->id, $leavetype->id)->days??0;
+                $daysattained=$this->leaverequestService->getleavestatementbyuserandleavetype($user->id, $leavetype->id)->daysattained??0;
+                $daystaken=$this->leaverequestService->getleavestatementbyuserandleavetype($user->id, $leavetype->id)->daystaken??0;
                 $leavetypebalancedetails[] = [
                     'leavetype' => $leavetype->name,
-                    'balance' => (float)$leavetype->ceiling - (float)$statementdays,
+                    'balance' => (float)$daysattained - (float)$daystaken,
                 ];
                 
             });
@@ -103,13 +104,14 @@ class Leavestatements extends Component
                     'leavetype_id' => $this->leaverequestService->getleavetypebyname($statement[3])->id,
                     'year' => Carbon::now()->format('Y'),
                     'month'=> Carbon::now()->format('M'),
-                    'days' => ($statement[6]!=null)?$statement[6]:0
+                    'daysattained' => ($statement[6]!=null)?$statement[6]:0,
+                    'daystaken' => ($statement[7]!=null)?$statement[7]:0
                 ]);
                 $this->toast('success',$response['message']);
             }
             else
             {
-                $response=$this->leaverequestService->updateleavestatement($exists->id, ['days' => $statement[6]]);
+                $response=$this->leaverequestService->updateleavestatement($exists->id, ['daysattained' => $statement[6], 'daystaken' => $statement[7]]);
                 $this->toast('success',$response['message']);
             } 
         });
@@ -129,9 +131,10 @@ class Leavestatements extends Component
             "leavetypename"=>"Leave Type", 
             "year"=>"Year", 
             "month"=>"Month", 
-            "days"=>"Utilized Days"
+            "daysattained"=>"Days Attained",
+            "daystaken"=>"Days Taken",
+
         ];
-        //$this->userrepo->getall()->each(function($user) use (&$statements)
         $this->leaverequestService->getusers()->each(function($user) use (&$statements)
         {
             $exists=$this->leaverequestService->getleavestatementbyuserandleavetype($user->id, $this->leavetypeid);
@@ -143,7 +146,8 @@ class Leavestatements extends Component
                 'leavetypename' => $this->leaverequestService->getleavetype($this->leavetypeid)->name,
                 'year' => Carbon::now()->format('Y'),
                 'month' => Carbon::now()->format('m'),
-                'days' =>  $exists ? $exists->days: ""
+                'daysattained'=>$exists ? $exists->daysattained: "",
+                'daystaken'=>$exists ? $exists->daystaken: ""
             ];
         });
         $filename=$this->leaverequestService->getleavetype($this->leavetypeid)->name.'_leave_statements.csv';

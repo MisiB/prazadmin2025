@@ -2,72 +2,42 @@
 
 namespace App\Livewire\Admin\Workflows;
 
-use App\Interfaces\repositories\ileaverequestapprovalInterface;
-use App\Interfaces\repositories\ileaverequestInterface;
-use App\Interfaces\repositories\ileavestatementInterface;
-use App\Interfaces\repositories\ileavetypeInterface;
-use App\Interfaces\repositories\iuserInterface;
+
+use App\Interfaces\services\ileaverequestService;
 use App\Models\Leaverequestapproval;
 use App\Models\Leavestatement;
+use App\Notifications\LeaverequestSubmission;
 use App\Notifications\LeaverequestSubmitted;
+use App\Notifications\LeaverequestWithdrawn;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Mary\Traits\Toast;
 use Illuminate\Support\Str;
+use Livewire\WithFileUploads;
+use Livewire\WithPagination;
 
 class Leaverequests extends Component
 {
     
-    use Toast;
-    protected $repository;
-    protected $workplanrepository;
-    public $year;
-    public $search;
-    public $title;
-    public $priority;
-    public $individualoutputbreakdown_id;
-    public $description;
-    public $status;
-    public $start_date;
-    public $end_date;
-    public $contribution;
-    public $id;
-    public $statusfilter;
-    public $priorityfilter;
-    public $selectedtask=null;
-    public $analysisstatus;
-    public $analysiscomment;
-
-    public $totaloverdue=0;
-    public $totaldue=0; 
-    public bool $addtaskmodal=false;
-    public bool $viewtaskmodal=false;
-    public bool $link = false;
-
-    protected $leaverequestrepo, $leavetyperepo, $userrepo, $leavestatmentrepo, $leaverequestapprovalrepo;
-    protected $user;
+    use Toast, WithFileUploads, WithPagination;
+    protected $leaverequestService, $user;
     public $breadcrumbs = [];
-    public $totalapproved=0, $totalpending=0, $totalrejected=0;
     public $addleaverequestmodal=false;
-    public $statuslist =[];
+    public $statuslist =[], $statusfilter;
     public $dateRangeConfig=[];
-    public $hodassigneesmap=[], $leaveatypesmap=[];
     public $firstname, $surname, $employeenumber;
     public $selectedleavetypeid, $selectedapprover;
-    public $reasonforleave, $supportingdoc, $addressonleave;   
-    public $employeesignature;
+    public $reasonforleave, $supportingdoc, $addressonleave;
     public $starttoenddate, $startdate, $enddate, $returndate, $daysappliedfor, $validdays;
     public $usereporttoid, $leaveapprovername;
+    public $searchuuid, $datesrange;
+    public $assignedhodid;
 
-    public function boot(ileaverequestInterface $leaverequestrepo, ileavetypeInterface $leavetyperepo, iuserInterface $userrepo, ileavestatementInterface $leavestatmentrepo, ileaverequestapprovalInterface $leaverequestapprovalrepo)
+    public function boot(ileaverequestService $leaverequestService)
     {
-        $this->leaverequestrepo = $leaverequestrepo;
-        $this->leavetyperepo=$leavetyperepo;
-        $this->userrepo=$userrepo;
-        $this->leavestatmentrepo=$leavestatmentrepo;
-        $this->leaverequestapprovalrepo=$leaverequestapprovalrepo;
+        $this->leaverequestService=$leaverequestService;
         $this->user=Auth::user();
     }
 
@@ -76,24 +46,58 @@ class Leaverequests extends Component
             ['label' => 'Home', 'link' => route('admin.home')],
             ['label' => "Leave Requests"]
         ];
-        $this->year = Carbon::now()->year;
-        $this->start_date = Carbon::now()->startOfWeek()->nextWeekday()->format('Y-m-d');
-        $this->end_date = Carbon::now()->endOfWeek()->previousWeekday()->format('Y-m-d');
         $this->statuslist =[
-            ['id' => 'PENDING','name' => 'Pending'],
-            ['id' => 'APPROVED','name' => 'Approved'],
-            ['id' => 'REJECTED','name' => 'Rejected']
+            ['id' => 'P','name' => 'Pending'],
+            ['id' => 'A','name' => 'Approved'],
+            ['id' => 'C','name' => 'Cancelled'],
+            ['id' => 'R','name' => 'Rejected']
         ];
-        $this->dateRangeConfig=["mode"=>"range"];
+        $this->loaddatesrange();
         $this->firstname=$this->user->name;
         $this->surname=$this->user->surname;
         $this->usereporttoid= $this->user->department->reportto;
         $this->leaveapprovername=$this->getrequestapprovername();
     }
-
     public function updated()
     {
         $this->validaterequest();
+    }
+
+    public function initiateleaveaddition()
+    {
+        $this->loaddatesrange();
+        $this->addleaverequestmodal=true;
+    }
+    public function gethodrepresentatives()
+    {
+        $departmentid=$this->leaverequestService->getuserdepartmentid($this->user->email);
+        return $this->leaverequestService->gethodrepresentatives($departmentid, $this->user->id);
+    }
+    public function getdatesrange()
+    {
+        //Get all start dates of existing leave requests
+        $firstuserleaverequest=$this->leaverequestService->getfirstleaverequestsbyuserid($this->user->id);
+        $lastuserleaverequest=$this->leaverequestService->getlastleaverequestsbyuserid($this->user->id);
+        if($firstuserleaverequest==null && $lastuserleaverequest==null)
+        {
+            $datesrange=[];
+        }
+        else{
+            $existingstartdate= $firstuserleaverequest->startdate;
+            $existingreturndate= $lastuserleaverequest->returndate;
+            $period = CarbonPeriod::create($existingstartdate, $existingreturndate);
+            $datesrange = $period->toArray();
+        }
+        return $datesrange;
+    }
+    public function loaddatesrange()
+    { 
+        $this->datesrange= $this->getdatesrange();
+        $this->dateRangeConfig=[
+            "mode"=>"range",
+            'minDate' => now()->format('Y-m-d'),
+            'disable' => $this->datesrange
+        ];
     }
     public function validaterequest()
     {
@@ -102,17 +106,17 @@ class Leaverequests extends Component
             'starttoenddate'=>'required'
         ]);
         //check if user has a pending request
-        $userstatement=$this->leavestatmentrepo->getleavestatementByUserAndLeaveType($this->user->id,$this->selectedleavetypeid);
+        $userstatement=$this->leaverequestService->getleavestatementbyuserandleavetype($this->user->id,$this->selectedleavetypeid);
         if($userstatement!=null)
         {
-            $ceilingdays=$this->leavetyperepo->getleavetype($this->selectedleavetypeid)->ceiling;
+            $ceilingdays=$this->leaverequestService->getleavetype($this->selectedleavetypeid)->ceiling;
             $this->validdays=$ceilingdays-$userstatement->days;
             $starttoenddatearray=explode(' to ',$this->starttoenddate);
             $this->startdate=Carbon::parse($starttoenddatearray[0])->format('Y-m-d');
             $this->enddate=Carbon::parse($starttoenddatearray[1])->format('Y-m-d');
             $this->returndate=Carbon::parse($this->enddate)->copy()->nextWeekday()->format('Y-m-d');
             $leavePeriod=CarbonPeriod::create($this->startdate, $this->enddate);
-            $vacationleaveid=$this->leavetyperepo->getLeavetypeByName('Vacation')->id;
+            $vacationleaveid=$this->leaverequestService->getleavetypebyname('Vacation')->id;
             if($this->selectedleavetypeid===$vacationleaveid){
                 $this->daysappliedfor=$leavePeriod->count();
             }else{
@@ -132,19 +136,23 @@ class Leaverequests extends Component
     }
     public function getpendingleaverequests()
     {
-        return $this->leaverequestrepo->getleaverequestByUserIdAndStatus($this->user->id, 'PENDING');
+        return $this->leaverequestService->getleaverequestbyuseridandstatus($this->user->id, 'P', $this->statusfilter,$this->searchuuid);
     }
     public function getapprovedleaverequests()
     {
-        return $this->leaverequestrepo->getleaverequestByUserIdAndStatus($this->user->id, 'APPROVED');
+        return $this->leaverequestService->getleaverequestbyuseridandstatus($this->user->id, 'A', $this->statusfilter,$this->searchuuid);
     }
     public function getrejectedleaverequests()
     {
-        return $this->leaverequestrepo->getleaverequestByUserIdAndStatus($this->user->id, 'REJECTED');
+        return $this->leaverequestService->getleaverequestbyuseridandstatus($this->user->id, 'R', $this->statusfilter,$this->searchuuid);
+    }
+    public function getcancelledleaverequests()
+    {
+        return $this->leaverequestService->getleaverequestbyuseridandstatus($this->user->id, 'C', $this->statusfilter,$this->searchuuid);
     }
     public function getmyleaverequests()
     {
-        return $this->leaverequestrepo->getleaverequestsByUserId($this->user->id);
+        return $this->leaverequestService->getleaverequestsbyuserid($this->user->id,$this->statusfilter,$this->searchuuid);
     }
     public function headers(): array
     { 
@@ -155,13 +163,14 @@ class Leaverequests extends Component
             ['label' => 'End date', 'key' => 'enddate'],
             ['label' => 'Date of return', 'key' => 'returndate'],
             ['label' => 'Status', 'key' => 'status'],
-            ['label' => 'Approving H.O.D', 'key' => 'hod'],  
+            ['label' => 'Acting H.O.D', 'key' => 'hod'],  
+            ['label' => 'Approving H.O.D', 'key' => 'approver'], 
         ];
     }
 
     public function getleavetypes()
     {
-        $leavetypes=$this->leavetyperepo->getleavetypes();
+        $leavetypes=$this->leaverequestService->getleavetypes();
         $map=$leavetypes->each(function ($leavetype)
         {
             return ['id'=>$leavetype->id, 'name'=>$leavetype->name];
@@ -171,9 +180,7 @@ class Leaverequests extends Component
 
     public function getrequestapprovername()
     {
-       $hod=$this->userrepo->getuser($this->usereporttoid);
-       $approvername=$hod->name.' '.$hod->surname;
-       return $approvername;
+       return $this->leaverequestService->getuserfullname($this->usereporttoid);
     }
 
     public function sendleaverequest()
@@ -182,60 +189,113 @@ class Leaverequests extends Component
             'employeenumber'=>'required|numeric',
             'reasonforleave'=>'required',
             'addressonleave'=>'required',
-            'employeesignature'=>'required',
         ]);
-        if($this->daysappliedfor > $this->validdays){
-            $this->toast('warning','You have exceeded the number of days','You are only entitled to a maximum of '.$this->validNumberOfDays.' days ');
-            return 0;
+
+
+        $delayfrom=now();
+        $userid=$this->user->id;
+        $selectedleavetypeid=$this->selectedleavetypeid;
+        $leavedetails=[];
+        $leavedetails['daysappliedfor']=$this->daysappliedfor;
+        $leavedetails['validdays']=$this->validdays;
+        $leavedetails['startdate']=$this->startdate;
+        $leavedetails['enddate']=$this->enddate;
+        $leavedetails['returndate']=$this->returndate;
+        $leavedetails['addressonleave']=$this->addressonleave;
+        $leavedetails['reasonforleave']=$this->reasonforleave;
+        $leavedetails['actinghodid']=$this->assignedhodid;
+        $supportingdoc=$this->supportingdoc;
+        $hodactiveonleaveresponse=$this->leaverequestService->isactiveonleave($this->usereporttoid);
+        $usereporttoid = ($hodactiveonleaveresponse['status']==true)?$hodactiveonleaveresponse['actinghodid']:$this->usereporttoid;
+        $approver=$this->leaverequestService->getuser($usereporttoid);
+
+        
+        $sendresponse=$this->leaverequestService->sendleaverequest($userid, $selectedleavetypeid, $usereporttoid, $leavedetails, $supportingdoc); 
+        if($sendresponse['status']==='warning'||$sendresponse['status']==='error' )
+        {
+            return $this->toast($sendresponse['status'],$sendresponse['message']);
         }
-        else{
-            $requestuuid= (string) Str::uuid();
-            $fileuuid= (string) Str::uuid();
-            //create leave approval record Action=>APPROVE|REJECT Decision=>true|false|null
-            $createrequest=$this->leaverequestrepo->createleaverequest($this->user->id,[   
-                'leaverequestuuid'=>$requestuuid,
-                'user_id'=>$this->user->id,
-                'leavetype_id'=>$this->selectedleavetypeid,
-                'startdate'=>$this->startdate,
-                'enddate'=>$this->enddate,
-                'returndate'=>$this->returndate,
-                'daysappliedfor'=>$this->daysappliedfor,
-                'addressonleave'=>$this->addressonleave,
-                'reasonforleave'=>$this->reasonforleave,
-                'attachment_src'=>($this->supportingdoc!=null)?$this->supportingdoc->store('leaveattachments/'.$fileuuid):null,
-                'signature'=>$this->employeesignature,
-                'status'=>'PENDING',
-                'year'=>date('Y'),
-                'actinghod_id'=>$this->usereporttoid,
-            ]); 
-            if($createrequest['status']=='error')
-            {
-                return $this->toast('error', $createrequest['message']);
-            } 
-            $createapprovalrecord=$this->leaverequestapprovalrepo->createleaverequestapproval([
-                'leaverequest_uuid'=>$requestuuid,
-                'user_id'=>$this->usereporttoid,
-                'action'=>'PENDING',
-                'signature'=>$this->employeesignature
-            ]);
-            //Notify the approver via email
-            $approver=$this->userrepo->getuser($this->usereporttoid);
-            $appliedleaverecord=$this->leaverequestrepo->getleaverequestByUuid($requestuuid);
-            $approver->notify(new LeaverequestSubmitted($appliedleaverecord, $this->leavetyperepo, $this->leaverequestapprovalrepo));
-            $this->toast($createapprovalrecord['status'], $createapprovalrecord['message']);
-            $this->addleaverequestmodal=false;
-            return redirect('/workflows/leaverequests');
+        $leaverequestid=$sendresponse['message'];//$leavedetails['actinghodid']
+        //Optionally notify acting hod aswell if assigned
+        if(!empty($hodactiveonleaveresponse['actinghodid']))
+        {
+            $actinghod=$this->leaverequestService->getuser($hodactiveonleaveresponse['actinghodid']);
+            if (!empty($actinghod)) {
+                $actinghod->notify( new LeaverequestSubmitted($this->leaverequestService, $leaverequestid)->delay($delayfrom->copy()->addSeconds(1)) );
+            }
         }
+        //Notify approver
+        if ($approver) {
+            $approver->notify( new LeaverequestSubmitted($this->leaverequestService, $leaverequestid)->delay($delayfrom->copy()->addSeconds(2)) );
+        }
+        //Notify user
+        if ($this->user) {
+            $this->user->notify( new LeaverequestSubmission($this->leaverequestService, $leaverequestid)->delay($delayfrom->copy()->addSeconds(3)) );
+        }
+        $this->addleaverequestmodal=false;
+        $this->toast($sendresponse['status'], 'Leave request submitted & email notification sent');
+        return $this->redirect(route('admin.workflows.leaverequests'));
     }
+
+    public function cancelrequest($leaverequestuuid)
+    {
+        $leaverequestcopy=$this->leaverequestService->getleaverequestbyuuid($leaverequestuuid);
+        $updateresponse=$this->leaverequestService->updateleaverequest($leaverequestuuid, [
+            'status'=>'C',
+        ]);
+        if($updateresponse['status']=='error')
+        {
+            return $this->toast('error', $updateresponse['message']);
+        }
+        //Update the leaverequestapproval record
+        $approvalrecordupdate=$this->leaverequestService->updateleaverequestapproval($leaverequestuuid, [
+            'action'=>'C',
+            'comment'=>'Request cancelled by user'
+        ]);
+        if($approvalrecordupdate['status']=='error')
+        {
+            return $this->toast('error', $approvalrecordupdate['message']);
+        }
+        //Update the leavestatement record
+        $leavestatement=$this->leaverequestService->getleavestatementbyuserandleavetype($this->user->id, $leaverequestcopy->leavetype_id);
+        if($leaverequestcopy->status==='A')
+        {
+            $leavestatementupdate=$this->leaverequestService->updateleavestatement($leavestatement->id, [
+                'daysattained'=>(float)$leavestatement->daysattained+(float)$leaverequestcopy->daysappliedfor,
+                'daystaken'=>(float)$leavestatement->daystaken-(float)$leaverequestcopy->daysappliedfor
+            ]);
+            if($leavestatementupdate['status']=='error')
+            {
+                return $this->toast('error', $leavestatementupdate['message']);
+            }
+        }
+
+        //Notify the approver of the recall via email
+        $requestapprovalrecord=$this->leaverequestService->getleaverequestapproval($leaverequestuuid);
+        if($requestapprovalrecord==null)
+        {
+            return $this->toast('error', 'No approval record found for this request');
+        }
+        $approver=$this->leaverequestService->getuser($requestapprovalrecord->user_id);
+        $appliedleaverecord=$this->leaverequestService->getleaverequestbyuuid($leaverequestuuid);
+        $approver->notify(new LeaverequestWithdrawn($this->leaverequestService, $leaverequestuuid));
+        $this->toast($updateresponse['status'], $updateresponse['message']);
+        $this->addleaverequestmodal=false;
+        return $this->redirect('/workflows/leaverequests');
+    }
+    
+
     public function render()
     {
         return view('livewire.admin.workflows.leaverequests',[
-            'totalpending'=>$this->getpendingleaverequests()?$this->getpendingleaverequests()->count():0,
-            'totalapproved'=>$this->getapprovedleaverequests()?$this->getapprovedleaverequests()->count():0,
-            'totalrejected'=>$this->getrejectedleaverequests()?$this->getrejectedleaverequests()->count():0,
+            'totalcancelled'=>$this->getcancelledleaverequests()->count(),
+            'totalpending'=>$this->getpendingleaverequests()->count(),
+            'totalapproved'=>$this->getapprovedleaverequests()->count(),
+            'totalrejected'=>$this->getrejectedleaverequests()->count(),
             'leaverequests'=>$this->getmyleaverequests(),
             'leavetypesmap'=>$this->getleavetypes(),
             'headers' => $this->headers(),
+            'hodassigneesmap'=>$this->gethodrepresentatives()
         ]);
     }
 }

@@ -15,14 +15,14 @@ class Userstatementcreation extends Command
      *
      * @var string
      */
-    protected $signature = 'app:userstatementcreation';
+    protected $signature = 'leavestatement:newuserstatementcreation';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Command creates statements daily for any newly registered user';
+    protected $description = 'Command creates statements daily for any newly registered users only';
 
     /**
      * Execute the console command.
@@ -55,11 +55,11 @@ class Userstatementcreation extends Command
                             "year"=>Carbon::now()->format('Y'),
                             "month"=>Carbon::now()->format('M'),
                             "leavetype_id"=>$leavetypedetail['id'],
-                            "days"=>0
+                            "daysattained"=>0,
+                            "daystaken"=>0
                         ]);
                     }
                 }
-            
             });
         });
         

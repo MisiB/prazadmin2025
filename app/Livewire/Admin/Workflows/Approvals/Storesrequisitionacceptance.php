@@ -4,7 +4,6 @@ namespace App\Livewire\Admin\Workflows\Approvals;
 
 use App\Interfaces\services\istoresrequisitionService;
 use App\Notifications\StoresrequisitionacceptanceNotification;
-use App\Notifications\StoresrequisitionapprovalNotify;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Mary\Traits\Toast;

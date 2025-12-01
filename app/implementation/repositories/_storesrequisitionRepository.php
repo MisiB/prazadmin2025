@@ -20,14 +20,14 @@ class _storesrequisitionRepository implements istoresrequisitionInterface
     {
         return $this->model->all();
     }
-    public function getmystoresrequisitions($userid,$status=null, $searchuuid=null)
+    public function getmystoresrequisitions($userid, $status=null, $searchuuid=null)
     {
         if($status)
         {
-            $requisitions=$searchuuid!=null?$this->model->where('initiator_id', $userid)->where('status',$status)->where('storesrequisition_uuid', $searchuuid)->get():$this->model->where('initiator_id', $userid)->where('status',$status)->get();
+            $requisitions=$searchuuid!=null?$this->model->where('initiator_id', $userid)->where('status',$status)->where('storesrequisition_uuid', $searchuuid)->orderBy('created_at','desc')->paginate(10):$this->model->where('initiator_id', $userid)->where('status',$status)->orderBy('created_at','desc')->paginate(10);
             return $requisitions;
         }
-        $requisitions=$searchuuid!=null?$this->model->where('initiator_id', $userid)->where('storesrequisition_uuid', $searchuuid)->get():$this->model->where('initiator_id', $userid)->get();
+        $requisitions=$searchuuid!=null?$this->model->where('initiator_id', $userid)->where('storesrequisition_uuid', $searchuuid)->get():$this->model->where('initiator_id', $userid)->orderBy('created_at','desc')->paginate(10);
         return $requisitions;
     }
     public function getdeptstoresrequisitions($status,$departmentid=null,$searchuuid=null,$statussearch=null)
@@ -38,9 +38,9 @@ class _storesrequisitionRepository implements istoresrequisitionInterface
            
             if(!is_array($status))
             {
-                return $searchuuid!=null?$this->model->where('status',$status)->where('storesrequisition_uuid', $searchuuid)->get():$this->model->where('status',$status)->get();
+                return $searchuuid!=null?$this->model->where('status',$status)->where('storesrequisition_uuid', $searchuuid)->orderBy('created_at','desc')->paginate(10):$this->model->where('status',$status)->orderBy('created_at','desc')->paginate(10);
             }
-            return $searchuuid!=null?$this->model->whereIn('status',collect($status))->where('storesrequisition_uuid', $searchuuid)->get():$this->model->whereIn('status',collect($status))->get();
+            return $searchuuid!=null?$this->model->whereIn('status',collect($status))->where('storesrequisition_uuid', $searchuuid)->orderBy('created_at','desc')->paginate(10):$this->model->whereIn('status',collect($status))->orderBy('created_at','desc')->paginate(10);
         }
         $deptmemberids=$this->deptmodel->where('department_id', $departmentid)->pluck('user_id')->toArray();
         
@@ -49,7 +49,7 @@ class _storesrequisitionRepository implements istoresrequisitionInterface
             return ['status' => 'error', 'message' => 'User has no access to any department. Visit ICT to be assigned to a department.'];
         }else
         {
-            return $searchuuid!=null?$this->model->whereIn('initiator_id', $deptmemberids)->whereIn('status',collect($status))->where('storesrequisition_uuid', $searchuuid)->get():$this->model->whereIn('initiator_id', $deptmemberids)->whereIn('status',collect($status))->get();
+            return $searchuuid!=null?$this->model->whereIn('initiator_id', $deptmemberids)->whereIn('status',collect($status))->where('storesrequisition_uuid', $searchuuid)->orderBy('created_at','desc')->paginate(10):$this->model->whereIn('initiator_id', $deptmemberids)->whereIn('status',collect($status))->orderBy('created_at','desc')->paginate(10);
         }
     }
     public function gethodstoresrequestssubmissions()
@@ -114,24 +114,27 @@ class _storesrequisitionRepository implements istoresrequisitionInterface
         }
     }
 
-    public function exportstoresrequisitionreport($status)
+    public function exportstoresrequisitionreport($status, $startdate=null, $enddate=null)
     {
         try {
             $requisitionsdata=[];
             $requisitionsdata[]=['Date','Stock item','Purpose','Quantity Required','Quantity Issued','Department  Requested'];
 
-            $this->getstoresrequisitionsByStatus($status)->each(function ($item) use (&$requisitionsdata) {
+            $this->getstoresrequisitionsByStatus($status)->each(function ($item) use (&$requisitionsdata, &$startdate, &$enddate) {
                 $departmentname = ($this->deptmodel->with('department')->where('user_id', $item->initiator_id)->first()->department->name) ?? 'N/A';
                 $requisitionitems=json_decode($item->requisitionitems,true);
                 foreach ($requisitionitems as $requisitionitem) {
-                    $requisitionsdata[] = [
-                        $item->updated_at->format('Y-m-d'),
-                        $requisitionitem["itemdetail"] ?? '',      // child stock item
-                        $item->purposeofrequisition,
-                        $requisitionitem['requiredquantity'] ?? 0,
-                        $requisitionitem['issuedquantity'] ?? 0, // issued per item
-                        $departmentname
-                    ];
+                    if($item->updated_at > $startdate && $item->updated_at < $enddate)
+                    {
+                        $requisitionsdata[] = [
+                            $item->updated_at->format('Y-m-d'),
+                            $requisitionitem["itemdetail"] ?? '',      // child stock item
+                            $item->purposeofrequisition,
+                            $requisitionitem['requiredquantity'] ?? 0,
+                            $requisitionitem['issuedquantity'] ?? 0, // issued per item
+                            $departmentname
+                        ];
+                    }
                 }
                 
             });

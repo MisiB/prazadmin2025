@@ -14,69 +14,70 @@ class Rolloverstatement extends Command
      *
      * @var string
      */
-    protected $signature = 'app:statementsrollover';
+    protected $signature = 'leavestatement:rollover';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'This runs monthly to command rolls over all the leave statements represented';
+    protected $description = 'This runs every beginning of the year over all the leave statements represented';
 
     /**
      * Execute the console command.
      */
     public function handle(ileavetypeInterface $leavetyperepo, ileavestatementInterface $leavestatementrepo)
     {
-        //Get the list of available leavetypes from the database
-        
-        $leavetypes=$leavetyperepo->getleavetypes();
-        $leavetypeids=$leavetypes->map(function($leavetype, $index){
-            return [
-                'id'=>$leavetype->id,
-                'name'=>$leavetype->name
-            ];
-        });
+        if( Carbon::now()->format('d')==25 && Carbon::now()->format('m')==11)
+        {
+            //Get the list of available leavetypes from the database   
+            $leavetypes=$leavetyperepo->getleavetypes();
+            $leavetypeids=$leavetypes->map(function($leavetype, $index){
+                return [
+                    'id'=>$leavetype->id,
+                    'name'=>$leavetype->name
+                ];
+            });
 
-        /**
-         * For each leave type loop through all the statements and roll over if 1st day of the month or year
-         */
-        $leavetypeids->map(function($leavetypedetail) use(&$leavetyperepo, &$leavestatementrepo){
-            $leavetype=$leavetyperepo->getleavetype($leavetypedetail['id']);
-            if($leavetype->rollover==='Y')
-            {
-                //find all related statements and add their accumulation to the available days as long as the available days are less than the ceiling
-                $leavestatementrepo->getleavestatementByLeaveType($leavetypedetail['id'])->each(function($userstatement) use (&$leavetype){
-                    if($userstatement->days<$leavetype->ceiling)
-                    {
+            /**
+             * For each leave type loop through all the statements and roll over if 1st day of the month or year
+             */
+            $leavetypeids->map(function($leavetypedetail) use(&$leavetyperepo, &$leavestatementrepo){
+                $leavetype=$leavetyperepo->getleavetype($leavetypedetail['id']);
+                if($leavetype->rollover==='Y')
+                {
+                    //find all related statements and add their accumulation to the available days as long as the available days are less than the ceiling
+                    $leavestatementrepo->getleavestatementByLeaveType($leavetypedetail['id'])->each(function($userstatement) use (&$leavetype){
+                        if($userstatement->daysattained < $leavetype->ceiling)
+                        {
+                            $attaineddaysupdate=$userstatement->daysattained + $leavetype->accumulation;
+                            $userstatement->update([
+                                'daysattained'=> ($attaineddaysupdate<$leavetype->ceiling) ? $attaineddaysupdate:$leavetype->ceiling,
+                                'daystaken'=>0
+                            ]);
+                            $userstatement->save();
+                        }else{
+                            $userstatement->update([
+                                'daysattained'=> $leavetype->ceiling,
+                                'daystaken'=>0
+                            ]);
+                            $userstatement->save();
+                        }  
+                    });
+                }else{
+                    $leavestatementrepo->getleavestatementByLeaveType($leavetypedetail['id'])->each(function($userstatement){
                         $userstatement->update([
-                            'days'=> $userstatement->days + $leavetype->accumulation
+                            'daysattained'=> 0,
+                            'daystaken'=>0
                         ]);
-                        $userstatement->save();
-                    }else{
-                        $userstatement->update([
-                            'days'=> $leavetype->ceiling
-                        ]);
-                        $userstatement->save();
-                    }  
-                });
-            }else{
-                $leavestatementrepo->getleavestatementByLeaveType($leavetypedetail['id'])->each(function($userstatement) use (&$leavetype){
-                    if(Carbon::now()->format('m')==1 && Carbon::now()->format('d')==1)
-                    {
-                        
-                        $userstatement->update([
-                            'days'=> 0
-                        ]);
-                        $userstatement->save();
-                    }else{
-                        $userstatement->update([
-                            'days'=> $userstatement->days + $leavetype->accumulation
-                        ]);
-                        $userstatement->save();
-                    }    
-                });
-            }
-        });
+                        $userstatement->save();   
+                    });
+                }
+            });
+            $this->info("Congradulations the Yearly rollover completed successfully!!");
+        }else
+        {
+            $this->info("Rollover only done at the start of a new Year");
+        }
     }
 }
