@@ -2,7 +2,7 @@
 
     <x-modulewelcomebanner :breadcrumbs="$breadcrumbs"/>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 my-8">
         <x-card class="border-2 border-blue-200  shadow-sm shadow-blue-200 bg-gradient-to-bl from-white to-gray-200">
             <div class="flex items-center space-x-3">
                 <div class="bg-white p-3 rounded-full">
@@ -177,7 +177,13 @@
                 @foreach($itemfields as $itemindex => $itemfield)
                 <div>
                     <div>
-                        Item No.{{$itemindex+1}}
+                        Item No.{{$itemindex+1}}     
+                        <x-button icon="o-trash" 
+                            wire:click="removerequisitionitem({{$itemindex}})"
+                            wire:confirm="Do you want to remove this item?" 
+                            class="text-red-500 btn-sm bg-transparent" 
+                            spinner
+                        />
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                         <x-input  wire:model.live="itemfields.{{$itemindex}}.itemdetail" label="Item detail"></x-input>
@@ -201,7 +207,7 @@
         </x-form>
     </x-modal> 
 
-    <x-modal wire:model="viewrequisitionmodal"  title="STORES REQUISITION VIEW NOTE" box-class="max-w-xl">
+    <x-modal wire:model="viewrequisitionmodal"  title="STORES REQUISITION VIEW NOTE" box-class="max-w-2xl">
         <div class="grid gap-4" separator>
             <div class="text-md text-gray-400 bold">REF: {{$viewuuid}}</div>
             @foreach($viewfields as $itemindex => $field)

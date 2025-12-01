@@ -77,8 +77,7 @@ class Emailapproval extends Component
         $actinghoduser=null;
         if(!$this->approver->hasRole('Acting HOD'))
         {
-            $this->toast("warning", "Access denied due to HOD's return"); 
-            return $this->redirect(route('admin.workflows.leaverequests'));
+            abort("403", "Access denied. Please consult ICT about your HOD access assignment"); 
         }
         //Updates application action
         ($approved===true) ? $this->approvalrecord->update(['action'=>'A']): $this->approvalrecord->update(['action'=>'R']);

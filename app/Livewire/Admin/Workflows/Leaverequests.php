@@ -55,6 +55,14 @@ class Leaverequests extends Component
         $this->loaddatesrange();
         $this->firstname=$this->user->name;
         $this->surname=$this->user->surname;
+        if(!$this->user->department)
+        {
+            abort(403, 'Access Denied. Please liaise with ICT for your Department assignment');
+        }
+        if(!$this->user->department->reportto)
+        {
+            abort(403, 'Access Denied. Please contact ICT to complete your department HOD assignment.');
+        }
         $this->usereporttoid= $this->user->department->reportto;
         $this->leaveapprovername=$this->getrequestapprovername();
     }
@@ -171,9 +179,15 @@ class Leaverequests extends Component
     public function getleavetypes()
     {
         $leavetypes=$this->leaverequestService->getleavetypes();
-        $map=$leavetypes->each(function ($leavetype)
+
+        $filteredleavetypes=$leavetypes->filter(function ($leavetype)
         {
-            return ['id'=>$leavetype->id, 'name'=>$leavetype->name];
+            return !(strtolower($leavetype->name) === 'maternity' && strtolower($this->user->gender) === 'm');
+        });
+
+        $map=$filteredleavetypes->map(function ($leavetype)
+        {
+            return ['id'=>$leavetype->id, 'name'=>$leavetype->name];    
         });
         return $map;
     }
@@ -216,6 +230,7 @@ class Leaverequests extends Component
             return $this->toast($sendresponse['status'],$sendresponse['message']);
         }
         $leaverequestid=$sendresponse['message'];//$leavedetails['actinghodid']
+
         //Optionally notify acting hod aswell if assigned
         if(!empty($hodactiveonleaveresponse['actinghodid']))
         {
