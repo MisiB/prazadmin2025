@@ -251,16 +251,63 @@ class _calenderRepository implements icalendarInterface
     public function sendforapproval($calendarweek_id)
     {
         $check = $this->calenderworkusertask->where('calendarweek_id', $calendarweek_id)->where('user_id', Auth::user()->id)->first();
-        if ($check) {
+        
+        // Check if there are tasks with pending approval status (updated after rejection)
+        $calendarweek = $this->calendarweek->with('calendardays.tasks')->where('id', $calendarweek_id)->first();
+        $hasPendingTasks = false;
+        
+        if ($calendarweek) {
+            foreach ($calendarweek->calendardays as $day) {
+                if ($day->tasks && $day->tasks->where('approvalstatus', 'pending')->count() > 0) {
+                    $hasPendingTasks = true;
+                    break;
+                }
+            }
+        }
+        
+        // Allow resubmission if there are pending tasks (updated after rejection) or if no record exists
+        if ($check && !$hasPendingTasks && $check->status == 'pending') {
             return ['status' => 'error', 'message' => 'You have already sent for approval'];
         }
-        $this->calenderworkusertask->create([
-            'calendarweek_id' => $calendarweek_id,
-            'user_id' => Auth::user()->id,
-            'status' => 'pending',
-        ]);
+        
+        // If record exists, update it to allow resubmission; otherwise create new
+        if ($check) {
+            $check->update([
+                'status' => 'pending',
+                'comment' => null,
+            ]);
+        } else {
+            $this->calenderworkusertask->create([
+                'calendarweek_id' => $calendarweek_id,
+                'user_id' => Auth::user()->id,
+                'status' => 'pending',
+            ]);
+        }
 
         return ['status' => 'success', 'message' => 'Sent for approval successfully'];
+    }
+
+    public function updatecalenderworkusertask($calendarweek_id, $user_id, $data)
+    {
+        try {
+            $calenderworkusertask = $this->calenderworkusertask->where('calendarweek_id', $calendarweek_id)
+                ->where('user_id', $user_id)
+                ->first();
+            
+            if (!$calenderworkusertask) {
+                return ['status' => 'error', 'message' => 'Approval record not found'];
+            }
+            
+            $calenderworkusertask->update([
+                'status' => $data['status'],
+                'supervisor_id' => Auth::user()->id,
+                'comment' => $data['comment'] ?? null,
+            ]);
+            
+            return ['status' => 'success', 'message' => 'Approval updated successfully'];
+        } catch (\Exception $e) {
+            return ['status' => 'error', 'message' => $e->getMessage()];
+        }
     }
 
     public function gettasksbydepartment($department_id, $startDate, $endDate)

@@ -16,4 +16,5 @@ interface icalendarInterface
     public function gettasksbydepartment($department_id,$startDate,$endDate);
     public function gettasksbydepartmentbycalenderweek($department_id,$calendarweek_id);
     public function gettasksbycalenderweek($calendarweek_id);
+    public function updatecalenderworkusertask($calendarweek_id, $user_id, $data);
 }

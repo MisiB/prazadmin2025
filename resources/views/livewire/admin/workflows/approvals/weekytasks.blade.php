@@ -156,12 +156,48 @@
             </div>
             
             @if($selectedUserTasks->count() > 0)
-                @php
-                    $tasksByDay = $selectedUserTasks->groupBy(function($task) {
-                        return \Carbon\Carbon::parse($task->start_date)->format('l'); // Day name (Monday, Tuesday, etc.)
-                    });
-                    $daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-                @endphp
+            @php
+                // Include new tasks (approvalstatus == 'pending') for bulk approval, except completed
+                // New ongoing tasks will be included, but previously approved tasks updated to ongoing won't
+                $pendingInitialTasks = $selectedUserTasks->filter(function($task) {
+                    return $task->approvalstatus == 'pending' && $task->status != 'completed';
+                });
+                $completedTasksNeedingApproval = $selectedUserTasks->filter(function($task) {
+                    return $task->approvalstatus == 'pending' && $task->status == 'completed';
+                });
+            @endphp
+            
+            @if($pendingInitialTasks->count() > 0)
+            <div class="alert alert-info mb-4">
+                <div class="flex-1">
+                    <p class="text-sm font-semibold">{{ $pendingInitialTasks->count() }} task(s) pending initial approval</p>
+                </div>
+                <div>
+                    <button wire:click="openBulkApprovalModal('{{ $selectedUser->id }}')" class="btn btn-sm btn-primary">
+                        Approve All Tasks
+                    </button>
+                </div>
+            </div>
+            @endif
+            
+            @if($completedTasksNeedingApproval->count() > 0)
+            <div class="alert alert-warning mb-4">
+                <div class="flex-1">
+                    <p class="text-sm font-semibold">{{ $completedTasksNeedingApproval->count() }} completed task(s) pending approval</p>
+                </div>
+                <div>
+                    <button wire:click="openCompletedBulkApprovalModal('{{ $selectedUser->id }}')" class="btn btn-sm btn-warning">
+                        Approve All Completed Tasks
+                    </button>
+                </div>
+            </div>
+            @endif
+            @php
+                $tasksByDay = $selectedUserTasks->groupBy(function($task) {
+                    return $task->calendarday ? \Carbon\Carbon::parse($task->calendarday->maindate)->format('l') : 'Unknown';
+                });
+                $daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+            @endphp
                 
                 <div class="space-y-4">
                     @foreach($daysOfWeek as $day)
@@ -206,6 +242,12 @@
                                                     <div>
                                                         <span class="font-medium">Approval:</span>
                                                         <span class="badge badge-sm">{{ $task->approvalstatus }}</span>
+                                                        @if($task->approvalstatus === 'pending' && $task->status == 'completed')
+                                                            <div class="flex gap-2 mt-2">
+                                                                <button wire:click="approveTask({{ $task->id }}, 'Approved')" class="btn btn-xs btn-success">Approve</button>
+                                                                <button wire:click="approveTask({{ $task->id }}, 'Rejected')" class="btn btn-xs btn-error">Reject</button>
+                                                            </div>
+                                                        @endif
                                                     </div>
                                                 </div>
                                             </div>
@@ -228,6 +270,134 @@
             
             <div class="modal-action">
                 <button wire:click="closeModal" class="btn btn-primary">Close</button>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- Bulk Approval Modal -->
+    @if($showBulkApprovalModal && $selectedUser)
+    <div class="modal modal-open">
+        <div class="modal-box max-w-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">Bulk Approval - {{ $selectedUser->name }} {{ $selectedUser->surname }}</h3>
+                <button wire:click="closeBulkApprovalModal" class="btn btn-sm btn-circle btn-ghost">✕</button>
+            </div>
+            
+            @php
+                // Include new tasks (approvalstatus == 'pending') for bulk approval, except completed
+                // New ongoing tasks will be included, but previously approved tasks updated to ongoing won't
+                $pendingInitialTasks = $selectedUserTasks->filter(function($task) {
+                    return $task->approvalstatus == 'pending' && $task->status != 'completed';
+                });
+            @endphp
+            
+            <div class="space-y-4">
+                <div class="alert alert-info">
+                    <p class="text-sm">You are about to {{ strtolower($bulkApprovalStatus) }} <strong>{{ $pendingInitialTasks->count() }} task(s)</strong> for this week.</p>
+                </div>
+                
+                <div>
+                    <label class="label">
+                        <span class="label-text font-semibold">Approval Decision</span>
+                    </label>
+                    <select wire:model="bulkApprovalStatus" class="select select-bordered w-full">
+                        <option value="Approved">Approve</option>
+                        <option value="Rejected">Reject</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="label">
+                        <span class="label-text font-semibold">Comment <span class="text-error">*</span></span>
+                    </label>
+                    <textarea 
+                        wire:model="bulkApprovalComment" 
+                        class="textarea textarea-bordered w-full" 
+                        rows="4"
+                        placeholder="Enter your comment for this approval decision..."
+                    ></textarea>
+                    @error('bulkApprovalComment') <span class="text-error text-xs">{{ $message }}</span> @enderror
+                </div>
+                
+                <div class="bg-base-200 p-3 rounded-lg">
+                    <p class="text-sm font-semibold mb-2">Tasks to be {{ strtolower($bulkApprovalStatus) }}:</p>
+                    <ul class="list-disc list-inside text-sm space-y-1">
+                        @foreach($pendingInitialTasks as $task)
+                            <li>{{ $task->title }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="modal-action">
+                <button wire:click="closeBulkApprovalModal" class="btn btn-outline">Cancel</button>
+                <button wire:click="bulkApproveTasks" class="btn btn-primary">
+                    {{ $bulkApprovalStatus }} All Tasks
+                </button>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- Bulk Approval Modal for Completed Tasks -->
+    @if($showCompletedBulkApprovalModal && $selectedUser)
+    <div class="modal modal-open">
+        <div class="modal-box max-w-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">Bulk Approval - Completed Tasks - {{ $selectedUser->name }} {{ $selectedUser->surname }}</h3>
+                <button wire:click="closeCompletedBulkApprovalModal" class="btn btn-sm btn-circle btn-ghost">✕</button>
+            </div>
+            
+            @php
+                $completedTasks = $selectedUserTasks->filter(function($task) {
+                    return $task->approvalstatus == 'pending' && $task->status == 'completed';
+                });
+            @endphp
+            
+            <div class="space-y-4">
+                <div class="alert alert-warning">
+                    <p class="text-sm">You are about to {{ strtolower($completedBulkApprovalStatus) }} <strong>{{ $completedTasks->count() }} completed task(s)</strong>.</p>
+                </div>
+                
+                <div>
+                    <label class="label">
+                        <span class="label-text font-semibold">Approval Decision</span>
+                    </label>
+                    <select wire:model="completedBulkApprovalStatus" class="select select-bordered w-full">
+                        <option value="Approved">Approve</option>
+                        <option value="Rejected">Reject</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="label">
+                        <span class="label-text font-semibold">Comment <span class="text-error">*</span></span>
+                    </label>
+                    <textarea 
+                        wire:model="completedBulkApprovalComment" 
+                        class="textarea textarea-bordered w-full" 
+                        rows="4"
+                        placeholder="Enter your comment for this approval decision..."
+                    ></textarea>
+                    @error('completedBulkApprovalComment') <span class="text-error text-xs">{{ $message }}</span> @enderror
+                </div>
+                
+                <div class="bg-base-200 p-3 rounded-lg">
+                    <p class="text-sm font-semibold mb-2">Completed tasks to be {{ strtolower($completedBulkApprovalStatus) }}:</p>
+                    <ul class="list-disc list-inside text-sm space-y-1">
+                        @foreach($completedTasks as $task)
+                            <li>{{ $task->title }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="modal-action">
+                <button wire:click="closeCompletedBulkApprovalModal" class="btn btn-outline">Cancel</button>
+                <button wire:click="bulkApproveCompletedTasks" class="btn btn-warning">
+                    {{ $completedBulkApprovalStatus }} All Completed Tasks
+                </button>
             </div>
         </div>
     </div>

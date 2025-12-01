@@ -82,7 +82,7 @@ class Users extends Component
 
     public  function getusers()
     {
-        return $this->repo->getusers($this->search);
+        return $this->repo->getusers($this->search)->paginate(20);
     }
 
     public function addUser()
@@ -93,16 +93,22 @@ class Users extends Component
 
     public function edit($id)
     {
-        $users = $this->getusers();
-        $user = $users->where('user_id', $id)->first();
+        $user = $this->repo->getuser($id);
+        
+        if ($user === \App\Enums\ApiResponse::NOT_FOUND) {
+            $this->error = 'User not found.';
+            return;
+        }
+        
         $this->name = $user->name;
         $this->email = $user->email;
         $this->gender = $user->gender;
-        $this->country = $user->country;
+        $this->country = $user->country ?? null;
         $this->status = $user->status;
         $this->id = $user->id;
 
         $accounttypes = $this->getaccounttypes();
+        $this->selectedroles = [];
         foreach ($accounttypes as $accounttype) {
             foreach ($accounttype->roles as $role) {
                 if ($user->hasRole($role->name)) {
@@ -174,7 +180,7 @@ class Users extends Component
         if ($response['status'] == "success") {
             $this->success('User deleted successfully.');
             $this->modal = false;
-            $this->reset(['name', 'email', 'phonenumber', 'country', 'status']);
+            $this->reset(['name', 'email', 'country', 'status', 'gender']);
             $this->selectedroles = [];
             $this->id = null;
         } else {
