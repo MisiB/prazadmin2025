@@ -214,15 +214,14 @@ class _leaverequestService implements ileaverequestService
         //Allow valid days check bypass for compassionate leave
         $user=$this->getuser($userid);
         $compassionateleave=$this->getleavetypebyname('Compassionate');
-        $selectedleavetype=$this->getLeavetype($selectedleavetypeid);
-        if(strtolower($user->gender==='m') && strtolower($selectedleavetype==='maternity'))
+        $selectedleavetype=$this->getleavetype($selectedleavetypeid);
+        if(strtolower($user->gender)==='m' && strtolower($selectedleavetype->name)==='maternity')
         {  
            return ['status'=>'warning', 'message'=>'Male employees are not allowed to apply for Marternity Leave'];
         }
         if($leavedetails['daysappliedfor'] > $leavedetails['validdays'] && $selectedleavetype->name!==$compassionateleave->name ){
-           return ['status'=>'warning', 'message'=>'You have exceeded the number of days','You are only entitled to a maximum of '.$leavedetails['validdays'].' days '];
+           return ['status'=>'warning', 'message'=>'You have exceeded the number of days. You are only entitled to a maximum of '.$leavedetails['validdays'].' days '];
         }
-        
         
         $activeleaveresponse=$this->isactiveonleave($userid);
         if($activeleaveresponse['status']===true){
@@ -257,10 +256,9 @@ class _leaverequestService implements ileaverequestService
             ]); 
             if($createapprovalrecord['status']=='error')
             {
-                return ['status'=>'error', 'message'=>$createrequest['message']]; 
+                return ['status'=>'error', 'message'=>$createapprovalrecord['message']]; 
             }
             /** Do notifications */
-            $usereporttoid= $user->department->reportto;
             $hodactiveonleaveresponse=$this->isactiveonleave($usereporttoid);
             //Assign current HOD
             $usereporttoid = ($hodactiveonleaveresponse['status']==true)?$hodactiveonleaveresponse['actinghodid']:$usereporttoid;
@@ -268,18 +266,18 @@ class _leaverequestService implements ileaverequestService
 
             //Notify approver
             if ($approver) {
-                $approver->notify( new LeaverequestSubmitted($this, $requestuuid)->delay(now()->copy()->addSeconds(1)) );
+                $approver->notify( new LeaverequestSubmitted($this, $requestuuid)->delay(Carbon::now()->copy()->addSeconds(1)) );
             }
             //Notify default approver if need there is an Acting HOD assigned
             if($hodactiveonleaveresponse['status']==true)
             {
-                $assignedhod=$this->getuser($user->department->reportto);
+                $assignedhod=$this->getuser($usereporttoid);
                 if ($assignedhod!=null) {
-                    $assignedhod->notify( new LeaverequestSubmitted($this, $requestuuid)->delay(now()->copy()->addSeconds(2)) );
+                    $assignedhod->notify( new LeaverequestSubmitted($this, $requestuuid)->delay(Carbon::now()->copy()->addSeconds(2)) );
                 }
             }
             //Notify user
-            $user->notify( new LeaverequestSubmission($this, $requestuuid)->delay(now()->copy()->addSeconds(1)) );
+            $user->notify( new LeaverequestSubmission($this, $requestuuid)->delay(Carbon::now()->copy()->addSeconds(1)) );
             
             return ['status'=>'success', 'message'=>$requestuuid, 'actinghodid'=>$leavedetails['actinghodid']??null] ;
         }
