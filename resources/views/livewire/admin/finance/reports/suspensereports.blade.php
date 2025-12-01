@@ -48,15 +48,5 @@
         {{ $rows->links() }}
     </div>
     </x-card>
-
-                <x-slot:empty>
-                    <x-alert class="alert-error" title="No Suspense found." />
-                </x-slot:empty>
-            </x-table>
-
-            <div class="mt-4">
-                {{ $rows->links() }}
-            </div>
-        </x-card>
-    </x-card>
+</x-card>
 </div>

@@ -34,7 +34,7 @@ class _revenuepostingRepository implements irevenuepostingInterface
     }
     public function getRevenuePostingJobs($year){
         
-        return $this->revenuepostingjob->with('inventoryitem','currency','createdBy','approvedBy')->where('year', $year)->paginate(10);
+        return $this->revenuepostingjob->with('inventoryitem','currency','createdBy','approvedBy','revenuepostingjobitems.invoice')->where('year', $year)->paginate(10);
     }
     public function getRevenuePostingJob($id){
         return $this->revenuepostingjob->with('inventoryitem','currency')->where('id', $id)->first();

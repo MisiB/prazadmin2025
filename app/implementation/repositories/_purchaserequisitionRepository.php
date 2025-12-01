@@ -52,8 +52,23 @@ class _purchaserequisitionRepository implements ipurchaseerequisitionInterface
     public function getpurchaseerequisitionbyuuid($uuid){
         return $this->purchaserequisition->with('budgetitem.currency','department','requestedby','recommendedby','workflow.workflowparameters','approvals.user')->where('uuid', $uuid)->first();
     }
-    public function getpurchaseerequisitionbydepartment($year,$department_id){
-        return $this->purchaserequisition->with('budgetitem.currency','department','requestedby','recommendedby')->where('year', $year)->where('department_id', $department_id)->paginate(10);
+    public function getpurchaseerequisitionbydepartment($year,$department_id, $search = null){
+        $query = $this->purchaserequisition
+            ->with('budgetitem.currency','department','requestedby','recommendedby')
+            ->where('year', $year)
+            ->where('department_id', $department_id);
+        
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('prnumber', 'like', "%{$search}%")
+                  ->orWhere('purpose', 'like', "%{$search}%")
+                  ->orWhereHas('budgetitem', function($q) use ($search) {
+                      $q->where('activity', 'like', "%{$search}%");
+                  });
+            });
+        }
+        
+        return $query->paginate(10);
     }
     public function createpurchaseerequisition($data){
         try{

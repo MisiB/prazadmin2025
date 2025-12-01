@@ -6,11 +6,12 @@ use App\Interfaces\repositories\ibudgetInterface;
 use App\Interfaces\repositories\ipurchaseerequisitionInterface;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
+use Livewire\WithPagination;
 use Mary\Traits\Toast;
 
 class Purchaserequisitions extends Component
 {
-    use Toast;
+    use Toast, WithPagination;
     public $breadcrumbs =[];
     public $search;
     public $year;
@@ -41,6 +42,7 @@ class Purchaserequisitions extends Component
         ];
         $this->year = date("Y");
         $this->quantity = 1;
+        $this->search = '';
         $this->getbudgets();
         $this->getbudgetitems();
     }
@@ -50,11 +52,16 @@ class Purchaserequisitions extends Component
         $this->budget_id = $budget->id;
         
     }
+    public function updatedSearch()
+    {
+        
+        $this->resetPage();
+    }
     public function getbudgetitems(){
         return $this->budgetrepo->getbudgetitemsbydepartment($this->budget_id,Auth::user()->department->department_id);
     }
     public function getpurchaserequisitions(){
-        return $this->purchaserequisitionrepo->getpurchaseerequisitionbydepartment($this->year,Auth::user()->department->department_id);
+        return $this->purchaserequisitionrepo->getpurchaseerequisitionbydepartment($this->year,Auth::user()->department->department_id,$this->search);
     }
     public function edit($id){
         $this->id = $id;

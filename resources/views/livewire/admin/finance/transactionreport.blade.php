@@ -30,7 +30,7 @@
            
               
                 <x-input id="enddate" placeholder="End Date" type="date" wire:model="enddate" />
-                <x-select id="bankaccount" placeholder="Select Bank Account" wire:model="bankaccount" :options="$bankaccounts" option-label="account_number" option-value="id" />
+                <x-select id="bankaccount" placeholder="Select Bank Account" wire:model="bankaccount" :options="$bankaccounts" option-label="account_number" option-value="account_number" />
          
         </div>
         <x-button icon="o-check" label="Retrive records" type="submit"  spinner="retriverecords" class="btn btn-primary"/>
