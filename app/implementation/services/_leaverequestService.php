@@ -9,6 +9,7 @@ use App\Interfaces\repositories\ileaverequestInterface;
 use App\Interfaces\repositories\ileavestatementInterface;
 use App\Interfaces\repositories\ileavetypeInterface;
 use App\Interfaces\repositories\iuserInterface;
+use App\Notifications\LeaverequestSubmission;
 use App\Notifications\LeaverequestSubmitted;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -214,7 +215,7 @@ class _leaverequestService implements ileaverequestService
         $user=$this->getuser($userid);
         $compassionateleave=$this->getleavetypebyname('Compassionate');
         $selectedleavetype=$this->getLeavetype($selectedleavetypeid);
-        if($user->gender==='M' && $selectedleavetype==='Maternity')
+        if(strtolower($user->gender==='m') && strtolower($selectedleavetype==='maternity'))
         {  
            return ['status'=>'warning', 'message'=>'Male employees are not allowed to apply for Marternity Leave'];
         }
@@ -253,7 +254,33 @@ class _leaverequestService implements ileaverequestService
                 'leaverequest_uuid'=>$requestuuid,
                 'user_id'=>$usereporttoid,
                 'action'=>'PENDING'
-            ]);   
+            ]); 
+            if($createapprovalrecord['status']=='error')
+            {
+                return ['status'=>'error', 'message'=>$createrequest['message']]; 
+            }
+            /** Do notifications */
+            $usereporttoid= $user->department->reportto;
+            $hodactiveonleaveresponse=$this->isactiveonleave($usereporttoid);
+            //Assign current HOD
+            $usereporttoid = ($hodactiveonleaveresponse['status']==true)?$hodactiveonleaveresponse['actinghodid']:$usereporttoid;
+            $approver=$this->getuser($usereporttoid);
+
+            //Notify approver
+            if ($approver) {
+                $approver->notify( new LeaverequestSubmitted($this, $requestuuid)->delay(now()->copy()->addSeconds(1)) );
+            }
+            //Notify default approver if need there is an Acting HOD assigned
+            if($hodactiveonleaveresponse['status']==true)
+            {
+                $assignedhod=$this->getuser($user->department->reportto);
+                if ($assignedhod!=null) {
+                    $assignedhod->notify( new LeaverequestSubmitted($this, $requestuuid)->delay(now()->copy()->addSeconds(2)) );
+                }
+            }
+            //Notify user
+            $user->notify( new LeaverequestSubmission($this, $requestuuid)->delay(now()->copy()->addSeconds(1)) );
+            
             return ['status'=>'success', 'message'=>$requestuuid, 'actinghodid'=>$leavedetails['actinghodid']??null] ;
         }
     }

@@ -78,9 +78,6 @@
 
                 <div>
                     <x-card title="Stores Requisitions Awaiting Delivery" separator class="mt-5 border-2 border-gray-200">
-                        <x-slot:menu>
-                            <x-select wire:model.live="statuslist" placeholder="Filter by status" :options="$statuslist" option-label="name" option-value="id" />
-                        </x-slot:menu>
                         {{$storesrequisitionsawaitingdelivery->links()}}
                         <x-table :headers="$headersforapproved" :rows="$storesrequisitionsawaitingdelivery">
                             @scope('cell_itembanner', $storesrequisition)

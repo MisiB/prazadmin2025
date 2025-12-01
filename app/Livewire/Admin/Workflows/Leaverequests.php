@@ -229,24 +229,7 @@ class Leaverequests extends Component
         {
             return $this->toast($sendresponse['status'],$sendresponse['message']);
         }
-        $leaverequestid=$sendresponse['message'];//$leavedetails['actinghodid']
-
-        //Optionally notify acting hod aswell if assigned
-        if(!empty($hodactiveonleaveresponse['actinghodid']))
-        {
-            $actinghod=$this->leaverequestService->getuser($hodactiveonleaveresponse['actinghodid']);
-            if (!empty($actinghod)) {
-                $actinghod->notify( new LeaverequestSubmitted($this->leaverequestService, $leaverequestid)->delay($delayfrom->copy()->addSeconds(1)) );
-            }
-        }
-        //Notify approver
-        if ($approver) {
-            $approver->notify( new LeaverequestSubmitted($this->leaverequestService, $leaverequestid)->delay($delayfrom->copy()->addSeconds(2)) );
-        }
-        //Notify user
-        if ($this->user) {
-            $this->user->notify( new LeaverequestSubmission($this->leaverequestService, $leaverequestid)->delay($delayfrom->copy()->addSeconds(3)) );
-        }
+        $leaverequestid=$sendresponse['message'];
         $this->addleaverequestmodal=false;
         $this->toast($sendresponse['status'], 'Leave request submitted & email notification sent');
         return $this->redirect(route('admin.workflows.leaverequests'));
