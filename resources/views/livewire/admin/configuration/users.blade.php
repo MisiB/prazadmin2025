@@ -8,10 +8,10 @@
                 <x-button class="btn-outline" label="New User" icon="o-plus" @click="$wire.addUser" responsive />
             </div>
         </x-slot:menu>
-        <x-table :headers="$headers" :rows="$users" pagination>
+        <x-table :headers="$headers" :rows="$users" with-pagination>
             @scope('actions', $user)
                 <div class="flex space-x-2">
-                    <x-button icon="o-eye" wire:click="edit({{ $user->user_id }})"
+                    <x-button icon="o-eye" wire:click="edit('{{ $user->id }}')"
                         class="text-blue-500 btn-ghost btn-sm" />
                 </div>
             @endscope

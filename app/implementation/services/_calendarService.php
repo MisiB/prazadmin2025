@@ -185,5 +185,8 @@ class _calendarService implements ICalendarService
     public function gettasksbycalenderweek($calendarweek_id){
         return $this->calendarRepository->gettasksbycalenderweek($calendarweek_id);
     }
+    public function updatecalenderworkusertask($calendarweek_id, $user_id, $data){
+        return $this->calendarRepository->updatecalenderworkusertask($calendarweek_id, $user_id, $data);
+    }
 }
 

@@ -112,18 +112,38 @@ class UserCalendar extends Component
     public function getmyindividualworkplans()
     {
         // Get all approved individual workplans for the current user in the current year
-        $workplans = Individualworkplan::with('user', 'targetmatrix')
+        $workplans = Individualworkplan::with('user', 'targetmatrix.target.indicator.departmentoutput.output.outcome.programme')
             ->where('user_id', Auth::user()->id)
             ->where('year', $this->year)
             ->get();
 
         return $workplans->map(function ($workplan) {
+              // Get output text from relationship or fallback to direct field
+              $outputText = $workplan->targetmatrix?->target?->indicator?->departmentoutput?->output?->title 
+              ?? $workplan->output;
+          
+          // Get indicator text from relationship or fallback to direct field
+          $indicatorText = $workplan->targetmatrix?->target?->indicator?->title 
+              ?? $workplan->indicator;
+
+
+            // Truncate long outputs and indicators for better readability in dropdown
+            $output = strlen($outputText) > 80 ? substr($outputText, 0, 80) . '...' : $outputText;
+            $indicator = strlen($indicatorText) > 80 ? substr($indicatorText, 0, 80) . '...' : $indicatorText;
+            
+            // Format month name for better readability
+            $monthNames = [
+                'Q1' => 'Q1', 'Q2' => 'Q2', 'Q3' => 'Q3', 'Q4' => 'Q4'
+            ];
+            $month = $monthNames[$workplan->month] ?? $workplan->month;
+            
             return [
                 'id' => $workplan->id,
                 'description' => sprintf(
-                    '%s - %s (Target: %s, Weightage: %s%%)',
-                    $workplan->output,
-                    $workplan->indicator,
+                    '[%s] %s | %s | Target: %s | Weightage: %s%%',
+                    $month,
+                    $output,
+                    $indicator,
                     $workplan->target,
                     $workplan->weightage
                 ),
@@ -192,6 +212,12 @@ class UserCalendar extends Component
 
         if ($response['status'] == 'success') {
             $this->success($response['message']);
+            // Refresh the current week data to reflect new task
+            if ($this->week_id) {
+                $this->getcalenderuserweektasksbyweekid();
+            } else {
+                $this->getcalenderuserweektasks();
+            }
         } else {
             $this->error($response['message']);
         }
@@ -228,6 +254,12 @@ class UserCalendar extends Component
         ]);
         if ($response['status'] == 'success') {
             $this->success($response['message']);
+            // Refresh the current week data to reflect updated approval status
+            if ($this->week_id) {
+                $this->getcalenderuserweektasksbyweekid();
+            } else {
+                $this->getcalenderuserweektasks();
+            }
         } else {
             $this->error($response['message']);
         }
@@ -238,6 +270,12 @@ class UserCalendar extends Component
         $response = $this->repository->deletetask($id);
         if ($response['status'] == 'success') {
             $this->success($response['message']);
+            // Refresh the current week data to reflect deleted task
+            if ($this->week_id) {
+                $this->getcalenderuserweektasksbyweekid();
+            } else {
+                $this->getcalenderuserweektasks();
+            }
         } else {
             $this->error($response['message']);
         }
@@ -294,6 +332,12 @@ class UserCalendar extends Component
         $response = $this->repository->marktask($id, 'completed');
         if ($response['status'] == 'success') {
             $this->success($response['message']);
+            // Refresh the current week data to reflect updated approval status
+            if ($this->week_id) {
+                $this->getcalenderuserweektasksbyweekid();
+            } else {
+                $this->getcalenderuserweektasks();
+            }
         } else {
             $this->error($response['message']);
         }
@@ -305,6 +349,12 @@ class UserCalendar extends Component
         $response = $this->calendarService->sendforapproval($this->currentweek->id);
         if ($response['status'] == 'success') {
             $this->success($response['message']);
+            // Refresh the current week data to reflect updated status
+            if ($this->week_id) {
+                $this->getcalenderuserweektasksbyweekid();
+            } else {
+                $this->getcalenderuserweektasks();
+            }
         } else {
             $this->error($response['message']);
         }

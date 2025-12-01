@@ -24,12 +24,14 @@ class _userRepository implements iuserInterface
     public function getusers($search = null)
     {
         try {
+            $query = $this->model::query();
             if ($search) {
-                return $this->model::where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%")->paginate(10);
+                $query->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
             }
-            return $this->model::paginate(10);
+            return $query;
         } catch (\Exception $e) {
-            return $e->getMessage();
+            return $this->model::query();
         }
     }
     public function getall(){

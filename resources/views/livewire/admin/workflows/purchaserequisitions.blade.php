@@ -21,6 +21,7 @@
             <div>{{ $purchaserequisition->budgetitem->currency->name }} {{ $purchaserequisition->budgetitem->unitprice }}</div>
             @endscope
             @scope("cell_total", $purchaserequisition)
+            
             <div>{{ $purchaserequisition->budgetitem->currency->name }} {{ $purchaserequisition->budgetitem->unitprice * $purchaserequisition->quantity }}</div>
             @endscope
             @scope("cell_action", $purchaserequisition)

@@ -27,25 +27,62 @@
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
         <!-- Status Alerts -->
+    @php
+        $allTasks = collect();
+        foreach ($currentweek->calendardays as $day) {
+            if ($day->relationLoaded('tasks')) {
+                $allTasks = $allTasks->merge($day->tasks);
+            }
+        }
+        $hasPendingApproval = $allTasks->where('approvalstatus', 'pending')->count() > 0;
+        $hasRejected = $allTasks->where('approvalstatus', 'Rejected')->count() > 0;
+        $allApproved = $allTasks->count() > 0 && $allTasks->where('approvalstatus', 'Approved')->count() === $allTasks->count();
+        $hasCalenderworkusertasks = $currentweek->calenderworkusertasks->count() > 0;
+        $calenderworkusertaskStatus = $hasCalenderworkusertasks ? $currentweek->calenderworkusertasks->first()->status : null;
+    @endphp
+    
     @if($currentweek->calenderworkusertasks->count() ==0)
-        <div class="mb-6 animate-fade-in">
-            <x-alert title="Awaiting Approval" description="Your supervisor has not approved your tasks for this week yet." icon="o-envelope" class="alert-error shadow-lg">
-      <x-slot:actions>
-                    <x-button label="Send for Approval" wire:click="sendforapproval" wire:confirm="Are you sure you want to send for approval?" class="btn-sm" />
-      </x-slot:actions>
-  </x-alert>
-        </div>
-  @elseif($currentweek->calenderworkusertasks->first()->status == 'pending')
-        <div class="mb-6 animate-fade-in">
-            <x-alert title="Pending Approval" description="Your supervisor is currently reviewing your tasks for this week." icon="o-envelope" class="alert-warning shadow-lg">
+    <div class="mb-6 animate-fade-in">
+        <x-alert title="Awaiting Approval" description="Your supervisor has not approved your tasks for this week yet." icon="o-envelope" class="alert-error shadow-lg">
+  <x-slot:actions>
+                <x-button label="Send for Approval" wire:click="sendforapproval" wire:confirm="Are you sure you want to send for approval?" class="btn-sm" />
+  </x-slot:actions>
+</x-alert>
+    </div>
+    @elseif($hasPendingApproval && $calenderworkusertaskStatus == 'pending')
+    <div class="mb-6 animate-fade-in">
+        <x-alert title="Pending Approval" description="Your supervisor is currently reviewing your tasks for this week." icon="o-envelope" class="alert-warning shadow-lg">
+<x-slot:actions>
+  @if($currentweek->calenderworkusertasks->first()->comment)
+                    <x-button label="View Comment" wire:click="viewcommentmodal=true" class="btn-sm" />
+  @endif
+</x-slot:actions>
+</x-alert>
+    </div>
+    @elseif($allApproved)
+    <div class="mb-6 animate-fade-in">
+        <x-alert title="All Tasks Approved" description="All your tasks for this week have been approved by your supervisor." icon="o-check-circle" class="alert-success shadow-lg">
+</x-alert>
+    </div>
+    @elseif($hasRejected)
+    <div class="mb-6 animate-fade-in">
+        <x-alert title="Some Tasks Rejected" description="Some of your tasks have been rejected. Please review and update them." icon="o-exclamation-triangle" class="alert-error shadow-lg">
     <x-slot:actions>
-      @if($currentweek->calenderworkusertasks->first()->comment)
-                        <x-button label="View Comment" wire:click="viewcommentmodal=true" class="btn-sm" />
-      @endif
+        @if($hasPendingApproval)
+            <x-button label="Resend for Approval" wire:click="sendforapproval" wire:confirm="Are you sure you want to resend for approval?" class="btn-sm" />
+        @endif
     </x-slot:actions>
 </x-alert>
-        </div>
-        @endif
+    </div>
+    @elseif($hasPendingApproval)
+    <div class="mb-6 animate-fade-in">
+        <x-alert title="New Tasks Added" description="You have added new tasks or updated rejected tasks. Send them for approval." icon="o-envelope" class="alert-info shadow-lg">
+    <x-slot:actions>
+        <x-button label="Send for Approval" wire:click="sendforapproval" wire:confirm="Are you sure you want to send for approval?" class="btn-sm" />
+    </x-slot:actions>
+</x-alert>
+    </div>
+    @endif
 
         <!-- Task Summary Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -181,7 +218,7 @@
                 </div>
             </div>
 
-            <!-- Legend -->
+           
             <div class="flex items-center justify-center gap-6 mt-4 flex-wrap">
                 <div class="flex items-center gap-2">
                     <div class="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-green-600"></div>
@@ -264,6 +301,10 @@
                                         value="{{ $task->priority }}" 
                                         class="badge-sm {{ $task->priority == 'High' ? 'badge-error' : ($task->priority == 'Medium' ? 'badge-warning' : 'badge-success') }}" 
                                     />
+                                    <x-badge 
+                                        value="{{ $task->approvalstatus == 'Approved' ? 'Approved' : ($task->approvalstatus == 'Rejected' ? 'Rejected' : 'Pending Approval') }}" 
+                                        class="badge-sm {{ $task->approvalstatus == 'Approved' ? 'badge-success' : ($task->approvalstatus == 'Rejected' ? 'badge-error' : 'badge-warning') }}" 
+                                    />
                                 </div>
               </div>
 
@@ -282,7 +323,7 @@
                                     class="btn-outline btn-info btn-sm" 
                                     wire:click="edit({{ $task->id }})" 
                                 />
-                     @if($currentweek->calenderworkusertasks->count() ==0)
+                     @if($task->approvalstatus == 'pending' || $task->approvalstatus == 'Rejected')
                                 <x-button 
                                     icon="o-trash" 
                                     label="Delete" 

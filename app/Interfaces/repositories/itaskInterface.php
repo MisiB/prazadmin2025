@@ -11,4 +11,5 @@ interface itaskInterface
     public function deletetask($id);
     public function marktask($id,$status);
     public function approvetask(array $data);
+    public function bulkapprovetasks(array $data);
 }
