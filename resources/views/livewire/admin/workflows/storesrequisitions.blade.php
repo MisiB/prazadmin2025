@@ -191,13 +191,7 @@
                     </div>
                 </div>
                 @endforeach
-                <x-input  wire:model.live="purposeofrequisition" label="Purpose of requisition"></x-input>           
-                @hasrole('Acting HOD')
-                    <div></div>
-                    <div>
-                        <x-select :options="$hodassigneesmap" wire:model.live.debounce="assignedHodId"/>
-                    </div>
-                @endhasrole
+                <x-input  wire:model.live="purposeofrequisition" label="Purpose of requisition"></x-input>
                 <div></div>
             </div>
             <x-slot:actions>
