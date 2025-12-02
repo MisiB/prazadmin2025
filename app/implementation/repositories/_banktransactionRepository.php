@@ -117,9 +117,13 @@ class _banktransactionRepository implements ibanktransactionInterface
 
     public function internalsearch($needle)
     {
-        $transactions = $this->model->with('customer', 'bank', 'bankaccount')->where('statementreference', 'like', '%'.$needle.'%')
-            ->orWhere('sourcereference', 'like', '%'.$needle.'%')
-            ->orWhere('description', 'like', '%'.$needle.'%')
+        $transactions = $this->model->with('customer', 'bank', 'bankaccount')
+            ->where('currency', '!=', 'ZWL')
+            ->where(function ($query) use ($needle) {
+                $query->where('statementreference', 'like', '%'.$needle.'%')
+                    ->orWhere('sourcereference', 'like', '%'.$needle.'%')
+                    ->orWhere('description', 'like', '%'.$needle.'%');
+            })
             ->get();
 
         return $transactions;
@@ -404,5 +408,12 @@ class _banktransactionRepository implements ibanktransactionInterface
     public function gettransactions($customer_id)
     {
         return $this->model->where('customer_id', '=', "$customer_id")->get();
+    }
+
+    public function gettransactionsPaginated($customer_id, $perPage = 10)
+    {
+        return $this->model->where('customer_id', '=', $customer_id)
+            ->orderBy('transactiondate', 'desc')
+            ->paginate($perPage);
     }
 }

@@ -70,18 +70,19 @@ class _onlinepaymentRepository implements ionlinepaymentInterface
             }
 
             $totaldue = $invoice->amount - $invoice->receipts->sum('amount');
-            if ($totaldue <= 0) {
+            $totaldueFloat = (float) str_replace(',', '', $totaldue);
+            if ($totaldueFloat <= 0) {
                 $invoice->status = 'PAID';
                 $invoice->save();
 
                 return ['status' => 'SUCCESS', 'message' => 'Invoice settled successfully'];
             }
             $walletbalance = $this->suspenserepo->getwalletbalance($invoice->customer->regnumber, $invoice->inventoryitem->type, $invoice->currency->name);
-            if ($totaldue <= $walletbalance) {
+            if ($totaldueFloat <= $walletbalance) {
                 return ['status' => 'ERROR', 'message' => 'User has sufficient balance in wallet to settle invoice', 'data' => null];
             }
 
-            $amountdue = round($totaldue - $walletbalance, 2);
+            $amountdue = round($totaldueFloat - $walletbalance, 2);
             $paymentlink = config('paynowconfig.paymenturl').'/'.$data['uuid'];
             $this->onlinepayment->create([
                 'customer_id' => $invoice->customer->id,

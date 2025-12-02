@@ -15,6 +15,8 @@ class Show extends Component
     public $walletBalances = [];
     protected $customerrepo;
     protected $suspenserepo;
+
+    protected $listeners = ['wallet-balances-updated' => 'calculateWalletBalances'];
     
     public function boot(icustomerInterface $customerrepo,isuspenseInterface $suspenserepo)
     {
@@ -33,7 +35,7 @@ class Show extends Component
         ];
     }
     
-    protected function calculateWalletBalances()
+    public function calculateWalletBalances()
     {
        $this->walletBalances = $this->suspenserepo->getsuspensewallet($this->customer->regnumber);
     }

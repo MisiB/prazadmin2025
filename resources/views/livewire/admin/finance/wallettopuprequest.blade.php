@@ -145,9 +145,9 @@
         @if($wallettopup->status == "PENDING")
             <x-form wire:submit.prevent="makedecision">
        
-                <x-select label="Status" wire:model.live="status" placeholder="Select Status" :options="[['id'=>'APPROVED','label'=>'APPROVED'],['id'=>'REJECTED','label'=>'REJECTED']]" option-label="label" option-value="id" />
+                <x-select label="Status" wire:model.live="decisionStatus" placeholder="Select Status" :options="[['id'=>'APPROVED','label'=>'APPROVED'],['id'=>'REJECTED','label'=>'REJECTED']]" option-label="label" option-value="id" />
                 
-                @if($status == "REJECTED")
+                @if($decisionStatus == "REJECTED")
                 <x-textarea label="Reason" wire:model="reason" placeholder="Enter Reason" />
                 @endif
                 <x-slot name="actions">

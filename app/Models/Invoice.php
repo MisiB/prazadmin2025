@@ -19,4 +19,11 @@ class Invoice extends Model
     public function receipts(){
         return $this->hasMany(Suspenseutilization::class,"invoice_id","id");
     }
+
+    protected function casts(): array
+    {
+        return [
+            'settled_at' => 'datetime',
+        ];
+    }
 }

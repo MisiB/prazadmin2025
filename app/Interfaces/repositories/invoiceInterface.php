@@ -9,6 +9,7 @@ interface invoiceInterface
     public function getcomparisonreport($firstfromDate, $firsttoDate,$secondfromDate, $secondtoDate,$status,array $inventoryItems,array $currencyItems);
     public function getInvoiceDetails($invoiceId);
     public function getInvoicebyCustomer($customerId);
+    public function getInvoicebyCustomerPaginated($customerId, $perPage = 15, $search = null);
     public function getquarterlyreport($year,$status,array $inventoryItems,array $currencyItems);
     public function getInvoiceByInvoiceNumber($invoiceNumber);
     public function markInvoiceAsPaid($invoiceNumber);

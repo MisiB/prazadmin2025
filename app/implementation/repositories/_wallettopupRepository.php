@@ -79,23 +79,35 @@ class _wallettopupRepository implements iwallettopupInterface
                 $wallettopup->status = $data['decision'];
                 $wallettopup->approvedby = Auth::user()->id;
                 if($data['decision'] == "APPROVED"){
-                    $response = $this->suspenserepo->create([
-                        "customer_id"=>$wallettopup->customer_id,
-                        "sourcetype"=>"Manual",
-                        "source_id"=>$wallettopup->id,
-                        "amount"=>$wallettopup->amount,
-                        "currency"=>$wallettopup->currency->name,
-                        "accountnumber"=>$wallettopup->accountnumber,
-                        "type"=>$wallettopup->type,
-                        "status"=>"PENDING",
-                        "method"=>"WALLETTOPUP"
-                    ]);
-                    if($response['status']=="success"){
-                        $wallettopup->suspense_id = $response['data']['id'];
+                    // Check if suspense already exists (from previous failed approval attempt)
+                    $existingSuspense = $this->suspenserepo->checksuspsnse($wallettopup->id, "Manual");
+                    
+                    if($existingSuspense){
+                        // Use existing suspense
+                        $wallettopup->suspense_id = $existingSuspense->id;
                         $wallettopup->save();
                         return ["status"=>"success","message"=>"Wallet topup decision made successfully"];
-                    }else{
-                        return ["status"=>"error","message"=>"Failed to create suspense: " . $response['message']];
+                    } else {
+                        // Create new suspense - convert amount from string to decimal
+                        $amount = (float) str_replace(',', '', $wallettopup->amount);
+                        
+                        $response = $this->suspenserepo->create([
+                            "customer_id"=>$wallettopup->customer_id,
+                            "sourcetype"=>"Manual",
+                            "source_id"=>$wallettopup->id,
+                            "amount"=>$amount,
+                            "currency"=>$wallettopup->currency->name,
+                            "accountnumber"=>$wallettopup->accountnumber,
+                            "type"=>$wallettopup->type,
+                            "status"=>"PENDING"
+                        ]);
+                        if($response['status']=="success"){
+                            $wallettopup->suspense_id = $response['data']['id'];
+                            $wallettopup->save();
+                            return ["status"=>"success","message"=>"Wallet topup decision made successfully"];
+                        }else{
+                            return ["status"=>"error","message"=>"Failed to create suspense: " . $response['message']];
+                        }
                     }
                 }else{
                     $wallettopup->rejectedreason = $data['rejectedreason'];

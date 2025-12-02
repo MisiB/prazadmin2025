@@ -15,6 +15,7 @@ interface ibanktransactionInterface
     public function link(array $data);
     public function block($id, $status);
     public function gettransactions($customer_id);
+    public function gettransactionsPaginated($customer_id, $perPage = 15);
 
     public function getbankreconciliations($year);
     public function getbankreconciliation($id);

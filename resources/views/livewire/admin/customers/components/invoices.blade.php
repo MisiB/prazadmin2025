@@ -7,7 +7,7 @@
         <x-input wire:model.live="search" placeholder="Search invoices..." />
         <x-button icon="o-plus" label="New Invoice" wire:click="modal=true" class="btn-primary" />
     </x-slot:menu>
-                    <x-table :rows="$invoices" :headers="$headers">
+                    <x-table :rows="$invoices" :headers="$headers" with-pagination>
                         @scope('cell_status', $row)
                             <span class="badge badge-{{ $row->status == 'PAID' ? 'success' : 'warning' }}">
                                 {{ $row->status }}
@@ -41,8 +41,8 @@
                         </div>
                         @elseif($row->status=="PAID" && $row->invoicesource=="MANUAL")
                         <div class="flex items-center space-x-2">
-                            <x-button icon="o-document-currency-dollar" class="btn-sm btn-secondary btn-outline" 
-                                wire:click="edit({{ $row->id }})" spinner />
+                            <x-button icon="o-arrow-down-tray" class="btn-sm btn-secondary btn-outline" 
+                                wire:click="downloadReceipt({{ $row->id }})" spinner="downloadReceipt" />
                                        </div>
                     @endif
                     @endscope
