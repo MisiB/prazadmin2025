@@ -265,7 +265,7 @@ class _leaverequestService implements ileaverequestService
             $approver=$this->getuser($usereporttoid);
 
             //Notify approver
-            if ($approver) {
+            if ($approver !== null) {
                 $approver->notify( new LeaverequestSubmitted($this, $requestuuid)->delay(Carbon::now()->copy()->addSeconds(1)) );
             }
             //Notify default approver if need there is an Acting HOD assigned
