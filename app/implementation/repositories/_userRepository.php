@@ -39,12 +39,9 @@ class _userRepository implements iuserInterface
     }
     public function getuser($id)
     {
-        try {
-            $user = $this->model::find($id);
-            return $user ? $user : ApiResponse::NOT_FOUND;
-        } catch (\Exception $e) {
-            return $e->getMessage();
-        }
+       
+            return $this->model::find($id);
+        
     }
 
     public function getuserbyemail($email)
