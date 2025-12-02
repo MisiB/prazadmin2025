@@ -12,7 +12,8 @@ class Wallettopuprequest extends Component
 {
     use Toast;
     public $year;
-    public $status;
+    public $status; // This is for the filter dropdown
+    public $decisionStatus; // Add this for the modal form
     public $reason;
     public $breadcrumbs=[];
     protected  $wallettoprepo;
@@ -36,6 +37,7 @@ class Wallettopuprequest extends Component
         ];
         $this->year = date('Y');
         $this->status = 'PENDING';
+        $this->decisionStatus = null; // Add this
         $this->wallettopup = null;
         $this->banktransactions = new Collection();
     }
@@ -53,6 +55,8 @@ class Wallettopuprequest extends Component
     public function view($id)
     {
         $this->wallettopup = $this->wallettoprepo->getwallettopup($id);
+        $this->decisionStatus = null; // Reset when opening modal
+        $this->reason = null; // Reset reason
         $this->showmodal = true;
     }
     public function getwallettoprequests()
@@ -82,7 +86,7 @@ class Wallettopuprequest extends Component
         {
             $payload = $payload->where('status', $this->status);
         }else{
-            $payload=['EMPTY'];
+            $payload = collect([]); 
         }
         return $payload;
     }
@@ -90,14 +94,17 @@ class Wallettopuprequest extends Component
     public function makedecision()
     {
         $this->validate([
-            'status' => 'required',
-            'reason' => 'required_if:status,REJECTED',
+            'decisionStatus' => 'required', // Change from 'status' to 'decisionStatus'
+            'reason' => 'required_if:decisionStatus,REJECTED', // Change from 'status' to 'decisionStatus'
         ]);
-        $response = $this->wallettoprepo->makedecision($this->wallettopup->id,['decision'=>$this->status,'rejectedreason'=>$this->reason]);
+        $response = $this->wallettoprepo->makedecision($this->wallettopup->id,['decision'=>$this->decisionStatus,'rejectedreason'=>$this->reason]);
       
         if($response['status']=="success")
         {
             $this->success($response['message']);
+            $this->showmodal = false; // Close modal after success
+            $this->decisionStatus = null; // Reset
+            $this->reason = null; // Reset
         }
         else
         {

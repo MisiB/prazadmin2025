@@ -23,6 +23,7 @@ interface isuspenseInterface
     public function getsuspense($id);
 
     public function getsuspensestatement($customer_id);
+    public function getsuspensestatementPaginated($customer_id, $perPage = 15);
 
     public function checksuspsnse($source_id, $sourcetype);
 
@@ -31,4 +32,8 @@ interface isuspenseInterface
     public function deductwallet($regnumber, $invoice_id, $accounttype, $currency, $amount, $receiptnumber);
 
     public function createSuspenseutilization($suspense_id, $invoice_id, $amount, $receiptnumber);
+
+    public function reverseSuspenseUtilization($suspenseUtilizationId);
+
+    public function getReversedTransactionsPaginated($customer_id, $perPage = 15);
 }

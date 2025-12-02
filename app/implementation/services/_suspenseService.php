@@ -63,7 +63,8 @@ class _suspenseService implements isuspenseService
         }
         //get wallet balance
         $walletbalance = $this->repository->getwalletbalance($customer->regnumber,$data['accounttype'],$invoice->currency->name);
-        if((double)$invoice->amount>(double)$walletbalance){
+        $invoiceAmount = (float) str_replace(',', '', $invoice->amount);
+        if($invoiceAmount > $walletbalance){
             return ['status'=>'ERROR','message'=>"Insufficient funds in wallet of type ".$data['accounttype']." using currency ".$invoice->currency->name];
         }
         //get pendingsuspense

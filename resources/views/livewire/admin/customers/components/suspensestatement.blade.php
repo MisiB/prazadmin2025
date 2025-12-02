@@ -2,13 +2,9 @@
     <x-breadcrumbs :items="$breadcrumbs" 
     class="bg-base-300 p-3 mt-2 rounded-box"
     link-item-class="text-sm font-bold" />
-    @if($suspenselist->isNotEmpty())
-
     @php 
-    $groupedSuspense = $suspenselist->groupBy('accountnumber');
+    $groupedSuspense = $allSuspense->isNotEmpty() ? $allSuspense->groupBy('accountnumber') : collect();
     @endphp
-
-    @endif
 
     @if($groupedSuspense->isNotEmpty())
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
@@ -32,7 +28,7 @@
     
     @endif
     <x-card title="Suspense Statement" separator class="mt-5 border-2 border-gray-200">
-        <x-table :headers="$headers" class="table-zebra table-xs" :rows="$suspenselist">
+        <x-table :headers="$headers" class="table-zebra table-xs" :rows="$suspenselist" with-pagination>
             <x-slot name="empty">
                 <x-alert class="alert-error" title="No Suspense found." />
             </x-slot>
@@ -73,7 +69,20 @@
                     <td>{{ $suspenseutilization?->invoice?->invoicenumber }}</td>
                     <td>{{ $suspenseutilization->receiptnumber }}</td>
                     <td>{{ $suspenseutilization->invoice->inventoryitem->name }}</td>
-                    <td>{{ $showsuspense->currency }}{{ $suspenseutilization->amount }}</td>
+                    <td>
+                        <div class="flex items-center gap-2">
+                            <span>{{ $showsuspense->currency }}{{ $suspenseutilization->amount }}</span>
+                            @if(auth()->user()->hasRole('Super Admin'))
+                                <x-button 
+                                    icon="o-arrow-uturn-left" 
+                                    class="btn-xs btn-error btn-outline" 
+                                    wire:click="reverseTransaction({{ $suspenseutilization->id }})" 
+                                    spinner="reverseTransaction"
+                                    wire:confirm="Are you sure you want to reverse this transaction? This will mark the invoice as PENDING and remove the receipt."
+                                />
+                            @endif
+                        </div>
+                    </td>
                 </tr>
                 @empty
                 <tr>

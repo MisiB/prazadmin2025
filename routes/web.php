@@ -61,6 +61,7 @@ Route::middleware('auth')->group(function () {
     Volt::route('/customers/{customer_id}/onlinepayments', 'admin.customers.components.onlinepayments')->name('admin.customers.showonlinepayments');
     Volt::route('/customers/{customer_id}/wallettopups', 'admin.customers.components.wallettops')->name('admin.customers.showwallettopups');
     Volt::route('/customers/{customer_id}/suspensestatement', 'admin.customers.components.suspensestatement')->name('admin.customers.showsuspensestatement');
+    Volt::route('/customers/{customer_id}/reversedtransactions', 'admin.customers.components.reversed-transactions')->name('admin.customers.showreversedtransactions');
     Volt::route('/workflows', 'admin.workflows.configurations')->name('admin.workflows');
     Volt::route('/purchaserequisitions', 'admin.workflows.purchaserequisitions')->name('admin.workflows.purchaserequisitions');
     Volt::route('/weekytasks', 'admin.workflows.approvals.weekytasks')->name('admin.workflows.approvals.weekytasks');

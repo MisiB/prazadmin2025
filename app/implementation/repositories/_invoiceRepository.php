@@ -192,7 +192,7 @@ class _invoiceRepository implements invoiceInterface
 
     public function updateInvoice($data)
     {
-        $invoice = $this->invoice->with('currency')->where('invoice_number', $data['invoicenumber'])->first();
+        $invoice = $this->invoice->with('currency')->where('invoicenumber', $data['invoicenumber'])->first();
         if (! $invoice) {
             return ['status' => 'ERROR', 'message' => 'Invoice not found', 'data' => null];
         }
@@ -218,7 +218,7 @@ class _invoiceRepository implements invoiceInterface
 
     public function deleteInvoice($invoicenumber)
     {
-        $invoice = $this->invoice->where('invoice_number', $invoicenumber)->first();
+        $invoice = $this->invoice->where('invoicenumber', $invoicenumber)->first();
         if (! $invoice) {
             return ['status' => 'ERROR', 'message' => 'Invoice not found', 'data' => null];
         }
@@ -235,6 +235,23 @@ class _invoiceRepository implements invoiceInterface
         return $this->invoice->with('inventoryitem', 'currency')->where('customer_id', $customerId)->get();
     }
 
+    public function getInvoicebyCustomerPaginated($customerId, $perPage = 15, $search = null)
+    {
+        $query = $this->invoice->with('inventoryitem', 'currency')
+            ->where('customer_id', $customerId);
+        
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('invoicenumber', 'like', '%' . $search . '%')
+                  ->orWhereHas('inventoryitem', function ($q) use ($search) {
+                      $q->where('name', 'like', '%' . $search . '%');
+                  });
+            });
+        }
+        
+        return $query->orderBy('created_at', 'desc')->paginate($perPage);
+    }
+
     public function settleInvoice($invoicenumber, $receiptnumber = null)
     {
         $invoice = $this->invoice->with('customer', 'inventoryitem', 'currency')->where('invoicenumber', $invoicenumber)->first();
@@ -245,7 +262,8 @@ class _invoiceRepository implements invoiceInterface
             return ['status' => 'error', 'message' => 'Invoice already settled', 'data' => null];
         }
         $walletbalance = $this->suspenserepo->getwalletbalance($invoice->customer->regnumber, $invoice->inventoryitem->type, $invoice->currency->name);
-        if ($walletbalance < $invoice->amount) {
+        $invoiceAmount = (float) str_replace(',', '', $invoice->amount);
+        if ($walletbalance < $invoiceAmount) {
             return ['status' => 'error', 'message' => 'Insufficient balance', 'data' => null];
         }
         if ($invoice->invoicesource == 'MANUAL') {

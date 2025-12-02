@@ -43,6 +43,10 @@
             <x-icon name="o-squares-plus" class="w-12 h-12 bg-blue-700 text-white p-2 rounded-full" />
             <div >Suspense Statement</div>
         </a>
+        <a href="{{ route('admin.customers.showreversedtransactions', $customer->id) }}" class="p-3 rounded-lg border-2 text-center border-green-200 hover:bg-green-300 cursor-pointer">
+            <x-icon name="o-arrow-uturn-left" class="w-12 h-12 bg-blue-700 text-white p-2 rounded-full" />
+            <div >Reversed Transactions</div>
+        </a>
          
          
        </div> 

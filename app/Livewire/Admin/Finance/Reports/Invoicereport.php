@@ -93,9 +93,17 @@ class Invoicereport extends Component
     $rows[] = $headers;
     
     foreach ($invoices as $value) {
-        $settlementdate = $value->receipts->count() > 0 ? 
-            $value->receipts->last()->created_at->format("Y-m-d") : 
-            $value->created_at->format("Y-m-d");
+        // Use settled_at column if available, otherwise fallback to receipts
+        $settlementdate = null;
+        if ($value->settled_at) {
+            $settlementdate = $value->settled_at->format("Y-m-d");
+        } elseif ($value->receipts->count() > 0) {
+            $lastReceipt = $value->receipts->last();
+            $settlementdate = $lastReceipt->created_at?->format("Y-m-d");
+        }
+        
+        // If no settled_at and no receipts, leave as null (will be empty string in CSV)
+        $settlementdate = $settlementdate ?? '';
             
         $source = [];
         foreach ($value->receipts as $receipt) {
@@ -109,7 +117,7 @@ class Invoicereport extends Component
         $source = implode(", ", $source);
         
         $rows[] = [
-            "Date" => $value->created_at->format("Y-m-d"),
+            "Date" => $value->created_at?->format("Y-m-d") ?? '',
             "SettlementDate" => $settlementdate,
             "Prnumber" => $value->customer?->regnumber,
             "Account" => $value->customer?->name,

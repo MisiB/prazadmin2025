@@ -6,7 +6,7 @@
         <x-slot:menu>
             <x-button icon="o-magnifying-glass" label="Search" wire:click="modal=true" class="btn-primary" />
         </x-slot:menu>
-        <x-table :rows="$banktransactions" :headers="$headers">
+        <x-table :rows="$banktransactions" :headers="$headers" with-pagination>
           
             @scope('cell_transactiondate', $row)
                 {{ date('Y-m-d', strtotime($row->transactiondate)) }}
@@ -40,5 +40,53 @@
                 <x-alert class="alert-error" title="No bank transactions found." />
             </x-slot:empty>
         </x-table>
+    </x-modal>
+    <x-modal wire:model="showmodal" title="View Transaction" separator box-class="max-w-3xl">
+        @if($transaction)
+        <table class="table table-bordered table-sm">
+            <tbody>
+                <tr>
+                    <th>Account Name</th>
+                    <td>{{ $transaction->customer->name ?? 'N/A' }}</td>
+                </tr>
+                <tr>
+                    <th>Account Number</th>
+                    <td>{{ $transaction->customer->regnumber ?? 'N/A' }}</td>
+                </tr>
+                <tr>
+                    <th>Description</th>
+                    <td>{{ $transaction->description }}</td>
+                </tr>
+                <tr>
+                    <th>Source Reference</th>
+                    <td>{{ $transaction->sourcereference }}</td>
+                </tr>
+                <tr>
+                    <th>Bank Account Number</th>
+                    <td>{{ $transaction->accountnumber }}</td>
+                </tr>
+                <tr>
+                    <th>Statement Reference</th>
+                    <td>{{ $transaction->statementreference }}</td>
+                </tr>
+                <tr>
+                    <th>Currency</th>
+                    <td>{{ $transaction->currency }}</td>
+                </tr>
+                <tr>
+                    <th>Amount</th>
+                    <td>{{ number_format($transaction->amount, 2) }}</td>
+                </tr>
+                <tr>
+                    <th>Transaction Date</th>
+                    <td>{{ $transaction->transactiondate }}</td>
+                </tr>
+                <tr>
+                    <th>Status</th>
+                    <td>{{ $transaction->status }}</td>
+                </tr>
+            </tbody>
+        </table>
+        @endif
     </x-modal>
 </div>

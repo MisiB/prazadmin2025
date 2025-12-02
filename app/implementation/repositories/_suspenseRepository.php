@@ -6,8 +6,10 @@ use App\Interfaces\repositories\isuspenseInterface;
 use App\Models\Currency;
 use App\Models\Customer;
 use App\Models\Monthlysuspensereport;
+use App\Models\ReversedTransaction;
 use App\Models\Suspense;
 use App\Models\Suspenseutilization;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class _suspenseRepository implements isuspenseInterface
@@ -226,6 +228,14 @@ class _suspenseRepository implements isuspenseInterface
         return $suspenses;
     }
 
+    public function getsuspensestatementPaginated($customer_id, $perPage = 15)
+    {
+        return $this->model->with('suspenseutilizations.invoice.inventoryitem')
+            ->where('customer_id', $customer_id)
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+    }
+
     public function getsuspense($id)
     {
         return $this->model->with('suspenseutilizations.invoice.inventoryitem')->where('id', $id)->first();
@@ -249,7 +259,7 @@ class _suspenseRepository implements isuspenseInterface
             }
         }
 
-        return number_format($totalsuspense - $totalutilized, 2);
+        return round($totalsuspense - $totalutilized, 2);
     }
 
     public function deductwallet($regnumber, $invoice_id, $accounttype, $currency, $amount, $receiptnumber)
@@ -323,5 +333,118 @@ class _suspenseRepository implements isuspenseInterface
         } catch (\Exception $e) {
             return ['status' => 'error', 'message' => $e->getMessage()];
         }
+    }
+
+    public function reverseSuspenseUtilization($suspenseUtilizationId)
+    {
+        try {
+            $suspenseUtilization = $this->suspenseutilizations->with(['invoice', 'suspense'])->find($suspenseUtilizationId);
+            
+            if (!$suspenseUtilization) {
+                return ['status' => 'ERROR', 'message' => 'Suspense utilization record not found'];
+            }
+
+            $invoice = $suspenseUtilization->invoice;
+            $suspense = $suspenseUtilization->suspense;
+
+            if (!$invoice || !$suspense) {
+                return ['status' => 'ERROR', 'message' => 'Related invoice or suspense not found'];
+            }
+
+            // Check if invoice is PAID
+            if ($invoice->status !== 'PAID') {
+                return ['status' => 'ERROR', 'message' => 'Invoice is not in PAID status'];
+            }
+
+            // Start transaction
+            DB::beginTransaction();
+
+            // Capture the data before deletion for audit trail
+            $reversedBy = Auth::user();
+            if (!$reversedBy) {
+                DB::rollBack();
+                return ['status' => 'ERROR', 'message' => 'User not authenticated'];
+            }
+
+            // Store original data as JSON for complete audit trail
+            $originalData = [
+                'suspense_utilization' => [
+                    'id' => $suspenseUtilization->id,
+                    'suspense_id' => $suspenseUtilization->suspense_id,
+                    'invoice_id' => $suspenseUtilization->invoice_id,
+                    'receiptnumber' => $suspenseUtilization->receiptnumber,
+                    'amount' => $suspenseUtilization->amount,
+                    'rate' => $suspenseUtilization->rate,
+                    'user_id' => $suspenseUtilization->user_id,
+                    'created_at' => $suspenseUtilization->created_at,
+                    'updated_at' => $suspenseUtilization->updated_at,
+                ],
+                'invoice' => [
+                    'id' => $invoice->id,
+                    'invoicenumber' => $invoice->invoicenumber,
+                    'status' => $invoice->status,
+                    'amount' => $invoice->amount,
+                    'settled_at' => $invoice->settled_at,
+                ],
+                'suspense' => [
+                    'id' => $suspense->id,
+                    'status' => $suspense->status,
+                    'amount' => $suspense->amount,
+                ],
+            ];
+
+            // Create reversed transaction record
+            ReversedTransaction::create([
+                'suspense_utilization_id' => $suspenseUtilization->id,
+                'suspense_id' => $suspenseUtilization->suspense_id,
+                'invoice_id' => $suspenseUtilization->invoice_id,
+                'invoice_number' => $invoice->invoicenumber,
+                'receipt_number' => $suspenseUtilization->receiptnumber,
+                'amount' => $suspenseUtilization->amount,
+                'rate' => $suspenseUtilization->rate,
+                'reversed_by' => $reversedBy->id,
+                'reversed_at' => now(),
+                'original_data' => $originalData,
+            ]);
+
+            // Delete the suspense utilization record (this removes the receipt)
+            $suspenseUtilization->delete();
+
+            // Update invoice status to PENDING
+            $invoice->status = 'PENDING';
+            $invoice->settled_at = null;
+            $invoice->save();
+
+            // Refresh the suspense model to clear cached relationships
+            $suspense->refresh();
+
+            // Check if suspense has available balance after reversal
+            $totalUtilized = $suspense->suspenseutilizations()->sum('amount');
+            $availableBalance = (float)$suspense->amount - (float)$totalUtilized;
+
+            // If suspense has available balance, set status to PENDING
+            // This handles both cases: no utilizations OR partial utilizations with available balance
+            if ($availableBalance > 0) {
+                $suspense->status = 'PENDING';
+                $suspense->save();
+            }
+
+            DB::commit();
+
+            return ['status' => 'SUCCESS', 'message' => 'Transaction reversed successfully'];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ['status' => 'ERROR', 'message' => 'Failed to reverse transaction: ' . $e->getMessage()];
+        }
+    }
+
+    public function getReversedTransactionsPaginated($customer_id, $perPage = 15)
+    {
+        return ReversedTransaction::with(['invoice', 'suspense', 'reversedBy'])
+            ->whereHas('suspense', function ($query) use ($customer_id) {
+                $query->where('customer_id', $customer_id);
+            })
+            ->orderBy('reversed_at', 'desc')
+            ->paginate($perPage);
     }
 }

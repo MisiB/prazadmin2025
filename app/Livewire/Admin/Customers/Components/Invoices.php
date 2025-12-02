@@ -9,16 +9,17 @@ use App\Interfaces\repositories\iinventoryitemInterface;
 use App\Interfaces\repositories\invoiceInterface;
 use App\Interfaces\repositories\isuspenseInterface;
 use App\Interfaces\repositories\itenderInterface;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Livewire\Component;
+use Livewire\WithPagination;
 use Mary\Traits\Toast;
 
 class Invoices extends Component
 {
-    use Toast;
+    use Toast, WithPagination;
     public $customer_id;
     protected $invoiceRepository;
-    public $invoices;
     public $breadcrumbs =[];
     public $modal = false;
     public $ratemodal = false;
@@ -63,7 +64,6 @@ class Invoices extends Component
     public function mount($customer_id)
     {
         $this->customer_id = $customer_id;
-        $this->invoices = new Collection();
         $this->rates =  new collection();
         $this->tenders = new Collection();
         $this->customer = $this->customerrepo->getCustomerById($this->customer_id);
@@ -73,17 +73,18 @@ class Invoices extends Component
             ["label" => "Invoices"],
         ];
     }
-    public function showInvoices()
+    public function showInvoices(): LengthAwarePaginator
     {
-        $this->invoices = $this->invoiceRepository->getInvoicebyCustomer($this->customer_id);
-        $invoices = $this->invoices;
-        if($this->search){
-            $this->invoices = $invoices->filter(function ($invoice) {
-                return str_contains(strtolower($invoice->invoicenumber), strtolower($this->search)) ||
-                       str_contains(strtolower($invoice->inventoryitem->name), strtolower($this->search));
-            });
-        }
-       
+        return $this->invoiceRepository->getInvoicebyCustomerPaginated(
+            $this->customer_id,
+            15,
+            $this->search
+        );
+    }
+
+    public function updatedSearch()
+    {
+        $this->resetPage();
     }
     public function searchtender(){
         if($this->tendernumber){
@@ -218,6 +219,12 @@ class Invoices extends Component
     public function createinvoice(){
         $inventoryitem = $this->inventoryitemrepo->getinventory($this->inventoryitem);
         $currency = $this->currencyrepo->getcurrency($this->currency);
+        
+        // Auto-generate invoice number if not provided
+        if (empty($this->invoicenumber)) {
+            $this->invoicenumber = $this->generateInvoiceNumber();
+        }
+        
         $response = $this->invoiceRepository->createinvoice([
             "regnumber"=>$this->customer->regnumber,
             "itemcode"=>$inventoryitem->name,
@@ -238,10 +245,35 @@ class Invoices extends Component
         }
     }
 
+    protected function generateInvoiceNumber(): string
+    {
+        // Format: INVTMAN + customer_id + 9 random numbers
+        $maxAttempts = 10;
+        $attempt = 0;
+        
+        do {
+            $randomNumbers = str_pad((string) rand(0, 999999999), 9, '0', STR_PAD_LEFT);
+            $invoiceNumber = 'INVTMAN' . $this->customer_id . '-' . $randomNumbers;
+            
+            // Check if invoice number already exists
+            $exists = $this->invoiceRepository->getInvoiceByInvoiceNumber($invoiceNumber);
+            $attempt++;
+            
+            if (!$exists || $attempt >= $maxAttempts) {
+                return $invoiceNumber;
+            }
+        } while ($attempt < $maxAttempts);
+        
+        // Fallback: add timestamp to ensure uniqueness
+        return 'INVTMAN' . $this->customer_id . substr(str_replace('.', '', microtime(true)), -9);
+    }
+
     public function updateinvoice(){
         $inventoryitem = $this->inventoryitemrepo->getinventory($this->inventoryitem);
         $currency = $this->currencyrepo->getcurrency($this->currency);
-        $response = $this->invoiceRepository->updateinvoice($this->invoice_id,[
+        $invoice = $this->invoiceRepository->getInvoiceByInvoiceNumber($this->invoicenumber);
+        
+        $response = $this->invoiceRepository->updateinvoice([
             "customer_id"=>$this->customer_id,
             "inventoryitem_id"=>$this->inventoryitem,
             "invoicenumber"=>$this->invoicenumber,
@@ -252,6 +284,7 @@ class Invoices extends Component
             "exchangerate_id"=>$this->exchangerate,
             "invoicesource"=>"MANUAL",
             "amount"=>$this->convertedamount,
+            "status"=>$invoice ? $invoice->status : 'PENDING',
         ]);
         if($response['status']=='success'){
             $this->success($response['message']);
@@ -266,10 +299,10 @@ class Invoices extends Component
         $regnumber = $invoice->customer->regnumber;
         $accounttype = $invoice->inventoryitem->type;
         $currency = $invoice->currency->name;
-        $amount = $invoice->amount;
+        $amount = (float) str_replace(',', '', $invoice->amount);
         $walletbalance = $this->suspenserepo->getwalletbalance($regnumber,$accounttype,$currency);
         if($walletbalance<$amount){
-            $this->error("Insufficient wallet balance of ".$currency." ".$walletbalance." for ".$accounttype);
+            $this->error("Insufficient wallet balance of ".$currency." ".number_format($walletbalance, 2)." for ".$accounttype);
             return;
         }
         $response = $this->invoiceRepository->settleInvoice($invoice->invoicenumber,null);
@@ -280,6 +313,102 @@ class Invoices extends Component
         }
    
         
+    }
+
+    public function edit($invoice_id)
+    {
+        $invoice = $this->invoiceRepository->getInvoiceDetails($invoice_id);
+        
+        if (!$invoice) {
+            $this->error("Invoice not found");
+            return;
+        }
+        
+        $this->invoice_id = $invoice->id;
+        $this->inventoryitem = $invoice->inventoryitem_id;
+        $this->invoicenumber = $invoice->invoicenumber;
+        $this->amount = $invoice->amount;
+        $this->currency = $invoice->currency_id;
+        $this->invoicdate = $invoice->invoicedate ?? $invoice->created_at->format('Y-m-d');
+        $this->exchangerate = $invoice->exchangerate_id;
+        $this->convertedamount = $invoice->amount;
+        
+        // Set exchange rate label if exchange rate exists
+        if ($invoice->exchangerate_id) {
+            $rate = $this->exchangraterepo->getexchangerate($invoice->exchangerate_id);
+            if ($rate && $rate->primarycurrency && $rate->secondarycurrency) {
+                $this->ratevalue = $rate->value;
+                $this->ratelabel = $rate->primarycurrency->name . "1  = " . $rate->secondarycurrency->name . " " . $rate->value;
+                $this->prefix = $rate->secondarycurrency->name;
+            }
+        }
+        
+        $this->modal = true;
+    }
+
+    public function delete($invoice_id)
+    {
+        $invoice = $this->invoiceRepository->getInvoiceDetails($invoice_id);
+        
+        if (!$invoice) {
+            $this->error("Invoice not found");
+            return;
+        }
+        
+        $response = $this->invoiceRepository->deleteInvoice($invoice->invoicenumber);
+        
+        if ($response['status'] == 'SUCCESS') {
+            $this->success($response['message']);
+        } else {
+            $this->error($response['message']);
+        }
+    }
+
+    public function downloadReceipt($invoice_id)
+    {
+        try {
+            $invoice = $this->invoiceRepository->getInvoiceDetails($invoice_id);
+            
+            if (!$invoice) {
+                $this->error("Invoice not found");
+                return;
+            }
+            
+            if ($invoice->status != 'PAID') {
+                $this->error("Receipt is only available for paid invoices");
+                return;
+            }
+            
+            // Load receipts with suspense relationships
+            $invoice->load('receipts.suspense.onlinepayment', 'receipts.suspense.banktransaction', 'receipts.suspense.wallettopup');
+            
+            // Get the latest receipt
+            $receipt = $invoice->receipts->last();
+            
+            if (!$receipt) {
+                $this->error("Receipt not found for this invoice");
+                return;
+            }
+            
+            $data = [
+                'invoice' => $invoice,
+                'receipt' => $receipt,
+                'customer' => $invoice->customer,
+                'currency' => $invoice->currency,
+                'inventoryitem' => $invoice->inventoryitem,
+                'date' => now()->format('d M Y'),
+            ];
+            
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.receipt', $data);
+            $filename = 'Receipt_' . ($receipt->receiptnumber ?? $invoice->invoicenumber) . '_' . date('Y-m-d') . '.pdf';
+            
+            return response()->streamDownload(function () use ($pdf) {
+                echo $pdf->output();
+            }, $filename);
+            
+        } catch (\Exception $e) {
+            $this->error('Failed to generate receipt: ' . $e->getMessage());
+        }
     }
     
     public function render()

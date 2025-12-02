@@ -4,19 +4,23 @@ namespace App\Livewire\Admin\Customers\Components;
 
 use App\Interfaces\repositories\ibanktransactionInterface;
 use App\Interfaces\repositories\icustomerInterface;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Livewire\Component;
+use Livewire\WithPagination;
 use Mary\Traits\Toast;
 
 class Banktransactions extends Component
 {
-    use Toast;
+    use Toast, WithPagination;
     public $customer_id;
     public $breadcrumbs =[];
     public $search;
     public bool $modal = false;
     public $transactions;
     public $customer;
+    public $transaction;
+    public bool $showmodal = false;
     protected $banktransactionrepo;
     protected $customerrepo;
 
@@ -36,8 +40,9 @@ class Banktransactions extends Component
         $this->customerrepo = $customerrepo;
     }
 
-    public function getbanktransactions(){
-        return $this->banktransactionrepo->gettransactions($this->customer_id);
+    public function getbanktransactions(): LengthAwarePaginator
+    {
+        return $this->banktransactionrepo->gettransactionsPaginated($this->customer_id, 10);
     }
     public function UpdatedSearch(){
        $this->searchtransactions();
@@ -64,7 +69,20 @@ class Banktransactions extends Component
             return;
         }
         $this->success($response['message']);
-        $this->modal = false;
+        
+        // Refresh the search results to show updated status
+        if($this->search) {
+            $this->searchtransactions();
+        }
+        
+        // Refresh the main bank transactions list
+        $this->dispatch('$refresh');
+    }
+
+    public function show($id)
+    {
+        $this->transaction = $this->banktransactionrepo->gettransaction($id);
+        $this->showmodal = true;
     }
 
     public function headers():array{
