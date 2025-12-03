@@ -11,6 +11,7 @@ use App\Interfaces\repositories\iroleRepository;
 use App\Interfaces\repositories\istoresrequisitionInterface;
 use App\Interfaces\repositories\iuserInterface;
 use App\Interfaces\services\istoresrequisitionService;
+use App\Notifications\StoresrequisitionapprovalSubmitted;
 use Illuminate\Support\Collection;
 
 class _storesrequisitionService implements istoresrequisitionService
@@ -149,7 +150,23 @@ class _storesrequisitionService implements istoresrequisitionService
     }
     public function createhodrequisitionapprovalrecord($data)
     {
-        return $this->hodstoresrequisitionapprovalrepo->createhodrequisitionapproval($data);
+        $response=$this->hodstoresrequisitionapprovalrepo->createhodrequisitionapproval($data);
+        //send email notification to approver if response is a success
+        if($response['status']=='success')
+        {
+            $approver=$this->getrecordowner($data['user_id']);
+            $storesrequisition=$this->storesrequisitionrepo->getstoresrequisition($data['storesrequisition_uuid']);
+            $storesrequisitionrecord=[
+                'storesrequisitionuuid'=>$storesrequisition->storesrequisition_uuid,
+                'hoduser_id'=>$data['user_id'],
+                'purposeofrequisition'=>$storesrequisition->purposeofrequisition,
+                'initiatorname'=>$storesrequisition->initiator->name,
+                'initiatorsurname'=>$storesrequisition->initiator->surname,
+                'storesapprovalitemuuid'=>$data['storesrequisition_uuid']
+            ];
+            $approver->notify(new StoresrequisitionapprovalSubmitted($storesrequisitionrecord) );  
+        }
+        return $response ;
     }
     public function createissuerrequisitionapprovalrecord($data)
     {
