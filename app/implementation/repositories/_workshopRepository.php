@@ -5,7 +5,7 @@ namespace App\implementation\repositories;
 
 use App\Interfaces\repositories\iworkshopInterface;
 use App\Models\Workshop;
-use App\Models\workshoporder;
+use App\Models\Workshoporder;
 use App\Models\WorkshopInvoice;
 use App\Models\Customer;
 use App\Models\WorkshopDelegate;
@@ -20,7 +20,7 @@ class _workshopRepository implements iworkshopInterface
     public  $customermodel;
     protected $delegatemodel;
  
-    public function __construct(Workshop $model,workshoporder $ordermodel,WorkshopInvoice $invoicemodel,Customer $customermodel,WorkshopDelegate $delegatemodel)
+    public function __construct(Workshop $model,Workshoporder $ordermodel,WorkshopInvoice $invoicemodel,Customer $customermodel,WorkshopDelegate $delegatemodel)
     {
         $this->model = $model;
         $this->ordermodel = $ordermodel;
