@@ -12,12 +12,10 @@ class StoresrequisitionapprovalSubmitted extends Notification implements ShouldQ
 {
     use Queueable;
 
-    protected $storesrequisitionService, $storesrequisitionuuid, $hodrequisitionapproverrepo;
-    public function __construct(istoresrequisitionService $storesrequisitionService, $storesrequisitionuuid)
+    protected $storesrequisitionrecord;
+    public function __construct($storesrequisitionrecord)
     {
-        $this->storesrequisitionService=$storesrequisitionService;
-        $this->storesrequisitionuuid=$storesrequisitionuuid;
-        $this->hodrequisitionapproverrepo=$this->storesrequisitionService->gethodrequisitionapprovalrecord($this->storesrequisitionuuid);
+        $this->storesrequisitionrecord=$storesrequisitionrecord;
     }
  
     /**
@@ -35,13 +33,10 @@ class StoresrequisitionapprovalSubmitted extends Notification implements ShouldQ
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $storesrequisition=$this->storesrequisitionService->getstoresrequisition($this->storesrequisitionuuid);
-        //$approvalrecord=$this->hodrequisitionapproverrepo->gethodrequisitionapproval($this->storesrequisitionuuid)
-        
         $leaveapprovalitemuuid='N';
         $leaveapproverid='N';
-        $storesapprovalitemuuid=$this->storesrequisitionuuid;
-        $storesapproverid=$this->hodrequisitionapproverrepo->gethodrequisitionapproval($storesapprovalitemuuid)->user_id;
+        $storesapprovalitemuuid=$this->storesrequisitionrecord['storesrequisitionuuid'];
+        $storesapproverid=$this->storesrequisitionrecord['hoduser_id'];
         $status='N';
         
         $finalizationurl=url('approval/'.$leaveapprovalitemuuid.'/'.$leaveapproverid.'/'.$storesapprovalitemuuid.'/'.$storesapproverid.'/'.$status);
@@ -50,11 +45,11 @@ class StoresrequisitionapprovalSubmitted extends Notification implements ShouldQ
             ->greeting('Good day')
             ->subject('RE: STORES REQUISITION SUBMISSION')
             ->line('')
-            ->line('A new '.$storesrequisition->purposeofrequisition.' stores requisition has been submitted by '.$storesrequisition->initiator->name.' '.$storesrequisition->initiator->surname)
+            ->line('A new '.$this->storesrequisitionrecord['purposeofrequisition'].' stores requisition has been submitted by '.$this->storesrequisitionrecord['initiatorname'].' '.$this->storesrequisitionrecord['initiatorsurname'])
             ->line('')
             ->action('Make decision', $finalizationurl)
             ->line('')
-            ->line('REF #:'.$storesrequisition->storesrequisition_uuid)
+            ->line('REF #:'.$this->storesrequisitionrecord['storesapprovalitemuuid'])
             ->line('Thank you for using our application, we are here to serve!')
             ->line('');
     }
