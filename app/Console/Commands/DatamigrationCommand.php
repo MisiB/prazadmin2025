@@ -29,20 +29,20 @@ class DatamigrationCommand extends Command
     {
         // 1. Get all the accounts from the self service database
 
-         $this->migrateAccounts();
+        $this->migrateAccounts();
         // 2. get bank transactions from the self service database
-         $this->migrateBankTransactions();
+        $this->migrateBankTransactions();
         // 3. get online payments from the self service database
         $this->migrateOnlinePayments();
         // 4. get invoices from the self service database
-       $this->migrateInvoices();
+        $this->migrateInvoices();
         // 5. get epayments from the self service database
-         $this->migrateEpayments();
+        $this->migrateEpayments();
 
         // 6. get suspenses records
         $this->migrateSuspenses();
         // 7. get  suspenses utilizations invoices records
-         $this->migrateSuspenseutilizations();
+        $this->migrateSuspenseutilizations();
         // 8. compute suspense balance comparison
         $this->computesuspensebalancecomparison();
     }
@@ -52,7 +52,7 @@ class DatamigrationCommand extends Command
 
         $accounts = DB::connection('selfservicedb')->table('accounts')->get();
         $count = count($accounts);
-        $this->info('Total accounts to migrate: '.$count);
+        $this->info('Total accounts to migrate: ' . $count);
         $i = 0;
         DB::beginTransaction();
         try {
@@ -63,7 +63,7 @@ class DatamigrationCommand extends Command
                 $i++;
                 $customer = DB::table('customers')->where('regnumber', $account->Regnumber)->first();
                 if ($customer) {
-                   // $this->warn('Account already exists: '.$account->Name.' - '.$i.' of '.$count);
+                    // $this->warn('Account already exists: '.$account->Name.' - '.$i.' of '.$count);
                     $progressBar->advance();
 
                     continue;
@@ -77,7 +77,7 @@ class DatamigrationCommand extends Command
                     'created_at' => $account->created_at,
                     'updated_at' => $account->updated_at,
                 ]);
-              //  $this->line('Account migrated: '.$account->Name.' - '.$i.' of '.$count);
+                //  $this->line('Account migrated: '.$account->Name.' - '.$i.' of '.$count);
                 $progressBar->advance();
             }
             $progressBar->finish();
@@ -93,7 +93,7 @@ class DatamigrationCommand extends Command
     {
         $bankTransactions = DB::connection('selfservicedb')->table('banktransactions')->get();
         $count = count($bankTransactions);
-        $this->info('Total bank transactions to migrate: '.$count);
+        $this->info('Total bank transactions to migrate: ' . $count);
         $i = 0;
         DB::beginTransaction();
         try {
@@ -144,7 +144,7 @@ class DatamigrationCommand extends Command
     {
         $invoices = DB::connection('selfservicedb')->table('invoices')->get();
         $count = count($invoices);
-        $this->info('Total invoices to migrate: '.$count);
+        $this->info('Total invoices to migrate: ' . $count);
         $i = 0;
         DB::beginTransaction();
         try {
@@ -192,7 +192,7 @@ class DatamigrationCommand extends Command
     {
         $onlinePayments = DB::connection('selfservicedb')->table('onlinepayments')->get();
         $count = count($onlinePayments);
-        $this->info('Total online payments to migrate: '.$count);
+        $this->info('Total online payments to migrate: ' . $count);
         $i = 0;
         DB::beginTransaction();
         try {
@@ -242,7 +242,7 @@ class DatamigrationCommand extends Command
     {
         $epayments = DB::connection('selfservicedb')->table('epayments')->get();
         $count = count($epayments);
-        $this->info('Total epayments to migrate: '.$count);
+        $this->info('Total epayments to migrate: ' . $count);
         $i = 0;
         DB::beginTransaction();
         try {
@@ -288,7 +288,7 @@ class DatamigrationCommand extends Command
     {
         $suspenses = DB::connection('selfservicedb')->table('suspenses')->get();
         $count = count($suspenses);
-        $this->info('Total suspenses to migrate: '.$count);
+        $this->info('Total suspenses to migrate: ' . $count);
         $i = 0;
         DB::beginTransaction();
         try {
@@ -332,7 +332,7 @@ class DatamigrationCommand extends Command
     {
         $suspenseutilizations = DB::connection('selfservicedb')->table('suspenseutilizations')->get();
         $count = count($suspenseutilizations);
-        $this->info('Total suspenseutilizations to migrate: '.$count);
+        $this->info('Total suspenseutilizations to migrate: ' . $count);
         $i = 0;
         DB::beginTransaction();
         try {
@@ -369,7 +369,6 @@ class DatamigrationCommand extends Command
         $progressBar->finish();
         $this->newLine();
         DB::commit();
-
     }
 
     public function computesuspensebalancecomparison(): void
@@ -377,45 +376,43 @@ class DatamigrationCommand extends Command
         $this->info('Computing suspense balance comparison');
 
         try {
-           $suspenses = DB::connection('selfservicedb')->table('suspenses')->get();
-           $count = count($suspenses);
-           $progressBar = $this->output->createProgressBar($count);
-           $progressBar->start();
-           $this->info('Total suspenses to compute: '.$count);
-           $i = 0;
-           $array = [];
-          foreach ($suspenses as $suspense) {
-            $selfserviceutilizations = DB::connection('selfservicedb')->table('suspenseutilizations')->where('SuspenseId', $suspense->id)->get();
-            $selfserviceutilizationsum = $selfserviceutilizations->sum('Amount');
-            $selfservicebalance = $suspense->Amount - $selfserviceutilizationsum;
-            $maindbsuspense = DB::table('suspenses')->where('id', $suspense->id)->first();
-            if ($maindbsuspense) {
-                $maindbutilizations = DB::table('suspenseutilizations')->where('suspense_id', $maindbsuspense->id)->get();
-                $maindbutilizationsum = $maindbutilizations->sum('amount');
-                $maindbbalance = $maindbsuspense->amount - $maindbutilizationsum;
-                $difference = $selfservicebalance - $maindbbalance;
-                $this->info('Suspense: '.$suspense->id.' - Self service balance: '.$selfservicebalance.' - Main database balance: '.$maindbbalance.' - Difference: '.$difference);
-                $array[] = [
-                    'suspense_id' => $suspense->id,
-                    'selfserviceamount' => $suspense->Amount,
-                    'selfserviceutilizations' => $selfserviceutilizationsum,                   
-                    'maindbamount' => $maindbsuspense->amount,
-                    'maindbutilizations' => $maindbutilizationsum,
-                    'selfservicebalance' => $selfservicebalance,
-                    'maindbbalance' => $maindbbalance,
-                    'difference' => $difference,
-                ];
+            $suspenses = DB::connection('selfservicedb')->table('suspenses')->get();
+            $count = count($suspenses);
+            $progressBar = $this->output->createProgressBar($count);
+            $progressBar->start();
+            $this->info('Total suspenses to compute: ' . $count);
+            $i = 0;
+            $array = [];
+            foreach ($suspenses as $suspense) {
+                $selfserviceutilizations = DB::connection('selfservicedb')->table('suspenseutilizations')->where('SuspenseId', $suspense->id)->get();
+                $selfserviceutilizationsum = $selfserviceutilizations->sum('Amount');
+                $selfservicebalance = $suspense->Amount - $selfserviceutilizationsum;
+                $maindbsuspense = DB::table('suspenses')->where('id', $suspense->id)->first();
+                if ($maindbsuspense) {
+                    $maindbutilizations = DB::table('suspenseutilizations')->where('suspense_id', $maindbsuspense->id)->get();
+                    $maindbutilizationsum = $maindbutilizations->sum('amount');
+                    $maindbbalance = $maindbsuspense->amount - $maindbutilizationsum;
+                    $difference = $selfservicebalance - $maindbbalance;
+                    $this->info('Suspense: ' . $suspense->id . ' - Self service balance: ' . $selfservicebalance . ' - Main database balance: ' . $maindbbalance . ' - Difference: ' . $difference);
+                    $array[] = [
+                        'suspense_id' => $suspense->id,
+                        'selfserviceamount' => $suspense->Amount,
+                        'selfserviceutilizations' => $selfserviceutilizationsum,
+                        'maindbamount' => $maindbsuspense->amount,
+                        'maindbutilizations' => $maindbutilizationsum,
+                        'selfservicebalance' => $selfservicebalance,
+                        'maindbbalance' => $maindbbalance,
+                        'difference' => $difference,
+                    ];
+                    $progressBar->advance();
+                }
+
                 $progressBar->advance();
             }
-
-                   $progressBar->advance();
-          }
-          Log::info(json_encode($array));
-          $progressBar->finish();
-          
-        
+            Log::info(json_encode($array));
+            $progressBar->finish();
         } catch (\Exception $e) {
-            $this->error('Error computing suspense balance comparison: '.$e->getMessage());
+            $this->error('Error computing suspense balance comparison: ' . $e->getMessage());
             Log::error('Suspense balance comparison error', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
