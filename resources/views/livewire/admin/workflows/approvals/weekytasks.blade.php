@@ -245,7 +245,7 @@
                                                         @if($task->approvalstatus === 'pending' && $task->status == 'completed')
                                                             <div class="flex gap-2 mt-2">
                                                                 <button wire:click="approveTask({{ $task->id }}, 'Approved')" class="btn btn-xs btn-success">Approve</button>
-                                                                <button wire:click="approveTask({{ $task->id }}, 'Rejected')" class="btn btn-xs btn-error">Reject</button>
+                                                                <button wire:click="approveTask({{ $task->id }}, 'Rejected')" class="btn btn-xs btn-error">Send Back</button>
                                                             </div>
                                                         @endif
                                                     </div>
@@ -303,7 +303,7 @@
                     </label>
                     <select wire:model="bulkApprovalStatus" class="select select-bordered w-full">
                         <option value="Approved">Approve</option>
-                        <option value="Rejected">Reject</option>
+                        <option value="Rejected">Send Back</option>
                     </select>
                 </div>
                 
@@ -366,7 +366,7 @@
                     </label>
                     <select wire:model="completedBulkApprovalStatus" class="select select-bordered w-full">
                         <option value="Approved">Approve</option>
-                        <option value="Rejected">Reject</option>
+                        <option value="Rejected">Send Back</option>
                     </select>
                 </div>
                 

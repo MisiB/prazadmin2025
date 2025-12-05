@@ -97,9 +97,11 @@ class Weekytasks extends Component
 
     public function getUserActualTasks($user) {
         $tasks = collect();
-        $user->calenderworkusertasks->each(function($calenderworkusertask) use ($tasks) {
-            $calenderworkusertask->calendarweek->calendardays->each(function($calendarday) use ($tasks) {
-                $calendarday->tasks->each(function($task) use ($tasks) {
+        $user->calenderworkusertasks->each(function($calenderworkusertask) use ($tasks, $user) {
+            $calenderworkusertask->calendarweek->calendardays->each(function($calendarday) use ($tasks, $user) {
+                // Only get tasks for this specific user
+                $userTasks = $calendarday->tasks()->where('user_id', $user->id)->get();
+                $userTasks->each(function($task) use ($tasks) {
                     $task->load('calendarday');
                     $tasks->push($task);
                 });
