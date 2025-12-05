@@ -7,6 +7,7 @@ use App\Livewire\Admin\Workflows\Approvals\Storesrequisitionverification;
 use App\Livewire\Admin\Workflows\Leaverequests;
 use Dcblogdev\MsGraph\Facades\MsGraph;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
@@ -17,10 +18,18 @@ Volt::route('/connect', 'auth.connect')->name('connect');
 Volt::route('/reset/{token}', 'auth.resetpassword')->name('auth.reset');
 Route::middleware('auth')->group(function () {
     Route::get('/logout', function () {
+        try {
+            MsGraph::disconnect();
+        } catch (\Exception $e) {
+            // Log error but continue with logout
+            Log::warning('MsGraph disconnect failed during logout: ' . $e->getMessage());
+        }
         Auth::logout();
-
-        return MsGraph::disconnect();
+        request()->session()->invalidate();
+        request()->session()->regenerateToken();
+        return redirect()->route('login');
     })->name('logout');
+    
     Volt::route('/home', 'admin.home')->name('admin.home');
     Volt::route('/settings', 'profile.settings')->name('profile.settings');
     Volt::route('/configuration/accounttypes', 'admin.configuration.accounttypes')->name('admin.configuration.accounttypes');

@@ -37,11 +37,16 @@
         $hasPendingApproval = $allTasks->where('approvalstatus', 'pending')->count() > 0;
         $hasRejected = $allTasks->where('approvalstatus', 'Rejected')->count() > 0;
         $allApproved = $allTasks->count() > 0 && $allTasks->where('approvalstatus', 'Approved')->count() === $allTasks->count();
-        $hasCalenderworkusertasks = $currentweek->calenderworkusertasks->count() > 0;
-        $calenderworkusertaskStatus = $hasCalenderworkusertasks ? $currentweek->calenderworkusertasks->first()->status : null;
+        
+        // Explicitly get approval records for this specific week only (already filtered by calendarweek_id via relationship)
+        $currentWeekApprovalRecords = $currentweek->calenderworkusertasks->filter(function ($record) use ($currentweek) {
+            return $record->calendarweek_id == $currentweek->id;
+        });
+        $hasCalenderworkusertasks = $currentWeekApprovalRecords->count() > 0;
+        $calenderworkusertaskStatus = $hasCalenderworkusertasks ? $currentWeekApprovalRecords->first()->status : null;
     @endphp
     
-    @if($currentweek->calenderworkusertasks->count() ==0)
+    @if($taskSummary['total'] > 0 && $currentWeekApprovalRecords->count() == 0)
     <div class="mb-6 animate-fade-in">
         <x-alert title="Awaiting Approval" description="Your supervisor has not approved your tasks for this week yet." icon="o-envelope" class="alert-error shadow-lg">
   <x-slot:actions>
@@ -53,7 +58,7 @@
     <div class="mb-6 animate-fade-in">
         <x-alert title="Pending Approval" description="Your supervisor is currently reviewing your tasks for this week." icon="o-envelope" class="alert-warning shadow-lg">
 <x-slot:actions>
-  @if($currentweek->calenderworkusertasks->first()->comment)
+  @if($currentWeekApprovalRecords->first() && $currentWeekApprovalRecords->first()->comment)
                     <x-button label="View Comment" wire:click="viewcommentmodal=true" class="btn-sm" />
   @endif
 </x-slot:actions>
@@ -532,12 +537,12 @@
             </x-slot:title>
             
             <div class="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl p-6 border border-amber-200">
-            @if($currentweek->calenderworkusertasks->count() > 0)
+            @if($currentWeekApprovalRecords->count() > 0 && $currentWeekApprovalRecords->first()->comment)
                     <div class="flex gap-3">
                         <svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
                         </svg>
-                        <p class="text-gray-800 leading-relaxed">{{ $currentweek->calenderworkusertasks->first()->comment }}</p>
+                        <p class="text-gray-800 leading-relaxed">{{ $currentWeekApprovalRecords->first()->comment }}</p>
                     </div>
                 @else
                     <p class="text-gray-500 text-center py-4">No comments available</p>
