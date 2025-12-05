@@ -17,7 +17,7 @@
                 <x-slot:trigger>
                     <x-button class="btn-ghost btn-sm" label="Action" icon="o-cog-6-tooth" />
                 </x-slot:trigger>
-                <x-menu-item title="Custmers"   
+                <x-menu-item title="Customers"   
                   icon="o-user-group" 
                 link="{{ route('admin.customers.showlist') }}"/>             
                 <x-menu-separator />
