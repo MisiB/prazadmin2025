@@ -44,6 +44,7 @@
         });
         $hasCalenderworkusertasks = $currentWeekApprovalRecords->count() > 0;
         $calenderworkusertaskStatus = $hasCalenderworkusertasks ? $currentWeekApprovalRecords->first()->status : null;
+        $rejectionComment = $hasCalenderworkusertasks && $currentWeekApprovalRecords->first()->comment ? $currentWeekApprovalRecords->first()->comment : null;
     @endphp
     
     @if($taskSummary['total'] > 0 && $currentWeekApprovalRecords->count() == 0)
@@ -312,6 +313,21 @@
                                     />
                                 </div>
               </div>
+
+                            <!-- Rejection Comment -->
+                            @if($task->approvalstatus == 'Rejected' && $rejectionComment)
+                            <div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                <div class="flex items-start gap-2">
+                                    <svg class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
+                                    </svg>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-semibold text-red-900 mb-1">Supervisor's Comment:</p>
+                                        <p class="text-sm text-red-800">{{ $rejectionComment }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            @endif
 
                             <!-- Task Actions -->
                @if($task->status != 'completed')
