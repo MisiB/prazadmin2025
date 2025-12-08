@@ -114,7 +114,7 @@ class Weekytasks extends Component
         return $users->sum(function($user) { 
             return $user->calenderworkusertasks->sum(function($calenderworkusertask) {
                 return $calenderworkusertask->calendarweek->calendardays->sum(function($calendarday) {
-                    return $calendarday->tasks->whereNotNull('individualoutputbreakdown_id')->count();
+                    return $calendarday->tasks->whereNotNull('individualworkplan_id')->count();
                 });
             });
         });
@@ -124,7 +124,7 @@ class Weekytasks extends Component
         return $users->sum(function($user) { 
             return $user->calenderworkusertasks->sum(function($calenderworkusertask) {
                 return $calenderworkusertask->calendarweek->calendardays->sum(function($calendarday) {
-                    return $calendarday->tasks->whereNull('individualoutputbreakdown_id')->count();
+                    return $calendarday->tasks->whereNull('individualworkplan_id')->count();
                 });
             });
         });
