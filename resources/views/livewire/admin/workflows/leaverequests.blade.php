@@ -123,7 +123,7 @@
                 <x-textarea class="col-span-1" wire:model.live="addressonleave" label="Address on leave" rows="4"></x-textarea>
                 @hasrole('Acting HOD')
                     <div class="col-span-1">
-                        <x-select :options="$hodassigneesmap" wire:model.live="assignedhodid"  label="Assign HOD" option-label="name" option-value="id" placeholder="Select Acting HOD"/>
+                        <x-select :options="$hodassigneesmap" wire:model.live="assignedhodid"  label="Assign Acting Person" option-label="name" option-value="id" placeholder="Select Acting Person"/>
                     </div>
                 @endhasrole
                 <div></div>   

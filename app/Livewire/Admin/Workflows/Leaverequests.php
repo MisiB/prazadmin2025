@@ -171,7 +171,7 @@ class Leaverequests extends Component
             ['label' => 'End date', 'key' => 'enddate'],
             ['label' => 'Date of return', 'key' => 'returndate'],
             ['label' => 'Status', 'key' => 'status'],
-            ['label' => 'Acting H.O.D', 'key' => 'hod'],  
+            ['label' => 'Acting Person', 'key' => 'hod'],  
             ['label' => 'Approving H.O.D', 'key' => 'approver'], 
         ];
     }
