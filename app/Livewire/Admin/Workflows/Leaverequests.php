@@ -103,7 +103,6 @@ class Leaverequests extends Component
         $this->datesrange= $this->getdatesrange();
         $this->dateRangeConfig=[
             "mode"=>"range",
-            'minDate' => now()->format('Y-m-d'),
             'disable' => $this->datesrange
         ];
     }
