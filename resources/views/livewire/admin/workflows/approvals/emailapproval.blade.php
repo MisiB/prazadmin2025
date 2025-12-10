@@ -53,44 +53,47 @@
                         <div class="text-sm mt-2 text-gray-600">📝 Reason: {{ $requestrecord->reasonforleave }}</div>
                     </div>
                 </div>
+                
             @if($requestrecord->status != 'C')
-                <!-- HOD's Comment and Dept Manager/CEO Signature Section -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-10 gap-6 mt-8 mx-6">
-                    <!-- HOD's Comment -->
-                    <div class="col-span-1 sm:col-span-2 lg:col-span-10">
-                        <x-textarea wire:model.live.debounce="comment" 
-                            hint="💬 HOD'S Comment" 
-                            rows="4"
-                            class="border border-gray-300 rounded-lg p-3 text-gray-700 focus:ring-2 focus:ring-blue-500 transition duration-300"
-                            :disabled="$approvalrecord->decision !=null && $approvalrecord->decision == true"
-                        />
+                @if($approvalrecord->action !=='A' || $approvalrecord->action === 'R')
+                    <!-- HOD's Comment and Dept Manager/CEO Signature Section -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-10 gap-6 mt-8 mx-6">
+                        <!-- HOD's Comment -->
+                        <div class="col-span-1 sm:col-span-2 lg:col-span-10">
+                            <x-textarea wire:model.live.debounce="comment" 
+                                hint="💬 HOD'S Comment" 
+                                rows="4"
+                                class="border border-gray-300 rounded-lg p-3 text-gray-700 focus:ring-2 focus:ring-blue-500 transition duration-300"
+                                :disabled="$approvalrecord->decision !=null && $approvalrecord->decision == true"
+                            />
+                        </div>
                     </div>
-                </div>
 
 
-                <!-- Actions (Approve/Reject Buttons) -->
-                <x-slot:actions>
-                    <div class="flex flex-wrap justify-center gap-6 mt-8">
+                    <!-- Actions (Approve/Reject Buttons) -->
+                    <x-slot:actions>
+                        <div class="flex flex-wrap justify-center gap-6 mt-8">
 
-                        {{-- Reject Button --}}            
-                        <x-button label="❌ Reject"
-                            wire:click="$set('isapproved',false)"
-                            type="submit"
-                            spinner="processApplication"
-                            class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md"
-                            :disabled="$approvalrecord->decision !=null && $approvalrecord->decision == true"
-                        />
+                            {{-- Reject Button --}}            
+                            <x-button label="❌ Reject"
+                                wire:click="$set('isapproved',false)"
+                                type="submit"
+                                spinner="processApplication"
+                                class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md"
+                                :disabled="$approvalrecord->decision !=null && $approvalrecord->decision == true"
+                            />
 
-                        {{-- Approve Button --}}
-                        <x-button label="✅ Approve"
-                            wire:click="$set('isapproved',true)"
-                            type="submit"
-                            spinner="processApplication"
-                            class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md"
-                            :disabled="$approvalrecord->decision !=null && $approvalrecord->decision == false"
-                        />
-                    </div>
-                </x-slot:actions>
+                            {{-- Approve Button --}}
+                            <x-button label="✅ Approve"
+                                wire:click="$set('isapproved',true)"
+                                type="submit"
+                                spinner="processApplication"
+                                class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md"
+                                :disabled="$approvalrecord->decision !=null && $approvalrecord->decision == false"
+                            />
+                        </div>
+                    </x-slot:actions>
+                @endif
             @endif
         </x-form>
 

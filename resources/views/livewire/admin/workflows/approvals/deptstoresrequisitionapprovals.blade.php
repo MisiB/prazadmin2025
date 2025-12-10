@@ -192,23 +192,6 @@
                                         wire:click="viewrequisition('{{$storesrequisition->storesrequisition_uuid}}', '{{$storesrequisition->initiator_id}}')" 
                                         spinner class="text-blue-500 btn-outline btn-sm" 
                                     />
-                                    @hasrole('Admin Issuer')
-                                        <x-button icon="o-folder-plus" 
-                                            wire:click="openrequisition('{{$storesrequisition->storesrequisition_uuid}}', '{{$storesrequisition->initiator_id}}')" 
-                                            wire:confirm="Do you want to claim delivery?" 
-                                            spinner 
-                                            class="text-green-500  btn-outline btn-sm" 
-                                            :disabled="$storesrequisition->status=='O'||$storesrequisition->status=='D'||$storesrequisition->status=='C'||$storesrequisition->status=='R'"
-                                        />
-                                    
-                                        <x-button icon="o-lock-closed"
-                                            wire:click="initiatedelivery('{{$storesrequisition->storesrequisition_uuid}}','{{$storesrequisition->initiator_id}}')" 
-                                            wire:confirm="Confirm delivery?" 
-                                            spinner 
-                                            class="text-zinc-500 btn-outline btn-sm" 
-                                            :disabled="$storesrequisition->status!=='O'"
-                                        />
-                                    @endhasrole
                                     
                                 </div>
                             @endscope    
@@ -256,33 +239,7 @@
                             @endscope
                             @scope('cell_initiator',$storesrequisition)   
                                 <span>{{$storesrequisition->initiator->name." ".$storesrequisition->initiator->surname}}</span>
-                            @endscope  
-                                
-                            @hasrole('Admin Issuer')
-                                @scope('actions', $storesrequisition)
-                                    <div class="flex space-x-2">
-                                        <x-button icon="o-folder-plus" 
-                                            wire:click="openrequisition('{{$storesrequisition->storesrequisition_uuid}}', '{{$storesrequisition->initiator_id}}')" 
-                                            wire:confirm="Do you want to claim delivery?" 
-                                            spinner 
-                                            class="text-green-500  btn-outline btn-sm" 
-                                            :disabled="$storesrequisition->status=='O'||$storesrequisition->status=='D'||$storesrequisition->status=='C'||$storesrequisition->status=='R'"
-                                        />
-                                        <x-button icon="o-lock-closed"
-                                            wire:click="initiatedelivery('{{$storesrequisition->storesrequisition_uuid}}','{{$storesrequisition->initiator_id}}')" 
-                                            wire:confirm="Confirm delivery?" 
-                                            spinner 
-                                            class="text-zinc-500 btn-outline btn-sm" 
-                                            :disabled="$storesrequisition->status!=='O'"
-                                        />
-                                        <x-button icon="o-eye" 
-                                            wire:click="viewrequisition('{{$storesrequisition->storesrequisition_uuid}}', '{{$storesrequisition->initiator_id}}')" 
-                                            spinner 
-                                            class="text-blue-500 btn-outline btn-sm" 
-                                        />
-                                    </div>
-                                @endscope    
-                            @endhasrole          
+                            @endscope         
                             <x-slot:empty>
                                 <x-alert class="alert-error" title="No delivered requests found." />
                             </x-slot:empty>
@@ -325,33 +282,7 @@
                             @endscope
                             @scope('cell_initiator',$storesrequisition)   
                                 <span>{{$storesrequisition->initiator->name." ".$storesrequisition->initiator->surname}}</span>
-                            @endscope  
-                                
-                            @hasrole('Admin Issuer')
-                                @scope('actions', $storesrequisition)
-                                    <div class="flex space-x-2">
-                                        <x-button icon="o-folder-plus" 
-                                            wire:click="openrequisition('{{$storesrequisition->storesrequisition_uuid}}', '{{$storesrequisition->initiator_id}}')" 
-                                            wire:confirm="Do you want to claim delivery?" 
-                                            spinner 
-                                            class="text-green-500  btn-outline btn-sm" 
-                                            :disabled="$storesrequisition->status=='O'||$storesrequisition->status=='D'||$storesrequisition->status=='C'||$storesrequisition->status=='R'"
-                                        />
-                                        <x-button icon="o-lock-closed"
-                                            wire:click="initiatedelivery('{{$storesrequisition->storesrequisition_uuid}}','{{$storesrequisition->initiator_id}}')" 
-                                            wire:confirm="Confirm delivery?" 
-                                            spinner 
-                                            class="text-zinc-500 btn-outline btn-sm" 
-                                            :disabled="$storesrequisition->status!=='O'"
-                                        />
-                                        <x-button icon="o-eye" 
-                                            wire:click="viewrequisition('{{$storesrequisition->storesrequisition_uuid}}', '{{$storesrequisition->initiator_id}}')" 
-                                            spinner 
-                                            class="text-blue-500 btn-outline btn-sm" 
-                                        />
-                                    </div>
-                                @endscope    
-                            @endhasrole          
+                            @endscope          
                             <x-slot:empty>
                                 <x-alert class="alert-error" title="No accepted requests found." />
                             </x-slot:empty>

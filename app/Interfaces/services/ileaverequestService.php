@@ -53,6 +53,7 @@ interface ileaverequestService
     public function getuserdepartmentname($userdepartmentid);
     public function gethodrepresentatives($departmentid,$hodid);
     public function isactiveonleave($userid);
+    public function getusersbyrole($rolename);
  
 }
  

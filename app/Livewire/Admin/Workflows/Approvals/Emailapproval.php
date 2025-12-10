@@ -4,6 +4,7 @@ namespace App\Livewire\Admin\Workflows\Approvals;
 
 use App\Interfaces\services\ileaverequestService;
 use App\Notifications\LeaverequestApproved;
+use App\Notifications\LeaverequestSubmitted;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
@@ -79,9 +80,9 @@ class Emailapproval extends Component
         {
             abort("403", "Access denied. Please consult ICT about your HOD access assignment"); 
         }
-        //Updates application action
+        //Updates leaveapplication action
         ($approved===true) ? $this->approvalrecord->update(['action'=>'A']): $this->approvalrecord->update(['action'=>'R']);
-        //Updates application
+        //Updates leave application
         ($this->approvalrecord->action==='A')? $this->approvalrecord->update(['decision'=>true]): $this->approvalrecord->update(['decision'=>false]);
         $this->approvalrecord->update([
             'comment'=>$this->comment
@@ -117,8 +118,28 @@ class Emailapproval extends Component
         }
 
         $appliedleaverecord=$this->leaverequestService->getleaverequestbyuuid($this->approvalrecord->leaverequest_uuid);
+        //Notify HR about decision->Role: Human Resource Manager
+        $sendtohrmanager=false;
+        if($this->requestrecord->status==='A'){
+            collect($this->leaverequestService->getusersbyrole('Human Resource Manager'))->each(function($hrmanager) use ($sendtohrmanager){
+                $this->leaverequestService->getusers()->each(function($user) use ($hrmanager){
+                    if($user->department!=null &&$user->department->reportto===$hrmanager->id){
+                        $user->notify(new LeaverequestSubmitted($this->leaverequestService, $this->approvalrecord->leaverequest_uuid)); 
+                    }
+                });
+                if(!$sendtohrmanager){
+                    $sendtohrmanager=true;
+                    $hrmanager->notify(new LeaverequestSubmitted($this->leaverequestService, $this->approvalrecord->leaverequest_uuid));
+                }
+            });
+
+            $sendtohrmanager=false;
+        }
+        //Notify applicant about decision
         $initiator=$this->leaverequestService->getuser($appliedleaverecord->user_id);
         $initiator->notify(new LeaverequestApproved($this->leaverequestService, $this->approvalrecord->leaverequest_uuid));
+        
+
         $this->comment=null;
         $this->toast('success', 'Application finalized successfully by your decision'); 
         return $this->redirect(route('admin.workflows.leaverequests'));

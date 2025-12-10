@@ -280,6 +280,21 @@ class Leaverequests extends Component
         $this->addleaverequestmodal=false;
         return $this->redirect('/workflows/leaverequests');
     }
+
+    public function getmyleavestatementbalances()
+    {
+        $leavestatementbalances=[];
+
+        $this->leaverequestService->getleavetypes()->map(function ($leavetype) use (&$leavestatementbalances){
+            $daysattained=( (float)$this->leaverequestService->getleavestatementbyuseridandleavename($this->user->id, $leavetype->name)?->daysattained) ?? 0;
+            $daystaken=( (float)$this->leaverequestService->getleavestatementbyuseridandleavename($this->user->id, $leavetype->name)?->daystaken ) ?? 0;  
+            $leavestatementbalances[]=[
+                strtolower($leavetype->name)=>$daysattained - $daystaken,
+            ];
+        });
+        $leavestatementbalances=array_merge(...$leavestatementbalances);
+        return $leavestatementbalances;
+    }
     
 
     public function render()
@@ -292,7 +307,8 @@ class Leaverequests extends Component
             'leaverequests'=>$this->getmyleaverequests(),
             'leavetypesmap'=>$this->getleavetypes(),
             'headers' => $this->headers(),
-            'hodassigneesmap'=>$this->gethodrepresentatives()
+            'hodassigneesmap'=>$this->gethodrepresentatives(),
+            'leavestatementbalances'=>$this->getmyleavestatementbalances()
         ]);
     }
 }
