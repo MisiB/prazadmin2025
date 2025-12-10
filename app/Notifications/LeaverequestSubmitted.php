@@ -53,7 +53,7 @@ class LeaverequestSubmitted extends Notification implements ShouldQueue
             ->line('')
             ->line('A new '.$leavetype->name.' leave request has been submitted by '.$this->leaverequest->user->name.' '.$this->leaverequest->user->surname)
             ->line('')
-            ->action('Make decision', $finalizationurl)
+            ->action('View details', $finalizationurl)
             ->line('')
             ->line('REF #:'.$this->leaverequest->leaverequestuuid)
             ->line('Thank you for using our application, we are here to serve!')

@@ -5,43 +5,129 @@
 
     <x-modulewelcomebanner :breadcrumbs="$breadcrumbs"/>
 
+    <!--Leave Balance Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-10">
+
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center gap-8 mb-4">
+                <div class="p-3 bg-gradient-to-br from-green-300 to-green-600 rounded-xl shadow-lg shadow-purple-500/30">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                </div>
+                <div>                    
+                    <div class="grid grid-cols-4 gap-12">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-gray-900">{{ $leavestatementbalances['vacation'] }}</div>
+                            <div class="text-xs text-gray-600">Vacation</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-blue-600">{{ $leavestatementbalances['annual'] }}</div>
+                            <div class="text-xs text-gray-600">Annual</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-purple-600">{{ $leavestatementbalances['study'] }}</div>
+                            <div class="text-xs text-gray-600">Study </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="p-3 bg-gradient-to-br from-green-300 to-green-600 rounded-xl shadow-lg shadow-purple-500/30">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                </div>
+                <div>                    
+                    <div class="grid grid-cols-4 gap-3">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-gray-900">{{ $leavestatementbalances['sick'] }}</div>
+                            <div class="text-xs text-gray-600">Sick</div>
+                        </div>
+                        @if(strtolower($this->user->gender)==='f')
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-blue-600">{{ $leavestatementbalances['maternity'] }}</div>
+                            <div class="text-xs text-gray-600">Maternity</div>
+                        </div>
+                        @endif
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-600">{{ $leavestatementbalances['compassionate'] }}</div>
+                            <div class="text-xs text-gray-600">Compassionate </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 my-8">
-        <x-card class="border-2 border-blue-200  shadow-sm shadow-blue-200 bg-gradient-to-bl from-white to-gray-200">
+        <x-card class="shadow-md bg-gradient-to-tl from-gray-100 to-white rounded-xl">
             <div class="flex items-center space-x-3">
-                <div class="bg-yellow-200 p-3 rounded-full">
-                    <x-icon name="o-clock" class="w-8 h-8 text-blue-600"/>
+                <div class="grid grid-flow-row gap-2">
+                    <div class="grid grid-flow-col gap-2">
+                        <div class="bg-yellow-200 p-3 rounded-full">
+                            <x-icon name="o-clock" class="w-8 h-8 text-blue-600"/>
+                        </div>
+                        <div class="text-sm text-gray-600 tracking-wide mt-4">Pending</div>
+                    </div>
+                    <div>
+                        <div class="text-4xl font-bold text-gray-600 pl-3">{{ $totalpending }}</div>
+                    </div>
                 </div>
-                <div class="text-4xl font-bold text-gray-600">{{ $totalpending }}</div>
-                <div class="text-sm text-gray-600 tracking-wide">Pending</div>
             </div>
         </x-card>
 
-        <x-card class="border-2 border-blue-200  shadow-sm shadow-blue-200 bg-gradient-to-bl from-white to-gray-200">
+        <x-card class="shadow-md bg-gradient-to-tl from-gray-100 to-white rounded-xl">
             <div class="flex items-center space-x-3">
-                <div class="bg-blue-200 p-3 rounded-full">
-                    <x-icon name="o-check" class="w-8 h-8 text-green-600"/>
+                <div class="grid grid-flow-row gap-2">
+                    <div class="grid grid-flow-col gap-2">
+                        <div class="bg-blue-200 p-3 rounded-full">
+                            <x-icon name="o-check" class="w-8 h-8 text-green-600"/>
+                        </div>
+                        <div class="text-sm text-gray-600 tracking-wide mt-4">Approved</div>
+                    </div>
+                    <div>
+                        <div class="text-4xl font-bold text-gray-600 pl-3">{{ $totalapproved }}</div>
+                    </div>
                 </div>
-                <div class="text-4xl font-bold text-gray-600">{{ $totalapproved }}</div>
-                <div class="text-sm text-gray-600 tracking-wide">Approved</div>
             </div>
         </x-card>
 
-        <x-card class="border-2 border-blue-200  shadow-sm shadow-blue-200 bg-gradient-to-bl from-white to-gray-200">
+        <x-card class="shadow-md bg-gradient-to-tl from-gray-100 to-white rounded-xl">
             <div class="flex items-center space-x-3">
-                <div class="bg-red-700 p-3 rounded-full">
-                    <x-icon name="c-arrow-left-end-on-rectangle" class="w-8 h-8 text-white"/>
+                <div class="grid grid-flow-row gap-2">
+                    <div class="grid grid-flow-col gap-1">
+                        <div class="bg-red-700 p-3 rounded-full">
+                            <x-icon name="c-arrow-left-end-on-rectangle" class="w-8 h-8 text-white"/>
+                        </div>
+
+                        <div class="text-sm text-gray-600 tracking-wide mt-4">Rejected</div>
+                    </div>
+                    <div>
+                        <div class="text-4xl font-bold text-gray-600 pl-3">{{ $totalrejected }}</div>
+                    </div>
                 </div>
-                <div class="text-4xl font-bold text-gray-600">{{ $totalrejected }}</div>
-                <div class="text-sm text-gray-600 tracking-wide">Rejected</div>
             </div>
         </x-card>
-        <x-card class="border-2 border-blue-200  shadow-sm shadow-blue-200 bg-gradient-to-bl from-white to-gray-200">
+
+        <x-card class="shadow-md bg-gradient-to-tl from-gray-100 to-white rounded-xl">
             <div class="flex items-center space-x-3">
-                <div class="bg-blue-700 p-3 rounded-full">
-                    <x-icon name="o-clock" class="w-8 h-8 text-white"/>
+
+                <div class="grid grid-flow-row gap-2">
+                    <div class="grid grid-flow-col gap-1">
+                        <div class="bg-blue-700 p-3 rounded-full">
+                            <x-icon name="o-clock" class="w-8 h-8 text-white"/>
+                        </div>
+                        <div class="text-sm text-gray-600 tracking-wide mt-4">Cancelled</div>
+                    </div>
+                    <div>
+                        <div class="text-4xl font-bold text-gray-600 pl-3">{{ $totalcancelled }}</div>
+                    </div>
+
                 </div>
-                <div class="text-4xl font-bold text-gray-600">{{ $totalcancelled }}</div>
-                <div class="text-sm text-gray-600 tracking-wide">Cancelled</div>
             </div>
         </x-card>
     </div>
@@ -55,7 +141,6 @@
                 class="bg-gradient-to-bl from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white"/>
             </x-slot:menu>
             
-            {{$leaverequests->links()}}
             <x-table :headers="$headers" :rows="$leaverequests">
                 @scope('cell_status', $leaverequest)
                     @if($leaverequest->status=='A')
@@ -102,6 +187,8 @@
                     <x-alert class="alert-error" title="No leave requests found." />
                 </x-slot:empty>
             </x-table>
+            {{$leaverequests->links()}}
+
         </x-card>    
     </div>
 
@@ -123,7 +210,7 @@
                 <x-textarea class="col-span-1" wire:model.live="addressonleave" label="Address on leave" rows="4"></x-textarea>
                 @hasrole('Acting HOD')
                     <div class="col-span-1">
-                        <x-select :options="$hodassigneesmap" wire:model.live="assignedhodid"  label="Assign HOD" option-label="name" option-value="id" placeholder="Select Acting HOD"/>
+                        <x-select :options="$hodassigneesmap" wire:model.live="assignedhodid"  label="Assign Acting Person" option-label="name" option-value="id" placeholder="Select Acting Person"/>
                     </div>
                 @endhasrole
                 <div></div>   

@@ -3,63 +3,107 @@
     <x-modulewelcomebanner :breadcrumbs="$breadcrumbs"/>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 my-8">
-        <x-card class="border-2 border-blue-200  shadow-sm shadow-blue-200 bg-gradient-to-bl from-white to-gray-200">
+        <x-card class="shadow-md bg-gradient-to-tl from-white to-yellow-500 rounded-xl">
             <div class="flex items-center space-x-3">
-                <div class="bg-white p-3 rounded-full">
-                    <x-icon name="o-clock" class="w-8 h-8 text-blue-600"/>
+                <div class="grid grid-flow-row gap-2">
+                    <div class="grid grid-flow-col gap-1">
+                        <div class="bg-white p-3 rounded-full">
+                            <x-icon name="o-clock" class="w-8 h-8 text-yellow-700"/>
+                        </div>
+
+                        <div class="text-sm text-white tracking-wide mt-4">Pending</div>
+                    </div>
+                    <div>
+                        <div class="text-4xl font-bold text-white pl-3">{{ $totalpending }}</div>
+                    </div>
                 </div>
-                <div class="text-4xl font-bold text-gray-600">{{ $totalpending }}</div>
-                <div class="text-sm text-gray-600 tracking-wide">Pending</div>
             </div>
         </x-card>
 
-        <x-card class="border-2 border-blue-200  shadow-sm shadow-blue-200 bg-gradient-to-bl from-white to-gray-200">
+        <x-card class="shadow-md bg-gradient-to-tl from-white to-blue-600 rounded-xl">
             <div class="flex items-center space-x-3">
-                <div class="bg-blue-200 p-3 rounded-full">
-                    <x-icon name="o-check" class="w-8 h-8 text-green-600"/>
+                <div class="grid grid-flow-row gap-2">
+                    <div class="grid grid-flow-col gap-1">
+                        <div class="bg-white p-3 rounded-full">
+                            <x-icon name="o-check" class="w-8 h-8 text-green-600"/>
+                        </div>
+
+                        <div class="text-sm text-white tracking-wide mt-4">Approved</div>
+                    </div>
+                    <div>
+                        <div class="text-4xl font-bold text-white pl-3">{{ $totalapproved }}</div>
+                    </div>
                 </div>
-                <div class="text-4xl font-bold text-gray-600">{{ $totalapproved }}</div>
-                <div class="text-sm text-gray-600 tracking-wide">Approved</div>
             </div>
         </x-card>
 
-        <x-card class="border-2 border-blue-200  shadow-sm shadow-blue-200 bg-gradient-to-bl from-white to-gray-200">
+        <x-card class="shadow-md bg-gradient-to-tl from-white to-orange-700 rounded-xl">
             <div class="flex items-center space-x-3">
-                <div class="bg-blue-400 p-3 rounded-full">
-                    <x-icon name="o-book-open" class="w-8 h-8 text-yellow-600"/>
+                <div class="grid grid-flow-row gap-2">
+                    <div class="grid grid-flow-col gap-1">
+                        <div class="bg-orange-600 p-3 rounded-full">
+                            <x-icon name="o-book-open" class="w-8 h-8 text-white"/>
+                        </div>
+
+                        <div class="text-sm text-white tracking-wide mt-4">Open</div>
+                    </div>
+                    <div>
+                        <div class="text-4xl font-bold text-white pl-3">{{ $totalopened }}</div>
+                    </div>
                 </div>
-                <div class="text-4xl font-bold text-gray-600">{{ $totalopened }}</div>
-                <div class="text-sm text-gray-600 tracking-wide">Open</div>
+
             </div>
         </x-card>
 
-        <x-card class="border-2 border-blue-200  shadow-sm shadow-blue-200 bg-gradient-to-bl from-white to-gray-200">
+        <x-card class="shadow-md bg-gradient-to-tl from-white to-green-500 rounded-xl">
             <div class="flex items-center space-x-3">
-                <div class="bg-green-200 p-3 rounded-full">
-                    <x-icon name="m-clipboard-document-list" class="w-8 h-8 text-yellow-600"/>
+                <div class="grid grid-flow-row gap-2">
+                    <div class="grid grid-flow-col gap-1">
+                        <div class="bg-green-300 p-3 rounded-full">
+                            <x-icon name="m-clipboard-document-list" class="w-8 h-8 text-white"/>
+                        </div>
+
+                        <div class="text-sm text-white tracking-wide mt-4">Delivered</div>
+                    </div>
+                    <div>
+                        <div class="text-4xl font-bold text-white pl-3">{{ $totaldelivered }}</div>
+                    </div>
                 </div>
-                <div class="text-4xl font-bold text-gray-600">{{ $totaldelivered }}</div>
-                <div class="text-sm text-gray-600 tracking-wide">Delivered</div>
+
             </div>
         </x-card>
 
-        <x-card class="border-2 border-blue-200  shadow-sm shadow-blue-200 bg-gradient-to-bl from-white to-gray-200">
+        <x-card class="shadow-md bg-gradient-to-tl from-white to-green-600 rounded-xl">
             <div class="flex items-center space-x-3">
-                <div class="bg-green-700 p-3 rounded-full">
-                    <x-icon name="o-hand-thumb-up" class="w-8 h-8 text-white"/>
+                <div class="grid grid-flow-row gap-2">
+                    <div class="grid grid-flow-col gap-1">
+                        <div class="bg-green-400 p-3 rounded-full">
+                            <x-icon name="o-hand-thumb-up" class="w-8 h-8 text-white"/>
+                        </div>
+
+                        <div class="text-sm text-white tracking-wide mt-4">Received</div>
+                    </div>
+                    <div>
+                        <div class="text-4xl font-bold text-white pl-3">{{ $totalrecieved }}</div>
+                    </div>
                 </div>
-                <div class="text-4xl font-bold text-gray-600">{{ $totalrecieved }}</div>
-                <div class="text-sm text-gray-600 tracking-wide">Received</div>
             </div>
         </x-card>
 
-        <x-card class="border-2 border-blue-200  shadow-sm shadow-blue-200 bg-gradient-to-bl from-white to-gray-200">
+        <x-card class="shadow-md bg-gradient-to-tl from-white to-red-600 rounded-xl">
             <div class="flex items-center space-x-3">
-                <div class="bg-red-700 p-3 rounded-full">
-                    <x-icon name="c-arrow-left-end-on-rectangle" class="w-8 h-8 text-white"/>
+                <div class="grid grid-flow-row gap-2">
+                    <div class="grid grid-flow-col gap-1">                
+                        <div class="bg-red-700 p-3 rounded-full">
+                            <x-icon name="c-arrow-left-end-on-rectangle" class="w-8 h-8 text-white"/>
+                        </div>
+
+                        <div class="text-sm text-white tracking-wide mt-4">Rejected</div>
+                    </div>
+                    <div>
+                        <div class="text-4xl font-bold text-white pl-3">{{ $totalrejected }}</div>
+                    </div>
                 </div>
-                <div class="text-4xl font-bold text-gray-600">{{ $totalrejected }}</div>
-                <div class="text-sm text-gray-600 tracking-wide">Rejected</div>
             </div>
         </x-card>
 
@@ -68,7 +112,7 @@
     <div class="mt-10">
         <x-card title="My Stores Requisitions" separator class="mt-5 border-2 border-gray-200">
             <x-slot:menu>
-                <x-input placeholder="Search by emailed reference..." wire:model.live.debounce="searchuuid"/>
+                <x-input placeholder="Search by emailed REF..." wire:model.live.debounce="searchuuid"/>
                 <x-select wire:model.live.debounce="statusfilter" placeholder="Filter by status" :options="$statuslist" option-label="name" option-value="id" />
                 <x-button icon="o-plus" label="Add Stores Requisition" wire:click="addrequisitionmodal=true"
                 class="bg-gradient-to-bl from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white"/>

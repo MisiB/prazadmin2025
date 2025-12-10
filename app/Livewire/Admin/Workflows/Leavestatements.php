@@ -58,7 +58,7 @@ class Leavestatements extends Component
                 $daystaken=$this->leaverequestService->getleavestatementbyuserandleavetype($user->id, $leavetype->id)->daystaken??0;
                 $leavetypebalancedetails[] = [
                     'leavetype' => $leavetype->name,
-                    'balance' => (float)$daysattained - (float)$daystaken,
+                    'balance' =>strtolower($leavetype->name)==="compassionate" ? "N/A ( ".(float)$daystaken." days taken )" : (float)$daysattained - (float)$daystaken,
                 ];
                 
             });

@@ -8,6 +8,7 @@ use App\Interfaces\repositories\ileaverequestapprovalInterface;
 use App\Interfaces\repositories\ileaverequestInterface;
 use App\Interfaces\repositories\ileavestatementInterface;
 use App\Interfaces\repositories\ileavetypeInterface;
+use App\Interfaces\repositories\iroleRepository;
 use App\Interfaces\repositories\iuserInterface;
 use App\Notifications\LeaverequestSubmission;
 use App\Notifications\LeaverequestSubmitted;
@@ -30,9 +31,10 @@ class _leaverequestService implements ileaverequestService
     protected $leaverequestapprovalrepo;
     protected $departmentrepo;
     protected $currentdate;
+    protected $rolerepo;
 
     public function __construct(ileaverequestInterface $leaverequestrepo, ileavetypeInterface $leavetyperepo, iuserInterface $userrepo, 
-    ileavestatementInterface $leavestatmentrepo, ileaverequestapprovalInterface $leaverequestapprovalrepo, idepartmentInterface $departmentrepo)
+    ileavestatementInterface $leavestatmentrepo, ileaverequestapprovalInterface $leaverequestapprovalrepo, idepartmentInterface $departmentrepo, iroleRepository $rolerepo)
     {
         $this->leaverequestrepo = $leaverequestrepo;
         $this->leavetyperepo = $leavetyperepo;
@@ -40,6 +42,7 @@ class _leaverequestService implements ileaverequestService
         $this->leavestatmentrepo = $leavestatmentrepo;
         $this->leaverequestapprovalrepo = $leaverequestapprovalrepo;
         $this->departmentrepo = $departmentrepo;
+        $this->rolerepo = $rolerepo;
         $this->currentdate=Carbon::now();
     }
 
@@ -321,6 +324,11 @@ class _leaverequestService implements ileaverequestService
         }
         return['status'=>false, 'message'=>'User has no active leave application'];
 
+    }
+
+    public function getusersbyrole($rolename)
+    {
+        return $this->rolerepo->getusersbyrole($rolename);
     }
 }
   

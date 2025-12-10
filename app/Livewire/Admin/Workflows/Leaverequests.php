@@ -103,7 +103,6 @@ class Leaverequests extends Component
         $this->datesrange= $this->getdatesrange();
         $this->dateRangeConfig=[
             "mode"=>"range",
-            'minDate' => now()->format('Y-m-d'),
             'disable' => $this->datesrange
         ];
     }
@@ -171,7 +170,7 @@ class Leaverequests extends Component
             ['label' => 'End date', 'key' => 'enddate'],
             ['label' => 'Date of return', 'key' => 'returndate'],
             ['label' => 'Status', 'key' => 'status'],
-            ['label' => 'Acting H.O.D', 'key' => 'hod'],  
+            ['label' => 'Acting Person', 'key' => 'hod'],  
             ['label' => 'Approving H.O.D', 'key' => 'approver'], 
         ];
     }
@@ -281,6 +280,21 @@ class Leaverequests extends Component
         $this->addleaverequestmodal=false;
         return $this->redirect('/workflows/leaverequests');
     }
+
+    public function getmyleavestatementbalances()
+    {
+        $leavestatementbalances=[];
+
+        $this->leaverequestService->getleavetypes()->map(function ($leavetype) use (&$leavestatementbalances){
+            $daysattained=( (float)$this->leaverequestService->getleavestatementbyuseridandleavename($this->user->id, $leavetype->name)?->daysattained) ?? 0;
+            $daystaken=( (float)$this->leaverequestService->getleavestatementbyuseridandleavename($this->user->id, $leavetype->name)?->daystaken ) ?? 0;  
+            $leavestatementbalances[]=[
+                strtolower($leavetype->name)=>$daysattained - $daystaken,
+            ];
+        });
+        $leavestatementbalances=array_merge(...$leavestatementbalances);
+        return $leavestatementbalances;
+    }
     
 
     public function render()
@@ -293,7 +307,8 @@ class Leaverequests extends Component
             'leaverequests'=>$this->getmyleaverequests(),
             'leavetypesmap'=>$this->getleavetypes(),
             'headers' => $this->headers(),
-            'hodassigneesmap'=>$this->gethodrepresentatives()
+            'hodassigneesmap'=>$this->gethodrepresentatives(),
+            'leavestatementbalances'=>$this->getmyleavestatementbalances()
         ]);
     }
 }
