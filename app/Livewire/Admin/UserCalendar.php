@@ -366,8 +366,11 @@ class UserCalendar extends Component
 
         // Collect all tasks from all calendar days
         foreach ($this->currentweek->calendardays as $day) {
-            if ($day->relationLoaded('tasks')) {
-                $allTasks = $allTasks->merge($day->tasks);
+            if ($day->relationLoaded('userTasks')) {
+                $allTasks = $allTasks->merge($day->userTasks);
+            } elseif ($day->relationLoaded('tasks')) {
+                // Fallback: filter tasks by current user if userTasks not loaded
+                $allTasks = $allTasks->merge($day->tasks->where('user_id', Auth::user()->id));
             }
         }
 

@@ -30,8 +30,11 @@
     @php
         $allTasks = collect();
         foreach ($currentweek->calendardays as $day) {
-            if ($day->relationLoaded('tasks')) {
-                $allTasks = $allTasks->merge($day->tasks);
+            if ($day->relationLoaded('userTasks')) {
+                $allTasks = $allTasks->merge($day->userTasks);
+            } elseif ($day->relationLoaded('tasks')) {
+                // Fallback: filter tasks by current user if userTasks not loaded
+                $allTasks = $allTasks->merge($day->tasks->where('user_id', auth()->id()));
             }
         }
         $hasPendingApproval = $allTasks->where('approvalstatus', 'pending')->count() > 0;
@@ -265,7 +268,7 @@
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                                 </svg>
-                                <span class="font-semibold">{{ count($day->tasks??[]) }}</span>
+                                <span class="font-semibold">{{ count($day->userTasks ?? []) }}</span>
                                 <span>tasks</span>
                             </div>
                             <x-button icon="o-plus" label="Add Task" class="btn-primary btn-sm shadow-lg shadow-blue-500/30" wire:click="openModal({{ $day->id }})" />
@@ -275,7 +278,7 @@
 
                 <!-- Tasks List -->
                 <div class="p-6">
-              @forelse ($day->tasks??[] as $task)
+              @forelse ($day->userTasks ?? [] as $task)
                     <div class="group relative mb-4 last:mb-0 bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-300 overflow-hidden">
                         <!-- Priority Bar -->
                         <div class="absolute left-0 top-0 bottom-0 w-1.5 {{ $task->priority == 'High' ? 'bg-gradient-to-b from-red-500 to-red-600' : ($task->priority == 'Medium' ? 'bg-gradient-to-b from-yellow-500 to-yellow-600' : 'bg-gradient-to-b from-green-500 to-green-600') }}"></div>
