@@ -137,9 +137,7 @@ class _calenderRepository implements icalendarInterface
     {
         return $this->calendarweek->with(['calenderworkusertasks' => function ($query) {
             $query->where('user_id', Auth::user()->id);
-        }, 'calendardays.tasks' => function ($query) {
-            $query->where('user_id', Auth::user()->id);
-        }])->where('id', $calendarweek_id)->first();
+        }, 'calendardays.userTasks'])->where('id', $calendarweek_id)->first();
     }
 
     public function getcalenderuserweektasks($startDate, $endDate)
@@ -149,9 +147,7 @@ class _calenderRepository implements icalendarInterface
         $endDate = $today->copy()->endOfWeek();
         $calendarWeek = $this->calendarweek->with(['calenderworkusertasks' => function ($query) {
             $query->where('user_id', Auth::user()->id);
-        }, 'calendardays.tasks' => function ($query) {
-            $query->where('user_id', Auth::user()->id);
-        }])->where('start_date', '>=', $startDate)->where('end_date', '<=', $endDate)->first();
+        }, 'calendardays.userTasks'])->where('start_date', '>=', $startDate)->where('end_date', '<=', $endDate)->first();
 
         return $calendarWeek ? $calendarWeek : collect();
     }
@@ -253,12 +249,12 @@ class _calenderRepository implements icalendarInterface
         $check = $this->calenderworkusertask->where('calendarweek_id', $calendarweek_id)->where('user_id', Auth::user()->id)->first();
         
         // Check if there are tasks with pending approval status (updated after rejection)
-        $calendarweek = $this->calendarweek->with('calendardays.tasks')->where('id', $calendarweek_id)->first();
+        $calendarweek = $this->calendarweek->with('calendardays.userTasks')->where('id', $calendarweek_id)->first();
         $hasPendingTasks = false;
         
         if ($calendarweek) {
             foreach ($calendarweek->calendardays as $day) {
-                if ($day->tasks && $day->tasks->where('approvalstatus', 'pending')->count() > 0) {
+                if ($day->userTasks && $day->userTasks->where('approvalstatus', 'pending')->count() > 0) {
                     $hasPendingTasks = true;
                     break;
                 }
