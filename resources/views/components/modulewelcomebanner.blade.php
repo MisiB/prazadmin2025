@@ -11,7 +11,7 @@
             <h1 class="text-4xl font-bold text-white pb-6 pt-4"> 
                 @php
                     $hour = date('H');
-                    $greeting = $hour < 12 ? 'Good Morning' : ($hour < 17 ? 'Good Afternoon' : 'Good Evening');
+                    $greeting = $hour <= 11 ? 'Good Morning' : ( $hour <= 16 ? 'Good Afternoon' : 'Good Evening');
                 @endphp
                 {{ $greeting }}, {{ auth()->user()->name ?? 'Admin' }}!
             </h1>
