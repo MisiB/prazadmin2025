@@ -2,7 +2,7 @@
     use Carbon\Carbon;
 @endphp
 <div>
-
+ 
     <x-modulewelcomebanner :breadcrumbs="$breadcrumbs"/>
  
     <!--Leave Balance Summary Cards -->
