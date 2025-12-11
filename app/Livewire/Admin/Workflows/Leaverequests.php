@@ -117,14 +117,17 @@ class Leaverequests extends Component
         if($userstatement!=null)
         {
             $ceilingdays=$this->leaverequestService->getleavetype($this->selectedleavetypeid)->ceiling;
-            $this->validdays=$ceilingdays-$userstatement->days;
+            $this->validdays=$ceilingdays-$userstatement->daystaken;
             $starttoenddatearray=explode(' to ',$this->starttoenddate);
             $this->startdate=Carbon::parse($starttoenddatearray[0])->format('Y-m-d');
             $this->enddate=Carbon::parse($starttoenddatearray[1])->format('Y-m-d');
             $this->returndate=Carbon::parse($this->enddate)->copy()->nextWeekday()->format('Y-m-d');
             $leavePeriod=CarbonPeriod::create($this->startdate, $this->enddate);
+            //Vacation , Sick, Maternity leaves include weekends
             $vacationleaveid=$this->leaverequestService->getleavetypebyname('Vacation')->id;
-            if($this->selectedleavetypeid===$vacationleaveid){
+            $sickleaveid=$this->leaverequestService->getleavetypebyname('Sick')->id;
+            $maternityleaveid=$this->leaverequestService->getleavetypebyname('Maternity')->id;
+            if((int)$this->selectedleavetypeid===$vacationleaveid || (int)$this->selectedleavetypeid===$sickleaveid || (int)$this->selectedleavetypeid===$maternityleaveid){
                 $this->daysappliedfor=$leavePeriod->count();
             }else{
                 $leavePeriod=$leavePeriod->filter('isWeekday');
