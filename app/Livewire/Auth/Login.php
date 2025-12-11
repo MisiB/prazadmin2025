@@ -34,7 +34,7 @@ class Login extends Component
         $response= $this->auth->getprofile();
         if($response!=null){
             // Redirect support-only users to support dashboard
-            if ($user->can('support.access')) {
+            if (auth()->user()->can('support.access')) {
                 $this->redirectRoute('support.dashboard');
             } else {
                 $this->redirectRoute('admin.home');
