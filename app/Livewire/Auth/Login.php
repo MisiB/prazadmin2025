@@ -31,11 +31,16 @@ class Login extends Component
     }
 
     public function mount(){
-       $response= $this->auth->getprofile();
-       if($response!=null){
-       $this->redirectRoute('admin.home');
-       }
-    }
+        $response= $this->auth->getprofile();
+        if($response!=null){
+            // Redirect support-only users to support dashboard
+            if (auth()->user()->can('support.access') && !auth()->user()->can('admin.access')) {
+                $this->redirectRoute('support.dashboard');
+            } else {
+                $this->redirectRoute('admin.home');
+            }
+        }
+     }
 
     public function getaccountsettings(){
         return $this->accountsettingRepository->getsettings();
