@@ -12,6 +12,10 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 
+use App\Notifications\TaskSubmittedForApproval;
+use App\Interfaces\repositories\itaskInterface;
+use App\Interfaces\services\ileaverequestService;
+
 class _calenderRepository implements icalendarInterface
 {
     /**
@@ -29,7 +33,11 @@ class _calenderRepository implements icalendarInterface
 
     protected $user;
 
-    public function __construct(Calendaryear $calendaryear, Calendarweek $calendarweek, Calendarday $calendarday, Calenderworkusertask $calenderworkusertask, Departmentuser $userdepartment, User $user)
+    protected $leaverequestService;
+
+    protected $taskRepository;
+
+    public function __construct(Calendaryear $calendaryear, Calendarweek $calendarweek, Calendarday $calendarday, Calenderworkusertask $calenderworkusertask, Departmentuser $userdepartment, User $user, ileaverequestService $leaverequestService, itaskInterface $taskRepository)
     {
         $this->calendaryear = $calendaryear;
         $this->calendarweek = $calendarweek;
@@ -37,6 +45,8 @@ class _calenderRepository implements icalendarInterface
         $this->calenderworkusertask = $calenderworkusertask;
         $this->userdepartment = $userdepartment;
         $this->user = $user;
+        $this->leaverequestService = $leaverequestService;
+        $this->taskRepository = $taskRepository;
     }
 
     /**
@@ -280,6 +290,25 @@ class _calenderRepository implements icalendarInterface
             ]);
         }
 
+        // Send notification to supervisor
+        $userDepartment = \App\Models\Departmentuser::where('user_id', Auth::user()->id)->first();
+        if ($userDepartment && $userDepartment->reportto) {
+            $supervisor = \App\Models\User::find($userDepartment->reportto);
+            if ($supervisor) {
+                // Check if supervisor is on leave and get acting supervisor
+                $leaverequestService = app(\App\Interfaces\services\ileaverequestService::class);
+                $supervisorLeaveStatus = $leaverequestService->isactiveonleave($userDepartment->reportto);
+                $notifyUserId = ($supervisorLeaveStatus['status'] === true && isset($supervisorLeaveStatus['actinghodid'])) 
+                    ? $supervisorLeaveStatus['actinghodid'] 
+                    : $userDepartment->reportto;
+                
+                $notifyUser = \App\Models\User::find($notifyUserId);
+                if ($notifyUser) {
+                    $notifyUser->notify(new TaskSubmittedForApproval($this->taskRepository, $calendarweek_id, Auth::user()->id));
+                }
+            }
+        }
+
         return ['status' => 'success', 'message' => 'Sent for approval successfully'];
     }
 
@@ -308,19 +337,27 @@ class _calenderRepository implements icalendarInterface
 
     public function gettasksbydepartment($department_id, $startDate, $endDate)
     {
-
         $calenderweek = $this->calendarweek->with('calendardays')->where('start_date', '>=', $startDate)->where('end_date', '<=', $endDate)->first();
         if (! $calenderweek) {
             return collect();
         }
+        
+        // Get current user's department to verify they belong to the same department
+        $currentUserDepartment = \App\Models\Departmentuser::where('user_id', Auth::user()->id)->first();
+        if (!$currentUserDepartment || $currentUserDepartment->department_id != $department_id) {
+            return ['users' => collect(), 'calendarweek' => $calenderweek];
+        }
+        
+        // Get ALL users in the department (for viewing purposes)
+        // Approval restrictions are handled in approvetask and bulkapprovetasks methods
         $users = $this->user->with(['calenderworkusertasks' => function ($query) use ($calenderweek) {
             $query->where('calendarweek_id', $calenderweek->id);
-        }, 'calenderworkusertasks.calendarweek.calendardays.tasks'])->wherehas('department', function ($query) use ($department_id) {
+        }, 'calenderworkusertasks.calendarweek.calendardays.tasks', 'department'])
+        ->whereHas('department', function ($query) use ($department_id) {
             $query->where('department_id', $department_id);
         })->get();
 
         return ['users' => $users, 'calendarweek' => $calenderweek];
-
     }
 
     public function gettasksbydepartmentbycalenderweek($department_id, $calendarweek_id)
