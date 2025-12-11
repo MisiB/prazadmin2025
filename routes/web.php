@@ -88,6 +88,8 @@ Route::middleware('auth')->group(function () {
     Volt::route('/approvals/storesrequisitiondelivery', 'admin.workflows.approvals.storesrequisitiondelivery')->name('admin.workflows.approvals.storesrequisitiondelivery');
     Volt::route('/trackers/performancetracker', 'admin.trackers.performancetracker')->name('admin.trackers.performancetracker');
     Volt::route('/trackers/budgettracker', 'admin.trackers.budgettracker')->name('admin.trackers.budgettracker');
+    // Volt::route('/trackers/departmentaldashboard', 'admin.trackers.departmentaldashboard')->name('admin.trackers.departmentaldashboard');
+    // Volt::route('/trackers/organisationdashboard', 'admin.trackers.organisationdashboard')->name('admin.trackers.organisationdashboard');
     Volt::route('/calendar', 'admin.weekday-calendar')->name('admin.calendar');
     Volt::route('/issues', 'admin.issues')->name('admin.issues');
     Volt::route('/myissues', 'admin.my-issues')->name('admin.myissues');
@@ -108,3 +110,8 @@ Volt::route('/leaverequestapproval/{approvalrecordid}/{approvalitemuuid}',Emaila
 Volt::route('/requisitionapproval/{approvalrecordid}/{approvalitemuuid}',Storesrequisitionapproval::class)->name('storesrequisition.email.auth.approval');
 Volt::route('/requisitionacceptance/{approvalrecordid}/{approvalitemuuid}',Storesrequisitionacceptance::class)->name('storesrequisition.email.auth.acceptance');
 Volt::route('/requisitionverification/{approvalrecordid}/{approvalitemuuid}',Storesrequisitionverification::class)->name('storesrequisition.email.auth.verification');
+
+// Support Dashboard - Limited access for consultants
+Volt::route('/support/dashboard', 'support.dashboard')
+    ->middleware('can:support.access')
+    ->name('support.dashboard');
