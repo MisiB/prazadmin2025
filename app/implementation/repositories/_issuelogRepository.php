@@ -46,6 +46,13 @@ class _issuelogRepository implements iissuelogInterface
             ->get();
     }
 
+    public function getissuelogsquery()
+    {
+        return $this->issuelog
+            ->with(['issuegroup', 'issuetype', 'department', 'assignedto', 'assignedby', 'comments'])
+            ->orderBy('created_at', 'desc');
+    }
+
     public function getissuelog($id)
     {
         return $this->issuelog

@@ -32,7 +32,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
         <!-- Filters and Search -->
         <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-5 md:grid-cols-5 gap-2">
                 <x-input 
                     wire:model.live.debounce.300ms="search" 
                     icon="o-magnifying-glass" 
@@ -64,6 +64,18 @@
                     option-label="name" 
                     option-value="id"
                     placeholder="Filter by Priority"
+                />
+                
+                <x-select 
+                    wire:model.live="perPage" 
+                    :options="[
+                        ['id' => 10, 'name' => '10 per page'],
+                        ['id' => 15, 'name' => '15 per page'],
+                        ['id' => 25, 'name' => '25 per page'],
+                        ['id' => 50, 'name' => '50 per page'],
+                    ]" 
+                    option-label="name" 
+                    option-value="id"
                 />
                 
                 <x-button 
@@ -217,7 +229,7 @@
                         </div>
 
                         <!-- Attachments Display -->
-                        @if($issue->attachments && count($issue->attachments) > 0)
+                        @if(is_array($issue->attachments) && count($issue->attachments) > 0)
                         <div class="bg-purple-50 rounded-xl p-4 border border-purple-200 mb-4">
                             <h4 class="text-sm font-semibold text-purple-900 mb-3 flex items-center gap-2">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,6 +239,25 @@
                             </h4>
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                                 @foreach($issue->attachments as $attachment)
+                                @php
+                                    // Skip null or empty attachments
+                                    if (empty($attachment)) {
+                                        continue;
+                                    }
+
+                                    // If it's a string → normalize
+                                    if (is_string($attachment)) {
+                                        $attachment = [
+                                            'path' => $attachment,
+                                            'original_name' => basename($attachment),
+                                        ];
+                                    }
+
+                                    // If it's an array but missing "path" → skip
+                                    if (!is_array($attachment) || !isset($attachment['path'])) {
+                                        continue;
+                                    }
+                                @endphp
                                 <a 
                                     href="{{ asset('storage/'.$attachment['path']) }}" 
                                     target="_blank"
@@ -347,7 +378,21 @@
                 </div>
             @endforelse
         </div>
-               </div>
+
+        <!-- Pagination -->
+        @if($issues->hasPages())
+        <div class="mt-6 bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="text-sm text-gray-600">
+                    Showing {{ $issues->firstItem() }} to {{ $issues->lastItem() }} of {{ $issues->total() }} tickets
+                </div>
+                <div>
+                    {{ $issues->links() }}
+                </div>
+            </div>
+        </div>
+        @endif
+    </div>
 
     <!-- Create/Edit Ticket Modal -->
     <x-modal wire:model="showModal" title="{{ $editingId ? 'Edit Ticket' : 'Create New Ticket' }}" separator box-class="max-w-4xl">
