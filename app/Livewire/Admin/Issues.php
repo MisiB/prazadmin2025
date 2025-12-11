@@ -49,6 +49,8 @@ class Issues extends Component
 
     public $search = '';
 
+    public $perPage = 15;
+
     public $attachments = [];
 
     public $existingAttachments = [];
@@ -294,13 +296,13 @@ class Issues extends Component
 
     public function getIssues()
     {
-        $query = $this->issueRepository->getissuelogs();
+        $query = $this->issueRepository->getissuelogsquery();
 
         if ($this->search) {
-            $query = $query->filter(function ($issue) {
-                return str_contains(strtolower($issue->title), strtolower($this->search)) ||
-                       str_contains(strtolower($issue->ticketnumber), strtolower($this->search)) ||
-                       str_contains(strtolower($issue->description), strtolower($this->search));
+            $query = $query->where(function ($q) {
+                $q->where('title', 'like', '%'.$this->search.'%')
+                    ->orWhere('ticketnumber', 'like', '%'.$this->search.'%')
+                    ->orWhere('description', 'like', '%'.$this->search.'%');
             });
         }
 
@@ -312,7 +314,27 @@ class Issues extends Component
             $query = $query->where('priority', $this->filterPriority);
         }
 
-        return $query;
+        return $query->paginate($this->perPage);
+    }
+
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedFilterStatus(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedFilterPriority(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedPerPage(): void
+    {
+        $this->resetPage();
     }
 
     public function getDepartments()
