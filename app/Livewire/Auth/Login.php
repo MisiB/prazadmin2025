@@ -34,7 +34,7 @@ class Login extends Component
         $response= $this->auth->getprofile();
         if($response!=null){
             // Redirect support-only users to support dashboard
-            if (auth()->user()->can('support.access') && !auth()->user()->can('admin.access')) {
+            if ($user->can('support.access')) {
                 $this->redirectRoute('support.dashboard');
             } else {
                 $this->redirectRoute('admin.home');
@@ -57,7 +57,12 @@ class Login extends Component
             'password' => $this->password
         ]);
         if($response){
-            $this->redirectRoute('admin.home');
+            // Redirect support-only users to support dashboard
+            if (auth()->user()->can('support.access')) {
+                $this->redirectRoute('support.dashboard');
+            } else {
+                $this->redirectRoute('admin.home');
+            }
         }else{
             $this->error = ApiResponse::AUTH_FAILURE->getMessage();
         }
