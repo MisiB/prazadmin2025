@@ -6,6 +6,8 @@ interface iissuelogInterface
 {
     public function getissuelogs();
 
+    public function getissuelogsquery();
+
     public function getissuelogsbyemail($email);
 
     public function getissuelog($id);
