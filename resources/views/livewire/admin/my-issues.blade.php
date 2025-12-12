@@ -27,7 +27,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> 
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
         <!-- Summary Cards -->
@@ -223,6 +223,46 @@
         </div>
     </div>
 
+    <!-- Assign Issue Modal -->
+    <x-modal wire:model="showAssignModal" title="Assign Issue to Department" separator box-class="max-w-2xl">
+       
+        
+        <div class="space-y-5">
+            <div class="bg-purple-50 rounded-xl p-4 border border-purple-200">
+                <p class="text-sm text-purple-900">
+                    Assign this issue to a department to handle it.
+                </p>
+            </div>
+            
+            <x-select 
+                wire:model.live="selectedDepartment" 
+                label="Select Department" 
+                placeholder="Choose a department" 
+                :options="$departments" 
+                option-label="name" 
+                option-value="id"
+                icon="o-building-office"
+                hint="First select the department that will handle this issue"
+            />
+
+        </div>
+
+        <x-slot name="actions">
+            <x-button 
+                label="Cancel" 
+                wire:click="closeAssignModal" 
+                class="btn-outline" 
+            />
+            <x-button 
+                label="Assign Issue" 
+                wire:click="assignIssue" 
+                class="btn-primary shadow-lg shadow-purple-500/30" 
+                spinner="assignIssue"
+                icon="o-check"
+            />
+        </x-slot>
+    </x-modal>
     <!-- Create/Edit Ticket Modal (Same as Issues page) -->
     @include('livewire.admin.partials.issue-form-modal')
+
 </div>

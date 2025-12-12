@@ -2,13 +2,14 @@
 
 namespace App\Livewire\Admin;
 
+use App\Interfaces\repositories\idepartmentInterface;
 use App\Interfaces\repositories\iissuelogInterface;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Mary\Traits\Toast;
-
+ 
 class MyIssues extends Component
 {
     use Toast, WithFileUploads;
@@ -52,10 +53,18 @@ class MyIssues extends Component
     public $existingAttachments = [];
 
     protected $issueRepository;
+ 
+    public $assigningIssueId; //$issueId
+    public $selectedDepartment = null;
+    //public $selectedUser = null;
+    public $showAssignModal = false;
+    protected $departmentRepository;
 
-    public function boot(iissuelogInterface $issueRepository)
+    public function boot(iissuelogInterface $issueRepository, idepartmentInterface $departmentRepository)
     {
         $this->issueRepository = $issueRepository;
+        $this->departmentRepository = $departmentRepository;
+    
     }
 
     public function mount()
@@ -261,6 +270,38 @@ class MyIssues extends Component
         ];
     }
 
+    public function openAssignModal($issueId)
+    {
+        $this->assigningIssueId = $issueId;
+        $this->selectedDepartment = null;
+        $this->showAssignModal = true;
+    }
+
+    public function getDepartments()
+    {
+        return $this->departmentRepository->getdepartments();
+    }
+
+    public function assignIssue()
+    {
+        $this->validate([
+            'selectedDepartment' => 'required|exists:departments,id',
+        ]);
+        $selectedUser=null;
+        $response = $this->issueRepository->assignissue(
+            $this->assigningIssueId,
+            $selectedUser,
+            $this->selectedDepartment
+        );
+
+        if ($response['status'] === 'success') {
+            $this->success($response['message']);
+            $this->showAssignModal=false;
+        } else {
+            $this->error($response['message']);
+        }
+    }
+
     public function render()
     {
         $createdIssues = $this->getCreatedIssues();
@@ -273,6 +314,7 @@ class MyIssues extends Component
             'assignedCounts' => $this->getStatusCounts($assignedIssues),
             'issuegroups' => $this->issueRepository->getissuegroups(),
             'issuetypes' => $this->issueRepository->getissuetypes(),
+            'departments' => $this->getDepartments(),
         ]);
     }
 }

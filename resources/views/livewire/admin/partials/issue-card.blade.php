@@ -208,6 +208,22 @@
                 wire:confirm="Mark this ticket as in progress?"
                 class="btn-outline btn-info btn-sm"
             />
+                @if($issue->department_id != null)
+                    <x-button 
+                        icon="o-user-plus"
+                        label="{{ $issue->department->name }} Department Already Selected" 
+                        placeholder="Choose a department" 
+                        class="btn-outline btn-green btn-sm"
+                        disabled
+                    />
+                @else
+                    <x-button 
+                        icon="o-user-plus" 
+                        label="Assign to Department" 
+                        wire:click="openAssignModal({{ $issue->id }})" 
+                        class="btn-outline btn-purple btn-sm"
+                    />
+                @endif
             @endif
 
             @if($issue->status == 'in_progress')
@@ -239,5 +255,8 @@
             @endif
         </div>
     </div>
+                
+
+
 </div>
 
