@@ -1,5 +1,7 @@
 <?php
 
+use App\Livewire\Admin\RecurringTasks;
+use App\Livewire\Admin\TaskTemplates;
 use App\Livewire\Admin\Workflows\Approvals\Emailapproval;
 use App\Livewire\Admin\Workflows\Approvals\Storesrequisitionacceptance;
 use App\Livewire\Admin\Workflows\Approvals\Storesrequisitionapproval;
@@ -22,14 +24,15 @@ Route::middleware('auth')->group(function () {
             MsGraph::disconnect();
         } catch (\Exception $e) {
             // Log error but continue with logout
-            Log::warning('MsGraph disconnect failed during logout: ' . $e->getMessage());
+            Log::warning('MsGraph disconnect failed during logout: '.$e->getMessage());
         }
         Auth::logout();
         request()->session()->invalidate();
         request()->session()->regenerateToken();
+
         return redirect()->route('login');
     })->name('logout');
-    
+
     Volt::route('/home', 'admin.home')->name('admin.home');
     Volt::route('/settings', 'profile.settings')->name('profile.settings');
     Volt::route('/configuration/accounttypes', 'admin.configuration.accounttypes')->name('admin.configuration.accounttypes');
@@ -81,13 +84,14 @@ Route::middleware('auth')->group(function () {
     Volt::route('/awaitingdelivery', 'admin.workflows.awaitingdelivary')->name('admin.workflows.awaitingdelivery');
     Volt::route('/finances/revenueposting', 'admin.finance.revenueposting')->name('admin.finance.revenueposting');
     Volt::route('/workflows/leavestatements', 'admin.workflows.leavestatements')->name('admin.workflows.leavestatements');
-    //Volt::route('/workflows/leaverequests', 'admin.workflows.leaverequests')->name('admin.workflows.leaverequests');
-    Route::match(['get','post'],'/workflows/leaverequests', Leaverequests::class)->name('admin.workflows.leaverequests');
+    // Volt::route('/workflows/leaverequests', 'admin.workflows.leaverequests')->name('admin.workflows.leaverequests');
+    Route::match(['get', 'post'], '/workflows/leaverequests', Leaverequests::class)->name('admin.workflows.leaverequests');
     Volt::route('/workflows/storesrequisitions', 'admin.workflows.storesrequisitions')->name('admin.workflows.storesrequisitions');
     Volt::route('/approvals/storesrequisitions', 'admin.workflows.approvals.deptstoresrequisitionapprovals')->name('admin.workflows.approvals.deptstoresrequisitionapprovals');
     Volt::route('/approvals/storesrequisitiondelivery', 'admin.workflows.approvals.storesrequisitiondelivery')->name('admin.workflows.approvals.storesrequisitiondelivery');
     Volt::route('/trackers/performancetracker', 'admin.trackers.performancetracker')->name('admin.trackers.performancetracker');
     Volt::route('/trackers/budgettracker', 'admin.trackers.budgettracker')->name('admin.trackers.budgettracker');
+    //Dashboards are disabled for now
     // Volt::route('/trackers/departmentaldashboard', 'admin.trackers.departmentaldashboard')->name('admin.trackers.departmentaldashboard');
     // Volt::route('/trackers/organisationdashboard', 'admin.trackers.organisationdashboard')->name('admin.trackers.organisationdashboard');
     Volt::route('/calendar', 'admin.weekday-calendar')->name('admin.calendar');
@@ -100,16 +104,21 @@ Route::middleware('auth')->group(function () {
     Volt::route('/weekly-task-review', 'admin.weekly-task-review')->name('admin.weeklytaskreview');
     Volt::route('/workshopindex', 'admin.workshops.workshopindex')->name('admin.workshop.index');
     Volt::route('/workshopindex/{id}', 'admin.workshops.workshopview')->name('admin.workshop.view');
+
+    // Task Templates and Recurring Tasks
+    Route::get('/tasks/templates', TaskTemplates::class)->name('admin.tasks.templates');
+    Route::get('/tasks/recurring', RecurringTasks::class)->name('admin.tasks.recurring');
 });
-//Email Approval Flows
-Route::get('/approval/{leaveapprovalitemuuid}/{leaveapproverid}/{storesapprovalitemuuid}/{storesapproverid}/{status}', function($leaveapprovalitemuuid,$leaveapproverid,$storesapprovalitemuuid,$storesapproverid,$status){
-    $msgraph=new MsGraph();
-    return $msgraph::emailapprovalconnect($leaveapprovalitemuuid,$leaveapproverid,$storesapprovalitemuuid,$storesapproverid,$status);
+// Email Approval Flows
+Route::get('/approval/{leaveapprovalitemuuid}/{leaveapproverid}/{storesapprovalitemuuid}/{storesapproverid}/{status}', function ($leaveapprovalitemuuid, $leaveapproverid, $storesapprovalitemuuid, $storesapproverid, $status) {
+    $msgraph = new MsGraph;
+
+    return $msgraph::emailapprovalconnect($leaveapprovalitemuuid, $leaveapproverid, $storesapprovalitemuuid, $storesapproverid, $status);
 });
-Volt::route('/leaverequestapproval/{approvalrecordid}/{approvalitemuuid}',Emailapproval::class)->name('leaverequest.email.auth.approval');
-Volt::route('/requisitionapproval/{approvalrecordid}/{approvalitemuuid}',Storesrequisitionapproval::class)->name('storesrequisition.email.auth.approval');
-Volt::route('/requisitionacceptance/{approvalrecordid}/{approvalitemuuid}',Storesrequisitionacceptance::class)->name('storesrequisition.email.auth.acceptance');
-Volt::route('/requisitionverification/{approvalrecordid}/{approvalitemuuid}',Storesrequisitionverification::class)->name('storesrequisition.email.auth.verification');
+Volt::route('/leaverequestapproval/{approvalrecordid}/{approvalitemuuid}', Emailapproval::class)->name('leaverequest.email.auth.approval');
+Volt::route('/requisitionapproval/{approvalrecordid}/{approvalitemuuid}', Storesrequisitionapproval::class)->name('storesrequisition.email.auth.approval');
+Volt::route('/requisitionacceptance/{approvalrecordid}/{approvalitemuuid}', Storesrequisitionacceptance::class)->name('storesrequisition.email.auth.acceptance');
+Volt::route('/requisitionverification/{approvalrecordid}/{approvalitemuuid}', Storesrequisitionverification::class)->name('storesrequisition.email.auth.verification');
 
 // Support Dashboard - Limited access for consultants
 Volt::route('/support/dashboard', 'support.dashboard')

@@ -20,6 +20,20 @@
                 
                 <div class="flex flex-col sm:flex-row gap-3">
                     <x-select wire:model.live="week_id" placeholder="Filter by Week" :options="$weeks" option-label="week" option-value="id" class="min-w-[200px]" />
+                    <div class="flex gap-2">
+                        <x-button 
+                            icon="o-document-duplicate" 
+                            label="Templates" 
+                            class="btn-outline btn-sm" 
+                            link="{{ route('admin.tasks.templates') }}"
+                        />
+                        <x-button 
+                            icon="o-arrow-path" 
+                            label="Recurring Tasks" 
+                            class="btn-outline btn-sm" 
+                            link="{{ route('admin.tasks.recurring') }}"
+                        />
+                    </div>
                 </div>
             </div>
         </div>
@@ -246,143 +260,240 @@
         @endif
 
         <!-- Days Grid Layout -->
-        <div class="grid gap-6">
-      @foreach ($currentweek->calendardays as $day)
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-300">
-                <!-- Day Header -->
-                <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-4">
-                            <div class="flex-shrink-0">
-                                <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30">
-                                    {{ Carbon\Carbon::parse($day->maindate)->format('d') }}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
+            @foreach ($currentweek->calendardays as $day)
+                @php
+                    $dayTasks = $day->userTasks ?? [];
+                    $taskCount = count($dayTasks);
+                    $completedCount = $dayTasks->where('status', 'completed')->count();
+                    $ongoingCount = $dayTasks->where('status', 'ongoing')->count();
+                    $pendingCount = $dayTasks->where('status', 'pending')->count();
+                @endphp
+                
+                <div class="bg-white rounded-xl shadow-sm border-2 border-gray-200 hover:border-blue-400 hover:shadow-lg transition-all duration-300 flex flex-col">
+                    <!-- Day Card Header -->
+                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 px-4 py-4 border-b border-gray-200 rounded-t-xl">
+                        <div class="flex items-center justify-between">
+                            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-md">
+                                {{ Carbon\Carbon::parse($day->maindate)->format('d') }}
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm font-bold text-gray-700 uppercase tracking-wide">
+                                    {{ Carbon\Carbon::parse($day->maindate)->format('D') }}
                                 </div>
-              </div>
-              <div>
-                                <h3 class="text-xl font-bold text-gray-900">{{ Carbon\Carbon::parse($day->maindate)->format('l') }}</h3>
-                                <p class="text-sm text-gray-500">{{ Carbon\Carbon::parse($day->maindate)->format('F d, Y') }}</p>
+                                <div class="text-xs text-gray-500 mt-0.5">
+                                    {{ Carbon\Carbon::parse($day->maindate)->format('M Y') }}
+                                </div>
                             </div>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <div class="flex items-center gap-2 text-sm text-gray-600 bg-white px-3 py-1.5 rounded-full border border-gray-200">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                                </svg>
-                                <span class="font-semibold">{{ count($day->userTasks ?? []) }}</span>
-                                <span>tasks</span>
+                    </div>
+
+                    <!-- Day Card Body -->
+                    <div class="p-4 flex-1 flex flex-col">
+                        <!-- Task Count Section -->
+                        <div class="mb-4">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="p-1.5 bg-gray-100 rounded-lg">
+                                    <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <span class="text-lg font-bold text-gray-900">{{ $taskCount }}</span>
+                                    <span class="text-sm text-gray-500 ml-1">task{{ $taskCount != 1 ? 's' : '' }}</span>
+                                </div>
                             </div>
-                            <x-button icon="o-plus" label="Add Task" class="btn-primary btn-sm shadow-lg shadow-blue-500/30" wire:click="openModal({{ $day->id }})" />
+
+                            <!-- Task Status Summary -->
+                            @if($taskCount > 0)
+                            <div class="space-y-1.5 mt-3">
+                                @if($completedCount > 0)
+                                <div class="flex items-center gap-2 text-xs">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-green-500 shadow-sm"></div>
+                                    <span class="text-gray-600 font-medium">{{ $completedCount }} completed</span>
+                                </div>
+                                @endif
+                                @if($ongoingCount > 0)
+                                <div class="flex items-center gap-2 text-xs">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-sm"></div>
+                                    <span class="text-gray-600 font-medium">{{ $ongoingCount }} ongoing</span>
+                                </div>
+                                @endif
+                                @if($pendingCount > 0)
+                                <div class="flex items-center gap-2 text-xs">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-yellow-500 shadow-sm"></div>
+                                    <span class="text-gray-600 font-medium">{{ $pendingCount }} pending</span>
+                                </div>
+                                @endif
+                            </div>
+                            @else
+                            <div class="text-center py-3 mt-2">
+                                <p class="text-sm text-gray-400 font-medium">No tasks scheduled</p>
+                            </div>
+                            @endif
+                        </div>
+
+                        <!-- Action Buttons Section -->
+                        <div class="mt-auto pt-4 border-t border-gray-100 space-y-2">
+                            @if($taskCount > 0)
+                            <x-button 
+                                icon="o-eye" 
+                                label="View Tasks" 
+                                class="btn-sm btn-primary w-full shadow-sm hover:shadow-md transition-shadow" 
+                                wire:click="openDayModal({{ $day->id }})"
+                            />
+                            @endif
+                            <x-button 
+                                icon="o-plus" 
+                                label="Add Task" 
+                                class="btn-sm {{ $taskCount > 0 ? 'btn-outline btn-primary' : 'btn-primary' }} w-full shadow-sm hover:shadow-md transition-shadow" 
+                                wire:click="openModal({{ $day->id }})"
+                            />
                         </div>
                     </div>
                 </div>
-
-                <!-- Tasks List -->
-                <div class="p-6">
-              @forelse ($day->userTasks ?? [] as $task)
-                    <div class="group relative mb-4 last:mb-0 bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-300 overflow-hidden">
-                        <!-- Priority Bar -->
-                        <div class="absolute left-0 top-0 bottom-0 w-1.5 {{ $task->priority == 'High' ? 'bg-gradient-to-b from-red-500 to-red-600' : ($task->priority == 'Medium' ? 'bg-gradient-to-b from-yellow-500 to-yellow-600' : 'bg-gradient-to-b from-green-500 to-green-600') }}"></div>
-                        
-                        <div class="p-5 pl-6">
-                            <!-- Task Header -->
-                            <div class="flex items-start justify-between mb-3">
-                                <div class="flex-1 min-w-0">
-                                    <h4 class="text-lg font-bold text-gray-900 mb-1 truncate">{{ $task->title }}</h4>
-                                    <p class="text-sm text-gray-600 line-clamp-2">{{ $task->description }}</p>
-                                </div>
-                  </div>
-
-                            <!-- Task Meta -->
-                            <div class="flex items-center gap-4 mb-4 flex-wrap">
-                                <div class="flex items-center gap-2 text-sm text-gray-700">
-                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                    <span class="font-medium">{{ $task->duration }} {{ $task->uom }}</span>
-                                </div>
-                                
-                                <div class="flex items-center gap-2">
-                                    <x-badge 
-                                        value="{{ ucfirst($task->status) }}" 
-                                        class="badge-sm {{ $task->status == 'completed' ? 'badge-success' : ($task->status == 'ongoing' ? 'badge-info' : 'badge-warning') }}" 
-                                    />
-                                    <x-badge 
-                                        value="{{ $task->priority }}" 
-                                        class="badge-sm {{ $task->priority == 'High' ? 'badge-error' : ($task->priority == 'Medium' ? 'badge-warning' : 'badge-success') }}" 
-                                    />
-                                    <x-badge 
-                                        value="{{ $task->approvalstatus == 'Approved' ? 'Approved' : ($task->approvalstatus == 'Rejected' ? 'Rejected' : 'Pending Approval') }}" 
-                                        class="badge-sm {{ $task->approvalstatus == 'Approved' ? 'badge-success' : ($task->approvalstatus == 'Rejected' ? 'badge-error' : 'badge-warning') }}" 
-                                    />
-                                </div>
-              </div>
-
-                            <!-- Rejection Comment -->
-                            @if($task->approvalstatus == 'Rejected' && $rejectionComment)
-                            <div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                                <div class="flex items-start gap-2">
-                                    <svg class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
-                                    </svg>
-                                    <div class="flex-1">
-                                        <p class="text-sm font-semibold text-red-900 mb-1">Supervisor's Comment:</p>
-                                        <p class="text-sm text-red-800">{{ $rejectionComment }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            @endif
-
-                            <!-- Task Actions -->
-               @if($task->status != 'completed')
-                            <div class="flex items-center gap-2 pt-3 border-t border-gray-200">
-                                <x-button 
-                                    icon="o-check-circle" 
-                                    label="Status" 
-                                    class="btn-outline btn-success btn-sm" 
-                                    wire:click="openmarkmodal({{ $task->id }})" 
-                                />
-                                <x-button 
-                                    icon="o-pencil" 
-                                    label="Edit" 
-                                    class="btn-outline btn-info btn-sm" 
-                                    wire:click="edit({{ $task->id }})" 
-                                />
-                     @if($task->approvalstatus == 'pending' || $task->approvalstatus == 'Rejected')
-                                <x-button 
-                                    icon="o-trash" 
-                                    label="Delete" 
-                                    class="btn-outline btn-error btn-sm" 
-                                    wire:click="delete({{ $task->id }})" 
-                                    wire:confirm="Are you sure you want to delete this task?" 
-                                />
-                   @endif
-                          </div>
-                            @else
-                            <div class="flex items-center gap-2 pt-3 border-t border-gray-200">
-                                <div class="flex items-center gap-2 text-sm text-green-700 bg-green-50 px-3 py-1.5 rounded-lg">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                    <span class="font-semibold">Completed</span>
-                                </div>
-                            </div>
-               @endif
-               </div>
-             </div>
-              @empty
-                    <div class="text-center py-12">
-                        <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-1">No tasks for this day</h3>
-                        <p class="text-sm text-gray-500 mb-4">Get started by adding your first task</p>
-                        <x-button icon="o-plus" label="Add Task" class="btn-primary btn-sm" wire:click="openModal({{ $day->id }})" />
-                    </div>
-              @endforelse
-              </div>
-            </div>
-      @endforeach
+            @endforeach
         </div>
+
+        <!-- Day Tasks Modal -->
+        <x-modal wire:model="dayTasksModal" :title="$selectedDayTitle ?? 'Tasks'" box-class="max-w-4xl">
+            <!-- Scrollable Task List Container -->
+            <div class="max-h-[60vh] overflow-y-auto pr-2 -mr-2">
+                @if($selectedDayTasks && is_array($selectedDayTasks))
+                    @php
+                        $hasTasks = false;
+                        foreach($selectedDayTasks as $group) {
+                            if($group->count() > 0) {
+                                $hasTasks = true;
+                                break;
+                            }
+                        }
+                    @endphp
+
+                    @if($hasTasks)
+                        <!-- Rejected Tasks Section -->
+                        @if($selectedDayTasks['rejected']->count() > 0)
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2 mb-3 sticky top-0 bg-white z-10 py-2 border-b-2 border-red-300">
+                                <div class="w-1 h-6 bg-red-500 rounded-full"></div>
+                                <h3 class="text-sm font-bold text-red-700 uppercase tracking-wide">Rejected Tasks ({{ $selectedDayTasks['rejected']->count() }})</h3>
+                                <x-badge value="Needs Attention" class="badge-xs badge-error ml-auto" />
+                            </div>
+                            <div class="space-y-3">
+                                @foreach($selectedDayTasks['rejected'] as $task)
+                                    @php
+                                        $activeInstance = $task->taskinstances?->where('status', 'ongoing')->sortByDesc('date')->first();
+                                    @endphp
+                                    @include('livewire.admin.partials.task-card', ['task' => $task, 'activeInstance' => $activeInstance])
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+
+                        <!-- Pending Approval Section -->
+                        @if($selectedDayTasks['pending_approval']->count() > 0)
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2 mb-3 sticky top-0 bg-white z-10 py-2 border-b-2 border-yellow-300">
+                                <div class="w-1 h-6 bg-yellow-500 rounded-full"></div>
+                                <h3 class="text-sm font-bold text-yellow-700 uppercase tracking-wide">Awaiting Approval ({{ $selectedDayTasks['pending_approval']->count() }})</h3>
+                                <x-badge value="Pending Review" class="badge-xs badge-warning ml-auto" />
+                            </div>
+                            <div class="space-y-3">
+                                @foreach($selectedDayTasks['pending_approval'] as $task)
+                                    @php
+                                        $activeInstance = $task->taskinstances?->where('status', 'ongoing')->sortByDesc('date')->first();
+                                    @endphp
+                                    @include('livewire.admin.partials.task-card', ['task' => $task, 'activeInstance' => $activeInstance])
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+
+                        <!-- Pending Tasks Section -->
+                        @if($selectedDayTasks['pending']->count() > 0)
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2 mb-3 sticky top-0 bg-white z-10 py-2 border-b-2 border-blue-300">
+                                <div class="w-1 h-6 bg-blue-500 rounded-full"></div>
+                                <h3 class="text-sm font-bold text-blue-700 uppercase tracking-wide">Not Started ({{ $selectedDayTasks['pending']->count() }})</h3>
+                                <x-badge value="Ready to Start" class="badge-xs badge-info ml-auto" />
+                            </div>
+                            <div class="space-y-3">
+                                @foreach($selectedDayTasks['pending'] as $task)
+                                    @php
+                                        $activeInstance = $task->taskinstances?->where('status', 'ongoing')->sortByDesc('date')->first();
+                                    @endphp
+                                    @include('livewire.admin.partials.task-card', ['task' => $task, 'activeInstance' => $activeInstance])
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+
+                        <!-- Ongoing Tasks Section -->
+                        @if($selectedDayTasks['ongoing']->count() > 0)
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2 mb-3 sticky top-0 bg-white z-10 py-2 border-b-2 border-purple-300">
+                                <div class="w-1 h-6 bg-purple-500 rounded-full"></div>
+                                <h3 class="text-sm font-bold text-purple-700 uppercase tracking-wide">In Progress ({{ $selectedDayTasks['ongoing']->count() }})</h3>
+                                <x-badge value="Active" class="badge-xs badge-primary ml-auto" />
+                            </div>
+                            <div class="space-y-3">
+                                @foreach($selectedDayTasks['ongoing'] as $task)
+                                    @php
+                                        $activeInstance = $task->taskinstances?->where('status', 'ongoing')->sortByDesc('date')->first();
+                                    @endphp
+                                    @include('livewire.admin.partials.task-card', ['task' => $task, 'activeInstance' => $activeInstance])
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+
+                        <!-- Completed Tasks Section -->
+                        @if($selectedDayTasks['completed']->count() > 0)
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2 mb-3 sticky top-0 bg-white z-10 py-2 border-b-2 border-green-300">
+                                <div class="w-1 h-6 bg-green-500 rounded-full"></div>
+                                <h3 class="text-sm font-bold text-green-700 uppercase tracking-wide">Completed ({{ $selectedDayTasks['completed']->count() }})</h3>
+                                <x-badge value="Done" class="badge-xs badge-success ml-auto" />
+                            </div>
+                            <div class="space-y-3">
+                                @foreach($selectedDayTasks['completed'] as $task)
+                                    @php
+                                        $activeInstance = $task->taskinstances?->where('status', 'ongoing')->sortByDesc('date')->first();
+                                    @endphp
+                                    @include('livewire.admin.partials.task-card', ['task' => $task, 'activeInstance' => $activeInstance])
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+                    @else
+                        <div class="text-center py-12">
+                            <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                            <p class="text-gray-500 font-medium">No tasks scheduled for this day</p>
+                        </div>
+                    @endif
+                @else
+                    <div class="text-center py-12">
+                        <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                        <p class="text-gray-500 font-medium">No tasks scheduled for this day</p>
+                    </div>
+                @endif
+            </div>
+
+            <!-- Fixed Footer with Actions -->
+            <x-slot:actions>
+                <x-button label="Close" wire:click="closeDayModal()" class="btn-outline" />
+                <x-button 
+                    icon="o-plus" 
+                    label="Add Task" 
+                    class="btn-primary" 
+                    wire:click="openModal({{ $selectedDayId }})"
+                />
+            </x-slot:actions>
+        </x-modal>
     </div>
            
 
@@ -393,6 +504,21 @@
             
           <x-form wire:submit="save">
                 <div class="space-y-5">
+                    @if(!$id && count($templates) > 0)
+                    <div class="bg-purple-50 rounded-xl p-4 border border-purple-200">
+                        <x-select 
+                            wire:model.live="selectedTemplateId" 
+                            label="Use Template (Optional)" 
+                            placeholder="Select a template to pre-fill form..."
+                            :options="$templates" 
+                            option-label="title" 
+                            option-value="id"
+                            icon="o-document-duplicate"
+                            hint="Select a saved template to quickly create a similar task"
+                        />
+                    </div>
+                    @endif
+
                     <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
                         <x-input 
                             wire:model="title" 
@@ -463,6 +589,16 @@
                         />
             </div>
             @endif
+
+                    @if(!$id)
+                    <div class="bg-amber-50 rounded-xl p-4 border border-amber-200">
+                        <x-checkbox 
+                            wire:model="saveAsTemplate" 
+                            label="Save as Template" 
+                            hint="Save this task as a template for future use"
+                        />
+                    </div>
+                    @endif
                 </div>
 
             <x-slot name="actions">
@@ -485,24 +621,44 @@
         <!-- Change Status Modal -->
         <x-modal wire:model="markmodal" title="Update Task Status" separator box-class="max-w-md">
             
+            @php
+                $taskForStatus = $taskid ? \App\Models\Task::with('taskinstances')->find($taskid) : null;
+                $totalWorkedHours = $taskForStatus ? $taskForStatus->taskinstances->sum('worked_hours') : 0;
+                $hasLoggedHours = $totalWorkedHours > 0;
+            @endphp
             
             <div class="space-y-3">
                 <p class="text-sm text-gray-600 mb-4">Choose the new status for this task:</p>
                 
+                @if(!$hasLoggedHours)
+                <div class="alert alert-warning text-sm mb-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <span>You must log hours before marking this task as completed.</span>
+                </div>
+                @endif
+                
                 <button 
                     type="button"
-                    wire:click="marktaskascompleted({{ $taskid }})" 
-                    wire:confirm="Are you sure you want to mark this task as completed?"
-                    class="w-full flex items-center gap-3 p-4 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 border-2 border-green-300 rounded-xl transition-all duration-200 group"
+                    wire:click="openEvidenceModal({{ $taskid }})"
+                    @if(!$hasLoggedHours) disabled @endif
+                    class="w-full flex items-center gap-3 p-4 bg-gradient-to-r {{ $hasLoggedHours ? 'from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 border-green-300' : 'from-gray-50 to-gray-100 border-gray-300 opacity-50 cursor-not-allowed' }} border-2 rounded-xl transition-all duration-200 group"
                 >
-                    <div class="p-2 bg-green-500 rounded-lg group-hover:scale-110 transition-transform">
+                    <div class="p-2 {{ $hasLoggedHours ? 'bg-green-500' : 'bg-gray-400' }} rounded-lg group-hover:scale-110 transition-transform">
                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                         </svg>
                     </div>
                     <div class="text-left">
-                        <div class="font-bold text-green-900">Completed</div>
-                        <div class="text-xs text-green-700">Task is finished</div>
+                        <div class="font-bold {{ $hasLoggedHours ? 'text-green-900' : 'text-gray-500' }}">Completed</div>
+                        <div class="text-xs {{ $hasLoggedHours ? 'text-green-700' : 'text-gray-500' }}">
+                            @if($hasLoggedHours)
+                                Task is finished (with optional evidence)
+                            @else
+                                Log hours first to mark as completed
+                            @endif
+                        </div>
                     </div>
                 </button>
 
@@ -542,6 +698,75 @@
           </div>
         </x-modal>
 
+        <!-- Evidence Upload Modal -->
+        <x-modal wire:model="showEvidenceModal" title="Complete Task" box-class="max-w-md">
+            <div class="space-y-4">
+                <div class="bg-green-50 rounded-xl p-4 border border-green-200">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="p-2 bg-green-500 rounded-lg">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <span class="font-semibold text-green-900">Mark as Completed</span>
+                    </div>
+                    <p class="text-sm text-green-700">You can optionally upload evidence to support task completion.</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Evidence Document (Optional)</label>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-400 transition-colors">
+                        <input 
+                            type="file" 
+                            wire:model="evidenceFile"
+                            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+                            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.zip,.rar"
+                        />
+                    </div>
+                    <p class="mt-2 text-xs text-gray-500">Supported: PDF, Word, Excel, PowerPoint, Images, ZIP (Max 10MB)</p>
+                    
+                    @error('evidenceFile') 
+                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
+                    
+                    <div wire:loading wire:target="evidenceFile" class="mt-2 text-sm text-blue-600">
+                        <svg class="animate-spin inline w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Uploading...
+                    </div>
+
+                    @if($evidenceFile)
+                    <div class="mt-2 p-2 bg-gray-100 rounded-lg flex items-center gap-2">
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span class="text-sm text-gray-700 truncate">{{ $evidenceFile->getClientOriginalName() }}</span>
+                    </div>
+                    @endif
+                </div>
+            </div>
+
+            <x-slot:actions>
+                <x-button label="Cancel" @click="$wire.showEvidenceModal = false" />
+                <x-button 
+                    label="Complete Without Evidence" 
+                    wire:click="completeWithoutEvidence"
+                    class="btn-outline btn-success"
+                    wire:loading.attr="disabled"
+                />
+                <x-button 
+                    label="Complete with Evidence" 
+                    wire:click="marktaskascompleted({{ $completingTaskId }})"
+                    class="btn-success"
+                    wire:loading.attr="disabled"
+                    icon="o-check"
+                    :disabled="!$evidenceFile"
+                />
+            </x-slot:actions>
+        </x-modal>
+
         <!-- View Comment Modal -->
         <x-modal wire:model="viewcommentmodal" box-class="max-w-lg">
             <x-slot:title>
@@ -567,6 +792,73 @@
                     <p class="text-gray-500 text-center py-4">No comments available</p>
             @endif
           </div>
+        </x-modal>
+
+        <!-- Log Hours Modal -->
+        <x-modal wire:model="logHoursModal" title="Log Worked Hours" box-class="max-w-md">
+            <x-form wire:submit="logHours">
+                <div class="space-y-4">
+                    <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="p-2 bg-blue-500 rounded-lg">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <span class="font-semibold text-blue-900">Track Your Progress</span>
+                        </div>
+                        <p class="text-sm text-blue-700">Enter the number of hours you have worked on this task today.</p>
+                    </div>
+
+                    <x-input 
+                        wire:model="workedHours" 
+                        type="number" 
+                        label="Worked Hours" 
+                        placeholder="0"
+                        min="0"
+                        step="0.5"
+                        hint="You can use decimals (e.g., 2.5 for 2 hours 30 minutes)"
+                    />
+
+                    <div class="border-t border-gray-200 pt-4">
+                        <div class="bg-amber-50 rounded-xl p-4 border border-amber-200 mb-3">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="p-2 bg-amber-500 rounded-lg">
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                    </svg>
+                                </div>
+                                <span class="font-semibold text-amber-900 text-sm">Need More Time?</span>
+                            </div>
+                            <p class="text-xs text-amber-700">If you need more hours than originally planned, add additional hours below.</p>
+                        </div>
+
+                        <x-input 
+                            wire:model="additionalHours" 
+                            type="number" 
+                            label="Additional Hours (Optional)" 
+                            placeholder="0"
+                            min="0"
+                            step="0.5"
+                            hint="Extra hours to add to your planned hours"
+                        />
+                    </div>
+                </div>
+
+                <x-slot:actions>
+                    <x-button 
+                        label="Cancel" 
+                        @click="$wire.closeLogHoursModal()"
+                    />
+                    <x-button 
+                        label="Save Hours" 
+                        type="submit" 
+                        class="btn-primary" 
+                        spinner="logHours"
+                        icon="o-check"
+                    />
+                </x-slot:actions>
+            </x-form>
         </x-modal>
  
     

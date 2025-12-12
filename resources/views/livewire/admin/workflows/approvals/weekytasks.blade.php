@@ -5,7 +5,7 @@
 
     <x-card title="{{ $tasks['calendarweek'] ? $tasks['calendarweek']->week : 'No Calendar Week Found' }}" subtitle="{{ $tasks['calendarweek'] ? $tasks['calendarweek']->start_date . ' - ' . $tasks['calendarweek']->end_date : 'Please select a valid week' }}" class="mt-2 border-2 border-gray-200" separator>
         <x-slot:menu>
-            <x-select wire:model="week" :options="$weeks" option-label="week" option-value="id" placeholder="Filter by week" />
+            <x-select wire:model.live="week" :options="$weeks" option-label="week" option-value="id" placeholder="Filter by week" />
         </x-slot:menu>
         
         <!-- Task Summary -->
@@ -241,15 +241,33 @@
                                                     </div>
                                                     <div>
                                                         <span class="font-medium">Approval:</span>
-                                                        <span class="badge badge-sm">{{ $task->approvalstatus }}</span>
-                                                        @if($task->approvalstatus === 'pending' && $task->status == 'completed')
+                                                        <span class="badge badge-sm {{ $task->approvalstatus == 'Approved' ? 'badge-success' : ($task->approvalstatus == 'Rejected' ? 'badge-error' : 'badge-warning') }}">{{ $task->approvalstatus }}</span>
+                                                        @if($task->approvalstatus === 'pending')
                                                             <div class="flex gap-2 mt-2">
-                                                                <button wire:click="approveTask({{ $task->id }}, 'Approved')" class="btn btn-xs btn-success">Approve</button>
-                                                                <button wire:click="approveTask({{ $task->id }}, 'Rejected')" class="btn btn-xs btn-error">Send Back</button>
+                                                                <button wire:click="openIndividualApprovalModal({{ $task->id }}, 'Approved')" class="btn btn-xs btn-success">Approve</button>
+                                                                <button wire:click="openIndividualApprovalModal({{ $task->id }}, 'Rejected')" class="btn btn-xs btn-error">Send Back</button>
+                                                            </div>
+                                                        @endif
+                                                        @if($task->approval_comment)
+                                                            <div class="mt-2 p-2 bg-base-300 rounded text-xs">
+                                                                <span class="font-medium">Comment:</span> {{ $task->approval_comment }}
                                                             </div>
                                                         @endif
                                                     </div>
                                                 </div>
+                                                
+                                                {{-- Show evidence if available --}}
+                                                @if($task->evidence_path)
+                                                <div class="mt-2 flex items-center gap-2 text-xs">
+                                                    <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                                                    </svg>
+                                                    <span class="font-medium">Evidence:</span>
+                                                    <a href="{{ asset('storage/' . $task->evidence_path) }}" target="_blank" class="text-blue-600 hover:underline">
+                                                        {{ $task->evidence_original_name ?? 'View Attachment' }}
+                                                    </a>
+                                                </div>
+                                                @endif
                                             </div>
                                         @endforeach
                                     </div>
@@ -294,12 +312,12 @@
             
             <div class="space-y-4">
                 <div class="alert alert-info">
-                    <p class="text-sm">You are about to {{ strtolower($bulkApprovalStatus) }} <strong>{{ $pendingInitialTasks->count() }} task(s)</strong> for this week.</p>
+                    <p class="text-sm">You are about to make a decision on <strong>{{ $pendingInitialTasks->count() }} task(s)</strong> for this week.</p>
                 </div>
                 
                 <div>
                     <label class="label">
-                        <span class="label-text font-semibold">Approval Decision</span>
+                        <span class="label-text font-semibold">Decision</span>
                     </label>
                     <select wire:model="bulkApprovalStatus" class="select select-bordered w-full">
                         <option value="Approved">Approve</option>
@@ -309,19 +327,18 @@
                 
                 <div>
                     <label class="label">
-                        <span class="label-text font-semibold">Comment <span class="text-error">*</span></span>
+                        <span class="label-text font-semibold">Comment (Optional)</span>
                     </label>
                     <textarea 
                         wire:model="bulkApprovalComment" 
                         class="textarea textarea-bordered w-full" 
                         rows="4"
-                        placeholder="Enter your comment for this approval decision..."
+                        placeholder="Enter an optional comment for this decision..."
                     ></textarea>
-                    @error('bulkApprovalComment') <span class="text-error text-xs">{{ $message }}</span> @enderror
                 </div>
                 
                 <div class="bg-base-200 p-3 rounded-lg">
-                    <p class="text-sm font-semibold mb-2">Tasks to be {{ strtolower($bulkApprovalStatus) }}:</p>
+                    <p class="text-sm font-semibold mb-2">Tasks:</p>
                     <ul class="list-disc list-inside text-sm space-y-1">
                         @foreach($pendingInitialTasks as $task)
                             <li>{{ $task->title }}</li>
@@ -333,7 +350,7 @@
             <div class="modal-action">
                 <button wire:click="closeBulkApprovalModal" class="btn btn-outline">Cancel</button>
                 <button wire:click="bulkApproveTasks" class="btn btn-primary">
-                    {{ $bulkApprovalStatus }} All Tasks
+                    Make Decision
                 </button>
             </div>
         </div>
@@ -357,12 +374,12 @@
             
             <div class="space-y-4">
                 <div class="alert alert-warning">
-                    <p class="text-sm">You are about to {{ strtolower($completedBulkApprovalStatus) }} <strong>{{ $completedTasks->count() }} completed task(s)</strong>.</p>
+                    <p class="text-sm">You are about to make a decision on <strong>{{ $completedTasks->count() }} completed task(s)</strong>.</p>
                 </div>
                 
                 <div>
                     <label class="label">
-                        <span class="label-text font-semibold">Approval Decision</span>
+                        <span class="label-text font-semibold">Decision</span>
                     </label>
                     <select wire:model="completedBulkApprovalStatus" class="select select-bordered w-full">
                         <option value="Approved">Approve</option>
@@ -372,19 +389,18 @@
                 
                 <div>
                     <label class="label">
-                        <span class="label-text font-semibold">Comment <span class="text-error">*</span></span>
+                        <span class="label-text font-semibold">Comment (Optional)</span>
                     </label>
                     <textarea 
                         wire:model="completedBulkApprovalComment" 
                         class="textarea textarea-bordered w-full" 
                         rows="4"
-                        placeholder="Enter your comment for this approval decision..."
+                        placeholder="Enter an optional comment for this decision..."
                     ></textarea>
-                    @error('completedBulkApprovalComment') <span class="text-error text-xs">{{ $message }}</span> @enderror
                 </div>
                 
                 <div class="bg-base-200 p-3 rounded-lg">
-                    <p class="text-sm font-semibold mb-2">Completed tasks to be {{ strtolower($completedBulkApprovalStatus) }}:</p>
+                    <p class="text-sm font-semibold mb-2">Completed Tasks:</p>
                     <ul class="list-disc list-inside text-sm space-y-1">
                         @foreach($completedTasks as $task)
                             <li>{{ $task->title }}</li>
@@ -396,7 +412,58 @@
             <div class="modal-action">
                 <button wire:click="closeCompletedBulkApprovalModal" class="btn btn-outline">Cancel</button>
                 <button wire:click="bulkApproveCompletedTasks" class="btn btn-warning">
-                    {{ $completedBulkApprovalStatus }} All Completed Tasks
+                    Make Decision
+                </button>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- Individual Task Approval Modal -->
+    @if($showIndividualApprovalModal)
+    <div class="modal modal-open">
+        <div class="modal-box max-w-lg">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold {{ $individualApprovalStatus == 'Approved' ? 'text-success' : 'text-error' }}">
+                    {{ $individualApprovalStatus == 'Approved' ? '✓ Approve Task' : '✕ Send Back Task' }}
+                </h3>
+                <button wire:click="closeIndividualApprovalModal" class="btn btn-sm btn-circle btn-ghost">✕</button>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="alert {{ $individualApprovalStatus == 'Approved' ? 'alert-success' : 'alert-error' }}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        @if($individualApprovalStatus == 'Approved')
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        @else
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        @endif
+                    </svg>
+                    <p class="text-sm">
+                        You are about to <strong>{{ $individualApprovalStatus == 'Approved' ? 'approve' : 'send back' }}</strong> this task.
+                    </p>
+                </div>
+                
+                <div>
+                    <label class="label">
+                        <span class="label-text font-semibold">Comment (Optional)</span>
+                    </label>
+                    <textarea 
+                        wire:model="individualApprovalComment" 
+                        class="textarea textarea-bordered w-full" 
+                        rows="3"
+                        placeholder="Enter an optional comment for your decision..."
+                    ></textarea>
+                </div>
+            </div>
+            
+            <div class="modal-action">
+                <button wire:click="closeIndividualApprovalModal" class="btn btn-outline">Cancel</button>
+                <button 
+                    wire:click="submitIndividualApproval" 
+                    class="btn {{ $individualApprovalStatus == 'Approved' ? 'btn-success' : 'btn-error' }}"
+                >
+                    {{ $individualApprovalStatus == 'Approved' ? 'Approve Task' : 'Send Back Task' }}
                 </button>
             </div>
         </div>

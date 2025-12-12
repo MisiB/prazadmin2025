@@ -5,11 +5,18 @@ namespace App\Interfaces\repositories;
 interface itaskInterface
 {
     public function getmytasks($year);
+
     public function gettask($id);
+
     public function createtask($data);
-    public function updatetask($id,$data);
+
+    public function updatetask($id, $data);
+
     public function deletetask($id);
-    public function marktask($id,$status);
+
+    public function marktask($id, $status, $evidencePath = null, $originalName = null);
+
     public function approvetask(array $data);
+
     public function bulkapprovetasks(array $data);
 }
