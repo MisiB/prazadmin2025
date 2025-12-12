@@ -5,19 +5,26 @@ namespace App\Livewire\Admin;
 use App\Interfaces\repositories\individualworkplanInterface;
 use App\Interfaces\repositories\itaskInterface;
 use App\Interfaces\services\ICalendarService;
+use App\Interfaces\services\itaskinstanceService;
+use App\Interfaces\services\itaskTemplateService;
 use App\Models\Individualworkplan;
+use App\Models\Taskinstance;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Mary\Traits\Toast;
 
 class UserCalendar extends Component
 {
     use Toast;
+    use WithFileUploads;
 
     protected $repository;
 
     protected $workplanrepository;
+
+    protected $taskinstanceService;
 
     public $startDate;
 
@@ -65,13 +72,44 @@ class UserCalendar extends Component
 
     public bool $viewcommentmodal = false;
 
+    // TaskInstance properties
+    public bool $logHoursModal = false;
+
+    public $loggingTaskId = null;
+
+    public $workedHours = 0;
+
+    public $additionalHours = 0;  // NEW: for extending planned hours
+
+    // Evidence upload properties
+    public $evidenceFile = null;
+
+    public bool $showEvidenceModal = false;
+
+    public $completingTaskId = null;
+
     protected $calendarService;
 
-    public function boot(ICalendarService $calendarService, itaskInterface $repository, individualworkplanInterface $workplanrepository)
+    protected $taskTemplateService;
+
+    public $templates = [];
+
+    public $selectedTemplateId = null;
+
+    public $saveAsTemplate = false;
+
+    public bool $dayTasksModal = false;
+    public $selectedDayId = null;
+    public $selectedDayTasks = null;
+    public $selectedDayTitle = null;
+
+    public function boot(ICalendarService $calendarService, itaskInterface $repository, individualworkplanInterface $workplanrepository, itaskinstanceService $taskinstanceService, itaskTemplateService $taskTemplateService)
     {
         $this->calendarService = $calendarService;
         $this->repository = $repository;
         $this->workplanrepository = $workplanrepository;
+        $this->taskinstanceService = $taskinstanceService;
+        $this->taskTemplateService = $taskTemplateService;
     }
 
     public function mount()
@@ -107,6 +145,71 @@ class UserCalendar extends Component
     {
         $this->currentday = $day;
         $this->modal = true;
+        $this->loadTemplates();
+        $this->selectedTemplateId = null;
+        $this->saveAsTemplate = false;
+    }
+
+    public function openDayModal($dayId)
+    {
+        $day = \App\Models\Calendarday::with('userTasks.taskinstances')->find($dayId);
+        
+        if ($day) {
+            $this->selectedDayId = $dayId;
+            $tasks = $day->userTasks ?? collect();
+            
+            // Group tasks by status
+            $this->selectedDayTasks = $this->groupTasksByStatus($tasks);
+            $this->selectedDayTitle = Carbon::parse($day->maindate)->format('l, F d, Y');
+            $this->dayTasksModal = true;
+        }
+    }
+
+    /**
+     * Group tasks by status for better organization
+     */
+    private function groupTasksByStatus($tasks)
+    {
+        $grouped = [
+            'rejected' => collect(),
+            'pending_approval' => collect(),
+            'pending' => collect(),
+            'ongoing' => collect(),
+            'completed' => collect(),
+        ];
+
+        foreach ($tasks as $task) {
+            // Rejected tasks (highest priority - needs immediate attention)
+            if ($task->approvalstatus == 'Rejected') {
+                $grouped['rejected']->push($task);
+            }
+            // Pending approval (completed tasks waiting for approval)
+            elseif ($task->status == 'completed' && $task->approvalstatus == 'pending') {
+                $grouped['pending_approval']->push($task);
+            }
+            // Pending tasks (not started yet)
+            elseif ($task->status == 'pending') {
+                $grouped['pending']->push($task);
+            }
+            // Ongoing tasks (in progress)
+            elseif ($task->status == 'ongoing') {
+                $grouped['ongoing']->push($task);
+            }
+            // Completed and approved tasks
+            else {
+                $grouped['completed']->push($task);
+            }
+        }
+
+        return $grouped;
+    }
+
+    public function closeDayModal()
+    {
+        $this->dayTasksModal = false;
+        $this->selectedDayId = null;
+        $this->selectedDayTasks = null;
+        $this->selectedDayTitle = null;
     }
 
     public function getmyindividualworkplans()
@@ -118,25 +221,24 @@ class UserCalendar extends Component
             ->get();
 
         return $workplans->map(function ($workplan) {
-              // Get output text from relationship or fallback to direct field
-              $outputText = $workplan->targetmatrix?->target?->indicator?->departmentoutput?->output?->title 
-              ?? $workplan->output;
-          
-          // Get indicator text from relationship or fallback to direct field
-          $indicatorText = $workplan->targetmatrix?->target?->indicator?->title 
-              ?? $workplan->indicator;
+            // Get output text from relationship or fallback to direct field
+            $outputText = $workplan->targetmatrix?->target?->indicator?->departmentoutput?->output?->title
+            ?? $workplan->output;
 
+            // Get indicator text from relationship or fallback to direct field
+            $indicatorText = $workplan->targetmatrix?->target?->indicator?->title
+                ?? $workplan->indicator;
 
             // Truncate long outputs and indicators for better readability in dropdown
-            $output = strlen($outputText) > 80 ? substr($outputText, 0, 80) . '...' : $outputText;
-            $indicator = strlen($indicatorText) > 80 ? substr($indicatorText, 0, 80) . '...' : $indicatorText;
-            
+            $output = strlen($outputText) > 80 ? substr($outputText, 0, 80).'...' : $outputText;
+            $indicator = strlen($indicatorText) > 80 ? substr($indicatorText, 0, 80).'...' : $indicatorText;
+
             // Format month name for better readability
             $monthNames = [
-                'Q1' => 'Q1', 'Q2' => 'Q2', 'Q3' => 'Q3', 'Q4' => 'Q4'
+                'Q1' => 'Q1', 'Q2' => 'Q2', 'Q3' => 'Q3', 'Q4' => 'Q4',
             ];
             $month = $monthNames[$workplan->month] ?? $workplan->month;
-            
+
             return [
                 'id' => $workplan->id,
                 'description' => sprintf(
@@ -169,6 +271,27 @@ class UserCalendar extends Component
         ];
     }
 
+    public function loadTemplates()
+    {
+        $this->templates = $this->taskTemplateService->getmytemplates(Auth::user()->id);
+    }
+
+    public function updatedSelectedTemplateId()
+    {
+        if ($this->selectedTemplateId) {
+            $template = $this->taskTemplateService->gettemplate($this->selectedTemplateId);
+            if ($template) {
+                $this->title = $template->title;
+                $this->description = $template->description;
+                $this->priority = $template->priority;
+                $this->duration = $template->duration;
+                $this->uom = $template->uom;
+                $this->individualworkplan_id = $template->individualworkplan_id;
+                $this->link = ! is_null($template->individualworkplan_id);
+            }
+        }
+    }
+
     public function save()
     {
         $this->validate([
@@ -177,7 +300,7 @@ class UserCalendar extends Component
             'description' => 'required',
             'duration' => 'required',
             'uom' => 'required',
-            'individualworkplan_id' => 'required_if:link,true', 
+            'individualworkplan_id' => 'required_if:link,true',
 
         ]);
         if ($this->id) {
@@ -185,6 +308,23 @@ class UserCalendar extends Component
         } else {
             $this->create();
         }
+
+        // Save as template if checkbox is checked
+        if ($this->saveAsTemplate && ! $this->id) {
+            $templateResult = $this->taskTemplateService->createtemplate([
+                'title' => $this->title,
+                'description' => $this->description,
+                'priority' => $this->priority,
+                'duration' => $this->duration,
+                'uom' => $this->uom,
+                'individualworkplan_id' => $this->individualworkplan_id,
+            ]);
+
+            if ($templateResult['status'] === 'success') {
+                $this->success('Task created and saved as template');
+            }
+        }
+
         $this->reset([
             'title',
             'priority',
@@ -194,6 +334,8 @@ class UserCalendar extends Component
             'link',
             'individualworkplan_id',
             'id',
+            'selectedTemplateId',
+            'saveAsTemplate',
         ]);
     }
 
@@ -327,9 +469,46 @@ class UserCalendar extends Component
         $this->markmodal = false;
     }
 
+    /**
+     * Open evidence upload modal for completing a task
+     */
+    public function openEvidenceModal($taskId)
+    {
+        $this->completingTaskId = $taskId;
+        $this->evidenceFile = null;
+        $this->showEvidenceModal = true;
+        $this->markmodal = false;
+    }
+
+    /**
+     * Complete task without evidence
+     */
+    public function completeWithoutEvidence()
+    {
+        $this->evidenceFile = null;
+        $this->marktaskascompleted($this->completingTaskId);
+    }
+
+    /**
+     * Mark task as completed with optional evidence upload
+     */
     public function marktaskascompleted($id)
     {
-        $response = $this->repository->marktask($id, 'completed');
+        $evidencePath = null;
+        $originalName = null;
+
+        // Handle file upload if provided
+        if ($this->evidenceFile) {
+            $this->validate([
+                'evidenceFile' => 'file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,gif,zip,rar',
+            ]);
+
+            $originalName = $this->evidenceFile->getClientOriginalName();
+            $evidencePath = $this->evidenceFile->store('task-evidence', 'public');
+        }
+
+        $response = $this->repository->marktask($id, 'completed', $evidencePath, $originalName);
+
         if ($response['status'] == 'success') {
             $this->success($response['message']);
             // Refresh the current week data to reflect updated approval status
@@ -341,7 +520,11 @@ class UserCalendar extends Component
         } else {
             $this->error($response['message']);
         }
+
+        $this->showEvidenceModal = false;
         $this->markmodal = false;
+        $this->evidenceFile = null;
+        $this->completingTaskId = null;
     }
 
     public function sendforapproval()
@@ -386,6 +569,140 @@ class UserCalendar extends Component
         ];
 
         return $summary;
+    }
+
+    // TaskInstance Methods
+
+    /**
+     * Get the active task instance for a task
+     */
+    public function getActiveTaskInstance($taskId)
+    {
+        return Taskinstance::where('task_id', $taskId)
+            ->where('status', 'ongoing')
+            ->orderBy('date', 'desc')
+            ->first();
+    }
+
+    /**
+     * Open the log hours modal
+     */
+    public function openLogHoursModal($taskId)
+    {
+        $this->loggingTaskId = $taskId;
+        $instance = $this->getActiveTaskInstance($taskId);
+        $this->workedHours = $instance ? $instance->worked_hours : 0;
+        $this->additionalHours = 0;  // Reset additional hours
+        $this->logHoursModal = true;
+    }
+
+    /**
+     * Close the log hours modal
+     */
+    public function closeLogHoursModal()
+    {
+        $this->logHoursModal = false;
+        $this->loggingTaskId = null;
+        $this->workedHours = 0;
+        $this->additionalHours = 0;  // NEW
+    }
+
+    /**
+     * Log worked hours for a task
+     */
+    public function logHours()
+    {
+        $this->validate([
+            'workedHours' => 'required|numeric|min:0',
+            'additionalHours' => 'nullable|numeric|min:0',
+        ]);
+
+        $instance = $this->getActiveTaskInstance($this->loggingTaskId);
+
+        if (! $instance) {
+            $this->error('No active task instance found');
+
+            return;
+        }
+
+        // Log the worked hours
+        $result = $this->taskinstanceService->loghours($instance->id, $this->workedHours);
+
+        if ($result['status'] === 'success') {
+            // If additional hours were requested, add them to planned hours
+            if ($this->additionalHours > 0) {
+                $newPlannedHours = $instance->planned_hours + $this->additionalHours;
+                $this->taskinstanceService->updateplannedhours($instance->id, $newPlannedHours);
+            }
+
+            $this->success('Hours logged successfully');
+            $this->closeLogHoursModal();
+            // Refresh current week data
+            if ($this->week_id) {
+                $this->getcalenderuserweektasksbyweekid();
+            } else {
+                $this->getcalenderuserweektasks();
+            }
+        } else {
+            $this->error($result['message']);
+        }
+    }
+
+    /**
+     * Rollover a task to the next day
+     */
+    public function rolloverTask($taskId)
+    {
+        $instance = $this->getActiveTaskInstance($taskId);
+
+        if (! $instance) {
+            $this->error('No active task instance found to rollover');
+
+            return;
+        }
+
+        $result = $this->taskinstanceService->rolloverinstance($instance->id);
+
+        if ($result['status'] === 'success') {
+            $carriedHours = $result['data']['carried_forward_hours'] ?? 0;
+            $this->success("Task rolled over. {$carriedHours} hours carried forward to tomorrow.");
+            // Refresh current week data
+            if ($this->week_id) {
+                $this->getcalenderuserweektasksbyweekid();
+            } else {
+                $this->getcalenderuserweektasks();
+            }
+        } else {
+            $this->error($result['message']);
+        }
+    }
+
+    /**
+     * Complete a task instance
+     */
+    public function completeTaskInstance($taskId)
+    {
+        $instance = $this->getActiveTaskInstance($taskId);
+
+        if (! $instance) {
+            $this->error('No active task instance found');
+
+            return;
+        }
+
+        $result = $this->taskinstanceService->completeinstance($instance->id);
+
+        if ($result['status'] === 'success') {
+            $this->success('Task instance marked as completed');
+            // Refresh current week data
+            if ($this->week_id) {
+                $this->getcalenderuserweektasksbyweekid();
+            } else {
+                $this->getcalenderuserweektasks();
+            }
+        } else {
+            $this->error($result['message']);
+        }
     }
 
     public function render()

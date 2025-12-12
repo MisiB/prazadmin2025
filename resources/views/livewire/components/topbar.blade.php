@@ -25,6 +25,13 @@
                   icon="o-ticket" 
                 link="{{ route('admin.myissues') }}"/>             
                 <x-menu-separator />
+                <x-menu-item title="Task Templates"   
+                  icon="o-document-duplicate" 
+                link="{{ route('admin.tasks.templates') }}"/>             
+                <x-menu-item title="Recurring Tasks"   
+                  icon="o-arrow-path" 
+                link="{{ route('admin.tasks.recurring') }}"/>             
+                <x-menu-separator />
              
             </x-dropdown>
             <x-dropdown>

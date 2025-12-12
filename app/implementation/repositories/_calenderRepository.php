@@ -3,18 +3,17 @@
 namespace App\implementation\repositories;
 
 use App\Interfaces\repositories\icalendarInterface;
+use App\Interfaces\repositories\itaskInterface;
+use App\Interfaces\services\ileaverequestService;
 use App\Models\Calendarday;
 use App\Models\Calendarweek;
 use App\Models\Calendaryear;
 use App\Models\Calenderworkusertask;
 use App\Models\Departmentuser;
 use App\Models\User;
+use App\Notifications\TaskSubmittedForApproval;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
-
-use App\Notifications\TaskSubmittedForApproval;
-use App\Interfaces\repositories\itaskInterface;
-use App\Interfaces\services\ileaverequestService;
 
 class _calenderRepository implements icalendarInterface
 {
@@ -257,11 +256,11 @@ class _calenderRepository implements icalendarInterface
     public function sendforapproval($calendarweek_id)
     {
         $check = $this->calenderworkusertask->where('calendarweek_id', $calendarweek_id)->where('user_id', Auth::user()->id)->first();
-        
+
         // Check if there are tasks with pending approval status (updated after rejection)
         $calendarweek = $this->calendarweek->with('calendardays.userTasks')->where('id', $calendarweek_id)->first();
         $hasPendingTasks = false;
-        
+
         if ($calendarweek) {
             foreach ($calendarweek->calendardays as $day) {
                 if ($day->userTasks && $day->userTasks->where('approvalstatus', 'pending')->count() > 0) {
@@ -270,12 +269,12 @@ class _calenderRepository implements icalendarInterface
                 }
             }
         }
-        
+
         // Allow resubmission if there are pending tasks (updated after rejection) or if no record exists
-        if ($check && !$hasPendingTasks && $check->status == 'pending') {
+        if ($check && ! $hasPendingTasks && $check->status == 'pending') {
             return ['status' => 'error', 'message' => 'You have already sent for approval'];
         }
-        
+
         // If record exists, update it to allow resubmission; otherwise create new
         if ($check) {
             $check->update([
@@ -290,26 +289,63 @@ class _calenderRepository implements icalendarInterface
             ]);
         }
 
-        // Send notification to supervisor
-        $userDepartment = \App\Models\Departmentuser::where('user_id', Auth::user()->id)->first();
-        if ($userDepartment && $userDepartment->reportto) {
-            $supervisor = \App\Models\User::find($userDepartment->reportto);
-            if ($supervisor) {
-                // Check if supervisor is on leave and get acting supervisor
-                $leaverequestService = app(\App\Interfaces\services\ileaverequestService::class);
-                $supervisorLeaveStatus = $leaverequestService->isactiveonleave($userDepartment->reportto);
-                $notifyUserId = ($supervisorLeaveStatus['status'] === true && isset($supervisorLeaveStatus['actinghodid'])) 
-                    ? $supervisorLeaveStatus['actinghodid'] 
-                    : $userDepartment->reportto;
-                
-                $notifyUser = \App\Models\User::find($notifyUserId);
-                if ($notifyUser) {
-                    $notifyUser->notify(new TaskSubmittedForApproval($this->taskRepository, $calendarweek_id, Auth::user()->id));
-                }
+        // Send notification to supervisor using the priority chain
+        $notifyUserId = $this->getNotificationRecipient(Auth::user()->id);
+        if ($notifyUserId) {
+            $notifyUser = \App\Models\User::find($notifyUserId);
+            if ($notifyUser) {
+                $notifyUser->notify(new TaskSubmittedForApproval($this->taskRepository, $calendarweek_id, Auth::user()->id));
             }
         }
 
         return ['status' => 'success', 'message' => 'Sent for approval successfully'];
+    }
+
+    /**
+     * Get the correct supervisor to notify based on leave status chain
+     * Priority: Direct Supervisor → Supervisor's Acting → HOD → HOD's Acting
+     */
+    private function getNotificationRecipient($userId): ?string
+    {
+        $userDepartment = \App\Models\Departmentuser::where('user_id', $userId)->first();
+        if (! $userDepartment || ! $userDepartment->reportto) {
+            return null;
+        }
+
+        $supervisorId = $userDepartment->reportto;
+
+        // Check if direct supervisor is on leave
+        $supervisorLeaveStatus = $this->leaverequestService->isactiveonleave($supervisorId);
+        if ($supervisorLeaveStatus['status'] !== true) {
+            // Supervisor is available - send to them
+            return $supervisorId;
+        }
+
+        // Supervisor is on leave - check if they assigned an acting person
+        if (isset($supervisorLeaveStatus['actinghodid']) && $supervisorLeaveStatus['actinghodid']) {
+            return $supervisorLeaveStatus['actinghodid'];
+        }
+
+        // No acting assigned by supervisor - check HOD
+        $hod = \App\Models\Departmentuser::where('department_id', $userDepartment->department_id)
+            ->where('isprimary', true)
+            ->first();
+
+        if ($hod) {
+            $hodLeaveStatus = $this->leaverequestService->isactiveonleave($hod->user_id);
+            if ($hodLeaveStatus['status'] !== true) {
+                // HOD is available
+                return $hod->user_id;
+            } else {
+                // HOD is on leave - use their acting member
+                if (isset($hodLeaveStatus['actinghodid']) && $hodLeaveStatus['actinghodid']) {
+                    return $hodLeaveStatus['actinghodid'];
+                }
+            }
+        }
+
+        // Fallback to direct supervisor (even if on leave, still notify)
+        return $supervisorId;
     }
 
     public function updatecalenderworkusertask($calendarweek_id, $user_id, $data)
@@ -318,17 +354,17 @@ class _calenderRepository implements icalendarInterface
             $calenderworkusertask = $this->calenderworkusertask->where('calendarweek_id', $calendarweek_id)
                 ->where('user_id', $user_id)
                 ->first();
-            
-            if (!$calenderworkusertask) {
+
+            if (! $calenderworkusertask) {
                 return ['status' => 'error', 'message' => 'Approval record not found'];
             }
-            
+
             $calenderworkusertask->update([
                 'status' => $data['status'],
                 'supervisor_id' => Auth::user()->id,
                 'comment' => $data['comment'] ?? null,
             ]);
-            
+
             return ['status' => 'success', 'message' => 'Approval updated successfully'];
         } catch (\Exception $e) {
             return ['status' => 'error', 'message' => $e->getMessage()];
@@ -341,21 +377,21 @@ class _calenderRepository implements icalendarInterface
         if (! $calenderweek) {
             return collect();
         }
-        
+
         // Get current user's department to verify they belong to the same department
         $currentUserDepartment = \App\Models\Departmentuser::where('user_id', Auth::user()->id)->first();
-        if (!$currentUserDepartment || $currentUserDepartment->department_id != $department_id) {
+        if (! $currentUserDepartment || $currentUserDepartment->department_id != $department_id) {
             return ['users' => collect(), 'calendarweek' => $calenderweek];
         }
-        
+
         // Get ALL users in the department (for viewing purposes)
         // Approval restrictions are handled in approvetask and bulkapprovetasks methods
         $users = $this->user->with(['calenderworkusertasks' => function ($query) use ($calenderweek) {
             $query->where('calendarweek_id', $calenderweek->id);
         }, 'calenderworkusertasks.calendarweek.calendardays.tasks', 'department'])
-        ->whereHas('department', function ($query) use ($department_id) {
-            $query->where('department_id', $department_id);
-        })->get();
+            ->whereHas('department', function ($query) use ($department_id) {
+                $query->where('department_id', $department_id);
+            })->get();
 
         return ['users' => $users, 'calendarweek' => $calenderweek];
     }

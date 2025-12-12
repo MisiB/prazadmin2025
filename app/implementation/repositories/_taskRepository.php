@@ -2,15 +2,14 @@
 
 namespace App\implementation\repositories;
 
+use App\Interfaces\repositories\idepartmentInterface;
 use App\Interfaces\repositories\itaskInterface;
+use App\Interfaces\services\ileaverequestService;
 use App\Models\Task;
+use App\Notifications\TaskApproved;
+use App\Notifications\TaskCompletedForApproval;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
-use App\Interfaces\services\ileaverequestService;
-use App\Interfaces\repositories\idepartmentInterface;
-use App\Notifications\TaskSubmittedForApproval;
-use App\Notifications\TaskCompletedForApproval;
-use App\Notifications\TaskApproved;
 
 class _taskRepository implements itaskInterface
 {
@@ -18,7 +17,9 @@ class _taskRepository implements itaskInterface
      * Create a new class instance.
      */
     protected $task;
+
     protected $leaverequestService;
+
     protected $departmentRepository;
 
     public function __construct(Task $task, ileaverequestService $leaverequestService, idepartmentInterface $departmentRepository)
@@ -50,9 +51,9 @@ class _taskRepository implements itaskInterface
             if ($leaveStatus['status'] === true) {
                 return ['status' => 'error', 'message' => 'You cannot add tasks while you are on leave'];
             }
-            
+
             $uuid = Str::uuid();
-            $this->task->create([
+            $task = $this->task->create([
                 'title' => $data['title'],
                 'user_id' => $data['user_id'],
                 'individualworkplan_id' => $data['individualworkplan_id'],
@@ -62,6 +63,15 @@ class _taskRepository implements itaskInterface
                 'duration' => $data['duration'],
                 'uom' => $data['uom'],
                 'uuid' => $uuid,
+            ]);
+
+            // Auto-create TaskInstance for today with planned hours from duration
+            \App\Models\Taskinstance::create([
+                'task_id' => $task->id,
+                'date' => now()->format('Y-m-d'),
+                'planned_hours' => $data['duration'] ?? 0,
+                'worked_hours' => 0,
+                'status' => 'ongoing',
             ]);
 
             return ['status' => 'success', 'message' => 'Task created successfully'];
@@ -74,7 +84,7 @@ class _taskRepository implements itaskInterface
     {
         try {
             $task = $this->task->where('id', $id)->first();
-            
+
             // If task was previously rejected, reset approval status to pending
             $updateData = [
                 'title' => $data['title'],
@@ -86,12 +96,12 @@ class _taskRepository implements itaskInterface
                 'duration' => $data['duration'],
                 'uom' => $data['uom'],
             ];
-            
+
             // Reset approval status if task was rejected
             if ($task->approvalstatus == 'Rejected') {
                 $updateData['approvalstatus'] = 'pending';
             }
-            
+
             $this->task->where('id', $id)->update($updateData);
 
             return ['status' => 'success', 'message' => 'Task updated successfully'];
@@ -104,16 +114,16 @@ class _taskRepository implements itaskInterface
     {
         try {
             $task = $this->task->where('id', $id)->first();
-            
-            if (!$task) {
+
+            if (! $task) {
                 return ['status' => 'error', 'message' => 'Task not found'];
             }
-            
+
             // Only allow deletion if task is pending or rejected
             if ($task->approvalstatus != 'pending' && $task->approvalstatus != 'Rejected') {
                 return ['status' => 'error', 'message' => 'You can only delete tasks that are pending or rejected'];
             }
-            
+
             $task->delete();
 
             return ['status' => 'success', 'message' => 'Task deleted successfully'];
@@ -122,33 +132,47 @@ class _taskRepository implements itaskInterface
         }
     }
 
-    public function marktask($id, $status)
+    public function marktask($id, $status, $evidencePath = null, $originalName = null)
     {
         try {
+            $task = $this->task->find($id);
+
+            if (! $task) {
+                return ['status' => 'error', 'message' => 'Task not found'];
+            }
+
+            // When marking as completed, check if hours have been logged
+            if ($status == 'completed') {
+                $totalWorkedHours = \App\Models\Taskinstance::where('task_id', $id)->sum('worked_hours');
+                if ($totalWorkedHours <= 0) {
+                    return ['status' => 'error', 'message' => 'You must log hours before marking this task as completed'];
+                }
+            }
+
             $updateData = [
                 'status' => $status,
                 'user_id' => Auth::user()->id,
             ];
-            
+
             // When task is marked as completed, reset approval status to pending for completion approval
             if ($status == 'completed') {
                 $updateData['approvalstatus'] = 'pending';
+
+                // Add evidence if provided
+                if ($evidencePath) {
+                    $updateData['evidence_path'] = $evidencePath;
+                    $updateData['evidence_original_name'] = $originalName;
+                }
             }
-            
+
             $this->task->where('id', "$id")->update($updateData);
 
             // Send notification to supervisor when task is marked as completed
             if ($status == 'completed') {
                 $task = $this->task->where('id', $id)->first();
                 if ($task) {
-                    $userDepartment = \App\Models\Departmentuser::where('user_id', $task->user_id)->first();
-                    if ($userDepartment && $userDepartment->reportto) {
-                        // Check if supervisor is on leave and get acting supervisor
-                        $supervisorLeaveStatus = $this->leaverequestService->isactiveonleave($userDepartment->reportto);
-                        $notifyUserId = ($supervisorLeaveStatus['status'] === true && isset($supervisorLeaveStatus['actinghodid'])) 
-                            ? $supervisorLeaveStatus['actinghodid'] 
-                            : $userDepartment->reportto;
-                        
+                    $notifyUserId = $this->getNotificationRecipient($task->user_id);
+                    if ($notifyUserId) {
                         $supervisor = \App\Models\User::find($notifyUserId);
                         if ($supervisor) {
                             $supervisor->notify(new TaskCompletedForApproval($this, $id));
@@ -167,51 +191,85 @@ class _taskRepository implements itaskInterface
     {
         try {
             $task = $this->task->where('id', $data['id'])->first();
-            
-            if (!$task) {
+
+            if (! $task) {
                 return ['status' => 'error', 'message' => 'Task not found'];
             }
-            
+
             if ($task->approvalstatus != 'pending') {
                 return ['status' => 'error', 'message' => 'You are not authorized to approve this task'];
             }
-            
+
             // Check if the task owner reports to the current approver
             $taskOwnerDepartment = \App\Models\Departmentuser::where('user_id', $task->user_id)->first();
-            if (!$taskOwnerDepartment) {
+            if (! $taskOwnerDepartment) {
                 return ['status' => 'error', 'message' => 'Task owner department information not found'];
             }
-            
+
             $supervisorId = $taskOwnerDepartment->reportto;
             $canApprove = false;
-            
+
             // Check if current user is the direct supervisor
             if ($supervisorId == Auth::user()->id) {
                 $canApprove = true;
             } else {
-                // Check if supervisor is on leave and current user is in same department
+                // Check if supervisor is on leave and get acting supervisor
                 $supervisorLeaveStatus = $this->leaverequestService->isactiveonleave($supervisorId);
                 if ($supervisorLeaveStatus['status'] === true) {
-                    // Supervisor is on leave, check if current user is in same department
-                    $currentUserDepartment = \App\Models\Departmentuser::where('user_id', Auth::user()->id)->first();
-                    if ($currentUserDepartment && $currentUserDepartment->department_id == $taskOwnerDepartment->department_id) {
-                        // Check if current user is a supervisor (has subordinates) in the same department
-                        $hasSubordinates = \App\Models\Departmentuser::where('reportto', Auth::user()->id)
-                            ->where('department_id', $taskOwnerDepartment->department_id)
-                            ->exists();
-                        if ($hasSubordinates) {
+                    // Check if current user is the acting supervisor assigned
+                    if (isset($supervisorLeaveStatus['actinghodid']) && $supervisorLeaveStatus['actinghodid'] == Auth::user()->id) {
+                        $canApprove = true;
+                    } else {
+                        // Supervisor is on leave, check if current user is in same department and is a supervisor
+                        $currentUserDepartment = \App\Models\Departmentuser::where('user_id', Auth::user()->id)->first();
+                        if ($currentUserDepartment && $currentUserDepartment->department_id == $taskOwnerDepartment->department_id) {
+                            // Check if current user is a supervisor (has subordinates) in the same department
+                            $hasSubordinates = \App\Models\Departmentuser::where('reportto', Auth::user()->id)
+                                ->where('department_id', $taskOwnerDepartment->department_id)
+                                ->exists();
+                            if ($hasSubordinates) {
+                                $canApprove = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Fallback: If all supervisors are unavailable, allow HOD or Acting HOD to approve
+            if (! $canApprove) {
+                $currentUserDepartment = \App\Models\Departmentuser::where('user_id', Auth::user()->id)->first();
+                if ($currentUserDepartment && $currentUserDepartment->department_id == $taskOwnerDepartment->department_id) {
+                    // Check if current user is HOD (isprimary = true) or has Acting HOD role
+                    $isHOD = $currentUserDepartment->isprimary == true;
+                    $hasActingHODRole = Auth::user()->hasRole('Acting HOD');
+
+                    if ($isHOD || $hasActingHODRole) {
+                        // Check if all supervisors in the chain are unavailable
+                        $supervisorStatus = $this->areAllSupervisorsUnavailable($supervisorId, $taskOwnerDepartment->department_id);
+                        if ($supervisorStatus['unavailable']) {
+                            $canApprove = true;
+                        }
+                    }
+
+                    // Also allow HOD's acting member to approve when HOD is on leave
+                    if (! $canApprove) {
+                        $supervisorStatus = $this->areAllSupervisorsUnavailable($supervisorId, $taskOwnerDepartment->department_id);
+                        if ($supervisorStatus['unavailable'] && isset($supervisorStatus['actinghodid']) && $supervisorStatus['actinghodid'] == Auth::user()->id) {
                             $canApprove = true;
                         }
                     }
                 }
             }
-            
-            if (!$canApprove) {
-                return ['status' => 'error', 'message' => 'You can only approve tasks for members you directly supervise, or for members whose supervisor is on leave'];
+
+            if (! $canApprove) {
+                return ['status' => 'error', 'message' => 'You can only approve tasks for members you directly supervise, or when all supervisors are unavailable and you are the HOD/Acting HOD'];
             }
-            
+
             $task->approvalstatus = $data['status'];
             $task->approved_by = Auth::user()->id;
+            if (isset($data['comment']) && ! empty($data['comment'])) {
+                $task->approval_comment = $data['comment'];
+            }
             $task->save();
 
             // Send notification to task owner
@@ -231,62 +289,98 @@ class _taskRepository implements itaskInterface
         try {
             $taskIds = $data['task_ids'];
             $status = $data['status'];
-            
+
             $tasks = $this->task->whereIn('id', $taskIds)
                 ->where('approvalstatus', 'pending')
                 ->get();
-            
+
             if ($tasks->isEmpty()) {
                 return ['status' => 'error', 'message' => 'No pending tasks found to approve'];
             }
-            
+
             // Filter tasks to only include those the user can approve
             $approvedTasks = collect();
             foreach ($tasks as $task) {
                 $taskOwnerDepartment = \App\Models\Departmentuser::where('user_id', $task->user_id)->first();
-                if (!$taskOwnerDepartment) {
+                if (! $taskOwnerDepartment) {
                     continue;
                 }
-                
+
                 $supervisorId = $taskOwnerDepartment->reportto;
                 $canApprove = false;
-                
+
                 // Check if current user is the direct supervisor
                 if ($supervisorId == Auth::user()->id) {
                     $canApprove = true;
                 } else {
-                    // Check if supervisor is on leave and current user is in same department
+                    // Check if supervisor is on leave and get acting supervisor
                     $supervisorLeaveStatus = $this->leaverequestService->isactiveonleave($supervisorId);
                     if ($supervisorLeaveStatus['status'] === true) {
-                        // Supervisor is on leave, check if current user is in same department
-                        $currentUserDepartment = \App\Models\Departmentuser::where('user_id', Auth::user()->id)->first();
-                        if ($currentUserDepartment && $currentUserDepartment->department_id == $taskOwnerDepartment->department_id) {
-                            // Check if current user is a supervisor (has subordinates) in the same department
-                            $hasSubordinates = \App\Models\Departmentuser::where('reportto', Auth::user()->id)
-                                ->where('department_id', $taskOwnerDepartment->department_id)
-                                ->exists();
-                            if ($hasSubordinates) {
+                        // Check if current user is the acting supervisor assigned by HOD
+                        if (isset($supervisorLeaveStatus['actinghod_id']) && $supervisorLeaveStatus['actinghod_id'] == Auth::user()->id) {
+                            $canApprove = true;
+                        } else {
+                            // Supervisor is on leave, check if current user is in same department and is a supervisor
+                            $currentUserDepartment = \App\Models\Departmentuser::where('user_id', Auth::user()->id)->first();
+                            if ($currentUserDepartment && $currentUserDepartment->department_id == $taskOwnerDepartment->department_id) {
+                                // Check if current user is a supervisor (has subordinates) in the same department
+                                $hasSubordinates = \App\Models\Departmentuser::where('reportto', Auth::user()->id)
+                                    ->where('department_id', $taskOwnerDepartment->department_id)
+                                    ->exists();
+                                if ($hasSubordinates) {
+                                    $canApprove = true;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Fallback: If all supervisors are unavailable, allow HOD or Acting HOD to approve
+                if (! $canApprove) {
+                    $currentUserDepartment = \App\Models\Departmentuser::where('user_id', Auth::user()->id)->first();
+                    if ($currentUserDepartment && $currentUserDepartment->department_id == $taskOwnerDepartment->department_id) {
+                        // Check if current user is HOD (isprimary = true) or has Acting HOD role
+                        $isHOD = $currentUserDepartment->isprimary == true;
+                        $hasActingHODRole = Auth::user()->hasRole('Acting HOD');
+
+                        if ($isHOD || $hasActingHODRole) {
+                            // Check if all supervisors in the chain are unavailable
+                            $supervisorStatus = $this->areAllSupervisorsUnavailable($supervisorId, $taskOwnerDepartment->department_id);
+                            if ($supervisorStatus['unavailable']) {
+                                $canApprove = true;
+                            }
+                        }
+
+                        // Also allow HOD's acting member to approve when HOD is on leave
+                        if (! $canApprove) {
+                            $supervisorStatus = $this->areAllSupervisorsUnavailable($supervisorId, $taskOwnerDepartment->department_id);
+                            if ($supervisorStatus['unavailable'] && isset($supervisorStatus['actinghodid']) && $supervisorStatus['actinghodid'] == Auth::user()->id) {
                                 $canApprove = true;
                             }
                         }
                     }
                 }
-                
+
                 if ($canApprove) {
                     $approvedTasks->push($task);
                 }
             }
-            
+
             if ($approvedTasks->isEmpty()) {
-                return ['status' => 'error', 'message' => 'You can only approve tasks for members you directly supervise, or for members whose supervisor is on leave'];
+                return ['status' => 'error', 'message' => 'You can only approve tasks for members you directly supervise, or when all supervisors are unavailable and you are the HOD/Acting HOD'];
             }
-            
+
             // Group tasks by user_id to send one notification per user
             $tasksByUser = $approvedTasks->groupBy('user_id');
-            
+
+            $comment = $data['comment'] ?? null;
+
             foreach ($approvedTasks as $task) {
                 $task->approvalstatus = $status;
                 $task->approved_by = Auth::user()->id;
+                if (! empty($comment)) {
+                    $task->approval_comment = $comment;
+                }
                 $task->save();
             }
 
@@ -299,9 +393,123 @@ class _taskRepository implements itaskInterface
                 }
             }
 
-            return ['status' => 'success', 'message' => count($approvedTasks) . ' task(s) ' . strtolower($status) . ' successfully'];
+            return ['status' => 'success', 'message' => count($approvedTasks).' task(s) '.strtolower($status).' successfully'];
         } catch (\Exception $e) {
             return ['status' => 'error', 'message' => $e->getMessage()];
         }
+    }
+
+    /**
+     * Check if all supervisors in the chain are unavailable (on leave or don't exist)
+     * Returns array with status and actinghodid if HOD assigned an acting member
+     */
+    private function areAllSupervisorsUnavailable($supervisorId, $departmentId): array
+    {
+        if (! $supervisorId) {
+            return ['unavailable' => true, 'actinghodid' => null];
+        }
+
+        // Check if supervisor is on leave
+        $supervisorLeaveStatus = $this->leaverequestService->isactiveonleave($supervisorId);
+        if ($supervisorLeaveStatus['status'] === true) {
+            // Supervisor is on leave, check if there's an acting supervisor assigned
+            if (isset($supervisorLeaveStatus['actinghodid']) && $supervisorLeaveStatus['actinghodid']) {
+                // There's an acting supervisor, so supervisors are not all unavailable
+                return ['unavailable' => false, 'actinghodid' => null];
+            }
+
+            // Supervisor is on leave but no acting supervisor assigned
+            // Check if there are other supervisors in the department who can approve
+            $otherSupervisors = \App\Models\Departmentuser::where('department_id', $departmentId)
+                ->where('user_id', '!=', $supervisorId)
+                ->whereNotNull('reportto')
+                ->get()
+                ->filter(function ($deptUser) {
+                    // Check if this user is a supervisor (has subordinates)
+                    return \App\Models\Departmentuser::where('reportto', $deptUser->user_id)
+                        ->where('department_id', $deptUser->department_id)
+                        ->exists();
+                });
+
+            // Check if other supervisors are available (not on leave)
+            foreach ($otherSupervisors as $otherSupervisor) {
+                $otherLeaveStatus = $this->leaverequestService->isactiveonleave($otherSupervisor->user_id);
+                if ($otherLeaveStatus['status'] !== true) {
+                    // Found an available supervisor
+                    return ['unavailable' => false, 'actinghodid' => null];
+                }
+            }
+
+            // All regular supervisors unavailable - check if HOD is available
+            $hod = \App\Models\Departmentuser::where('department_id', $departmentId)
+                ->where('isprimary', true)
+                ->first();
+
+            if ($hod) {
+                $hodLeaveStatus = $this->leaverequestService->isactiveonleave($hod->user_id);
+                if ($hodLeaveStatus['status'] !== true) {
+                    // HOD is available
+                    return ['unavailable' => false, 'actinghodid' => null];
+                } else {
+                    // HOD is on leave - check if HOD assigned an acting member
+                    if (isset($hodLeaveStatus['actinghodid']) && $hodLeaveStatus['actinghodid']) {
+                        return ['unavailable' => true, 'actinghodid' => $hodLeaveStatus['actinghodid']];
+                    }
+                }
+            }
+
+            // No one available
+            return ['unavailable' => true, 'actinghodid' => null];
+        }
+
+        // Supervisor is not on leave, so they are available
+        return ['unavailable' => false, 'actinghodid' => null];
+    }
+
+    /**
+     * Get the correct supervisor to notify based on leave status chain
+     * Priority: Direct Supervisor → Supervisor's Acting → HOD → HOD's Acting
+     */
+    private function getNotificationRecipient($userId): ?string
+    {
+        $userDepartment = \App\Models\Departmentuser::where('user_id', $userId)->first();
+        if (! $userDepartment || ! $userDepartment->reportto) {
+            return null;
+        }
+
+        $supervisorId = $userDepartment->reportto;
+
+        // Check if direct supervisor is on leave
+        $supervisorLeaveStatus = $this->leaverequestService->isactiveonleave($supervisorId);
+        if ($supervisorLeaveStatus['status'] !== true) {
+            // Supervisor is available - send to them
+            return $supervisorId;
+        }
+
+        // Supervisor is on leave - check if they assigned an acting person
+        if (isset($supervisorLeaveStatus['actinghodid']) && $supervisorLeaveStatus['actinghodid']) {
+            return $supervisorLeaveStatus['actinghodid'];
+        }
+
+        // No acting assigned by supervisor - check HOD
+        $hod = \App\Models\Departmentuser::where('department_id', $userDepartment->department_id)
+            ->where('isprimary', true)
+            ->first();
+
+        if ($hod) {
+            $hodLeaveStatus = $this->leaverequestService->isactiveonleave($hod->user_id);
+            if ($hodLeaveStatus['status'] !== true) {
+                // HOD is available
+                return $hod->user_id;
+            } else {
+                // HOD is on leave - use their acting member
+                if (isset($hodLeaveStatus['actinghodid']) && $hodLeaveStatus['actinghodid']) {
+                    return $hodLeaveStatus['actinghodid'];
+                }
+            }
+        }
+
+        // Fallback to direct supervisor (even if on leave, still notify)
+        return $supervisorId;
     }
 }
