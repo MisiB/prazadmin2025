@@ -2,9 +2,9 @@
     use Carbon\Carbon;
 @endphp
 <div>
-
+ 
     <x-modulewelcomebanner :breadcrumbs="$breadcrumbs"/>
-
+ 
     <!--Leave Balance Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-10">
 
