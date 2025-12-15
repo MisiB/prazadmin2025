@@ -104,6 +104,33 @@ class DepartmentalIssues extends Component
         $this->isReassigning = false;
     }
 
+    /**
+     * 
+     * This function allows a user to claim an unassigned issue.
+     * I supports the functionality of the claim ticket button in the UI.
+     */
+    public function claimIssue($issueId)
+    {
+        $claimassigningIssueId=$issueId;
+        $claimselectedUser=Auth::id();
+
+        $response = $this->issueRepository->assignissue(
+            $claimassigningIssueId,
+            $claimselectedUser,
+            $this->userDepartment->id
+        );
+
+        if ($response['status'] === 'success') {
+            if ($this->isReassigning) {
+                $this->success('Issue reassigned successfully');
+            } else {
+                $this->success($response['message']);
+            }
+            $this->closeAssignModal();
+        } else {
+            $this->error($response['message']);
+        }
+    }
     public function assignIssue()
     {
         $this->validate([

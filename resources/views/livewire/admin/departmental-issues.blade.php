@@ -341,7 +341,7 @@
 
                                             <!-- Actions -->
                                             <div class="flex items-center gap-2 pt-3 border-t border-gray-200 flex-wrap">
-                                                @if($isPrimaryUser)
+                                                @if(!$isPrimaryUser)
                                                     @if(!$issue->assigned_to)
                                                     <x-button 
                                                         icon="o-user-plus" 
@@ -357,10 +357,20 @@
                                                         class="btn-outline btn-purple btn-sm"
                                                     />
                                                     @endif
+                                                @else
+                                                <!--The claim button allows users to claim unassigned tickets-->
+                                                    @if(!$issue->assigned_to)
+                                                    <x-button 
+                                                        icon="o-user-plus" 
+                                                        label="Claim ticket"  
+                                                        wire:click="claimIssue({{ $issue->id }})" 
+                                                        class="btn-outline btn-purple btn-sm"
+                                                    />
+                                                    @endif
                                                 @endif
 
                                                 @if($issue->status != 'closed')
-                                                    @if($issue->status == 'open')
+                                                    @if($issue->status == 'open' && $issue->assigned_to == auth()->id())
                                                     <x-button 
                                                         icon="o-play" 
                                                         label="Start" 
