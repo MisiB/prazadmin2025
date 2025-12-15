@@ -1,6 +1,6 @@
 @php
     use Carbon\Carbon;
-@endphp
+@endphp 
 <div>
  
     <x-modulewelcomebanner :breadcrumbs="$breadcrumbs"/>
