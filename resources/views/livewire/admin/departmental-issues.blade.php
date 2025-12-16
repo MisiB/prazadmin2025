@@ -343,12 +343,20 @@
                                             <div class="flex items-center gap-2 pt-3 border-t border-gray-200 flex-wrap">
                                                 @if($isPrimaryUser)
                                                     @if(!$issue->assigned_to)
-                                                    <x-button 
-                                                        icon="o-user-plus" 
-                                                        label="Assign" 
-                                                        wire:click="openAssignModal({{ $issue->id }}, false)" 
-                                                        class="btn-outline btn-purple btn-sm"
-                                                    />
+                                                        <x-button 
+                                                            icon="o-user-plus" 
+                                                            label="Assign user" 
+                                                            wire:click="openAssignModal({{ $issue->id }}, false)" 
+                                                            class="btn-outline btn-purple btn-sm"
+                                                        />
+                                                        @if($userDepartment->name === 'Information and Communication Technology')
+                                                            <x-button 
+                                                                icon="o-user-plus" 
+                                                                label="Assign consultant"  
+                                                                wire:click="consultantAssigningTrigger({{ $issue->id }})" 
+                                                                class="btn-outline btn-purple btn-sm"
+                                                            />
+                                                        @endif
                                                     @else
                                                     <x-button 
                                                         icon="o-arrow-path-rounded-square" 
@@ -357,10 +365,29 @@
                                                         class="btn-outline btn-purple btn-sm"
                                                     />
                                                     @endif
+                                                @else
+                                                <!--The claim button allows users to claim unassigned tickets-->
+                                                    @if(!$issue->assigned_to)
+                                                        <x-button 
+                                                            icon="o-user-plus" 
+                                                            label="Claim ticket"  
+                                                            wire:click="claimIssue({{ $issue->id }})" 
+                                                            class="btn-outline btn-purple btn-sm"
+                                                        />                                                
+                                                        <!--The assign consultant button allows users to assign tickets to a consultant-->
+                                                        @if($userDepartment->name === 'ICT')
+                                                            <x-button 
+                                                                icon="o-user-plus" 
+                                                                label="Assign consultant"  
+                                                                wire:click="consultantAssigningTrigger({{ $issue->id }})" 
+                                                                class="btn-outline btn-purple btn-sm"
+                                                            />
+                                                        @endif
+                                                    @endif
                                                 @endif
 
                                                 @if($issue->status != 'closed')
-                                                    @if($issue->status == 'open')
+                                                    @if($issue->status == 'open' && $issue->assigned_to == auth()->id())
                                                     <x-button 
                                                         icon="o-play" 
                                                         label="Start" 
@@ -466,4 +493,49 @@
         </x-slot>
     </x-modal>
     @endif
+
+    
+    <!-- Assign/Reassign Issue Modal To Consultant-->
+    <x-modal wire:model="consultantAssignModal" title="{{ $isReassigning ? 'Reassign to Consultant' : 'Assign to Consultant' }}" separator box-class="max-w-lg">
+       
+        <div class="space-y-5">
+            <div class="bg-purple-50 rounded-xl p-4 border border-purple-200">
+                <p class="text-sm text-purple-900">
+                    @if($isReassigning)
+                        Change the assignment to a different consultant.
+                    @else
+                        Assign this issue to a consultant of your choice.
+                    @endif
+                </p>
+            </div>
+
+            <x-select 
+                wire:model="selectedconsultantUser" 
+                label="Select Consultant" 
+                placeholder="Choose a consultant" 
+                :options="$consultantsOptions" 
+                option-label="name" 
+                option-value="id"
+                placeholder="Select a consultant"
+                placeholder-value="0"
+                icon="o-user"
+                hint="{{ $isReassigning ? 'Select new assignee' : 'Select the consultant who will handle this issue' }}"
+            />
+        </div>
+
+        <x-slot name="actions">
+            <x-button 
+                label="Cancel" 
+                wire:click="closeAssignModal" 
+                class="btn-outline" 
+            />
+            <x-button 
+                label="{{ $isReassigning ? 'Reassign Issue' : 'Assign Issue' }}" 
+                wire:click="consultantIssue" 
+                class="btn-primary shadow-lg shadow-purple-500/30" 
+                spinner="consultantIssue"
+                icon="o-check"
+            />
+        </x-slot>
+    </x-modal>
 </div>

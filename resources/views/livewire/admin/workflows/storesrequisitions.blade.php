@@ -1,51 +1,41 @@
 <div>
-
     <x-modulewelcomebanner :breadcrumbs="$breadcrumbs"/>
    
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 my-8">
-        <x-card class="shadow-md bg-gradient-to-tl from-white to-yellow-500 rounded-xl">
-            <div class="flex items-center space-x-3">
-                <div class="grid grid-flow-row gap-2">
+        <div class="shadow-md bg-gradient-to-t from-yellow-200 to-yellow-500 rounded-xl py-5 pl-4">
+            <div class="grid items-center space-x-3">
+                <div class="grid grid-flow-row gap-2"> 
                     <div class="grid grid-flow-col gap-1">
-                        <div class="bg-white p-3 rounded-full">
-                            <x-icon name="o-clock" class="w-8 h-8 text-yellow-700"/>
-                        </div>
-
-                        <div class="text-sm text-white tracking-wide mt-4">Pending</div>
+                        <x-icon name="o-clock" class="w-14 h-14 text-yellow-700 bg-white inline p-3 rounded-full"/>
+                        <div class="text-lg text-white tracking-wide mt-4">Pending</div>
                     </div>
                     <div>
                         <div class="text-4xl font-bold text-white pl-3">{{ $totalpending }}</div>
                     </div>
                 </div>
             </div>
-        </x-card>
+        </div>
 
-        <x-card class="shadow-md bg-gradient-to-tl from-white to-blue-600 rounded-xl">
-            <div class="flex items-center space-x-3">
+        <div class="shadow-md bg-gradient-to-t from-blue-200 to-blue-600 rounded-xl  py-5 pl-4">
+            <div class="grid items-center space-x-3">
                 <div class="grid grid-flow-row gap-2">
                     <div class="grid grid-flow-col gap-1">
-                        <div class="bg-white p-3 rounded-full">
-                            <x-icon name="o-check" class="w-8 h-8 text-green-600"/>
-                        </div>
-
-                        <div class="text-sm text-white tracking-wide mt-4">Approved</div>
+                        <x-icon name="o-check" class="w-14 h-14 text-green-600 bg-white inline p-3 rounded-full"/>
+                        <div class="text-lg text-white tracking-wide mt-4">Approved</div>
                     </div>
                     <div>
                         <div class="text-4xl font-bold text-white pl-3">{{ $totalapproved }}</div>
                     </div>
                 </div>
             </div>
-        </x-card>
+        </div>
 
-        <x-card class="shadow-md bg-gradient-to-tl from-white to-orange-700 rounded-xl">
-            <div class="flex items-center space-x-3">
+        <div class="shadow-md bg-gradient-to-t from-cyan-200 to-cyan-700 rounded-xl  py-5 pl-4">
+            <div class="grid items-center space-x-3">
                 <div class="grid grid-flow-row gap-2">
                     <div class="grid grid-flow-col gap-1">
-                        <div class="bg-orange-600 p-3 rounded-full">
-                            <x-icon name="o-book-open" class="w-8 h-8 text-white"/>
-                        </div>
-
-                        <div class="text-sm text-white tracking-wide mt-4">Open</div>
+                            <x-icon name="o-book-open" class="w-14 h-14 text-white bg-cyan-600 inline p-3 rounded-full"/>
+                            <div class="text-lg text-white tracking-wide mt-4">Open</div>
                     </div>
                     <div>
                         <div class="text-4xl font-bold text-white pl-3">{{ $totalopened }}</div>
@@ -53,17 +43,14 @@
                 </div>
 
             </div>
-        </x-card>
+        </div>
 
-        <x-card class="shadow-md bg-gradient-to-tl from-white to-green-500 rounded-xl">
-            <div class="flex items-center space-x-3">
+        <div class="shadow-md bg-gradient-to-t from-green-200 to-green-500 rounded-xl  py-5 pl-4">
+            <div class="grid items-center space-x-3">
                 <div class="grid grid-flow-row gap-2">
                     <div class="grid grid-flow-col gap-1">
-                        <div class="bg-green-300 p-3 rounded-full">
-                            <x-icon name="m-clipboard-document-list" class="w-8 h-8 text-white"/>
-                        </div>
-
-                        <div class="text-sm text-white tracking-wide mt-4">Delivered</div>
+                            <x-icon name="m-clipboard-document-list" class="w-14 h-14 text-white bg-green-300 inline p-3 rounded-full"/>
+                            <div class="text-lg text-white tracking-wide mt-4">Delivered</div>
                     </div>
                     <div>
                         <div class="text-4xl font-bold text-white pl-3">{{ $totaldelivered }}</div>
@@ -71,41 +58,35 @@
                 </div>
 
             </div>
-        </x-card>
+        </div>
 
-        <x-card class="shadow-md bg-gradient-to-tl from-white to-green-600 rounded-xl">
-            <div class="flex items-center space-x-3">
+        <div class="shadow-md bg-gradient-to-t from-green-400 to-green-600 rounded-xl  py-5 pl-4">
+            <div class="grid items-center space-x-3">
                 <div class="grid grid-flow-row gap-2">
                     <div class="grid grid-flow-col gap-1">
-                        <div class="bg-green-400 p-3 rounded-full">
-                            <x-icon name="o-hand-thumb-up" class="w-8 h-8 text-white"/>
-                        </div>
-
-                        <div class="text-sm text-white tracking-wide mt-4">Received</div>
+                        <x-icon name="o-hand-thumb-up" class="w-14 h-14 text-white bg-green-400 inline p-3 rounded-full"/>
+                        <div class="text-lg text-white tracking-wide mt-4">Received</div>
                     </div>
                     <div>
                         <div class="text-4xl font-bold text-white pl-3">{{ $totalrecieved }}</div>
                     </div>
                 </div>
             </div>
-        </x-card>
+        </div>
 
-        <x-card class="shadow-md bg-gradient-to-tl from-white to-red-600 rounded-xl">
-            <div class="flex items-center space-x-3">
+        <div class="shadow-md bg-gradient-to-t from-red-200 to-red-600 rounded-xl  py-5 pl-4">
+            <div class="grid items-center space-x-3">
                 <div class="grid grid-flow-row gap-2">
-                    <div class="grid grid-flow-col gap-1">                
-                        <div class="bg-red-700 p-3 rounded-full">
-                            <x-icon name="c-arrow-left-end-on-rectangle" class="w-8 h-8 text-white"/>
-                        </div>
-
-                        <div class="text-sm text-white tracking-wide mt-4">Rejected</div>
+                    <div class="grid grid-flow-col gap-1">
+                        <x-icon name="c-arrow-left-end-on-rectangle" class="w-14 h-14 text-white bg-red-700 inline p-3 rounded-full"/>
+                        <div class="text-lg text-white tracking-wide mt-4">Rejected</div>
                     </div>
                     <div>
                         <div class="text-4xl font-bold text-white pl-3">{{ $totalrejected }}</div>
                     </div>
                 </div>
             </div>
-        </x-card>
+        </div>
 
     </div>
 
@@ -115,7 +96,7 @@
                 <x-input placeholder="Search by emailed REF..." wire:model.live.debounce="searchuuid"/>
                 <x-select wire:model.live.debounce="statusfilter" placeholder="Filter by status" :options="$statuslist" option-label="name" option-value="id" />
                 <x-button icon="o-plus" label="Add Stores Requisition" wire:click="addrequisitionmodal=true"
-                class="bg-gradient-to-bl from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white"/>
+                class="bg-gradient-to-t from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white"/>
             </x-slot:menu>
             {{$storesrequisitions->links()}}
             <x-table :headers="$headersforpending" :rows="$storesrequisitions">
@@ -127,24 +108,24 @@
                 @endscope
                 @scope('cell_status', $storesrequisition)
                     @if($storesrequisition->status=='P')
-                        <span  class="badge bg-gradient-to-b from-yellow-200 to-yellow-500 text-white">Pending</span>
+                        <span  class="badge bg-gradient-to-t from-yellow-200 to-yellow-500 text-white">Pending</span>
                     @elseif($storesrequisition->status=='A')
-                        <span  class="badge bg-gradient-to-b from-green-200 to-green-400 text-white">Approved</span>
+                        <span  class="badge bg-gradient-to-t from-green-200 to-green-400 text-white">Approved</span>
                     @elseif($storesrequisition->status=='O')
-                        <span class="badge bg-gradient-to-b from-blue-300 to-blue-800 text-white">Opened</span>
+                        <span class="badge bg-gradient-to-t from-blue-300 to-blue-800 text-white">Opened</span>
                     @elseif($storesrequisition->status=='D')
-                        <span class="badge badge-warning">Delivered</span>
+                        <span class="badge badge-warning text-white">Delivered</span>
                     @elseif($storesrequisition->status=='C')
-                        <span class="badge bg-gradient-to-b from-green-500 to-green-800 text-white">Recieved</span>
+                        <span class="badge bg-gradient-to-t from-green-500 to-green-800 text-white">Recieved</span>
                     @else
-                        <span class="badge bg-gradient-to-b from-red-400 to-red-800 text-white">Rejected</span>
+                        <span class="badge bg-gradient-to-t from-red-400 to-red-800 text-white">Rejected</span>
                     @endif
                 @endscope 
                 @scope('cell_initiator',$storesrequisition)   
                     <span>{{$storesrequisition->initiator->name." ".$storesrequisition->initiator->surname}}</span>
                 @endscope 
                 @scope('cell_actions', $storesrequisition)
-                    <div class="flex space-x-2">
+                    <div class="grid grid-flow-col space-x-1">
                         <div>
                             <x-button icon="o-eye" 
                                 wire:click="viewrequisition('{{$storesrequisition->storesrequisition_uuid}}', '{{$storesrequisition->initiator_id}}')" 
@@ -155,31 +136,31 @@
                     @haspermission('storesrequisitions.access')
                         @if($storesrequisition->status=== 'D')
                             <div>
-                                <x-button label="✅"
+                                <x-button icon="o-check-circle"
                                     wire:click="initiateacceptance('{{$storesrequisition->storesrequisition_uuid}}','{{$storesrequisition->initiator_id}}', true)" 
                                     wire:confirm="Do you want to accept delivery?" 
                                     spinner 
-                                    class="bg-green-600 btn-outline btn-sm" 
+                                    class="text-green-600 btn-outline btn-sm" 
                                     :disabled="$storesrequisition->status!=='D'"
                                 />
                             </div>
                             <div>
-                                <x-button label="❌"
+                                <x-button icon="o-x-mark"
                                     wire:click="initiateacceptance('{{$storesrequisition->storesrequisition_uuid}}','{{$storesrequisition->initiator_id}}', false)" 
                                     wire:confirm="Do you want to reject delivery?" 
                                     spinner 
-                                    class="bg-red-600 btn-outline btn-sm" 
+                                    class="text-red-600 btn-outline btn-sm" 
                                     :disabled="$storesrequisition->status!=='D'"
                                 />
                             </div>
                         @endif
                         @if($storesrequisition->status=== 'P')
                             <div>
-                                <x-button label="❌"
+                                <x-button icon="o-x-mark"
                                     wire:click="initiaterecall('{{$storesrequisition->storesrequisition_uuid}}')" 
                                     wire:confirm="Do you want to recall delivery by rejection?" 
                                     spinner 
-                                    class="bg-red-600 btn-outline btn-sm" 
+                                    class="text-red-600 btn-outline btn-sm" 
                                     :disabled="$storesrequisition->status!=='P'"
                                 />
                             </div>
@@ -187,11 +168,11 @@
                 
                         @if($storesrequisition->status=== 'O')
                             <div>
-                                <x-button label="❌"
+                                <x-button icon="o-x-mark"
                                     wire:click="initiaterecall('{{$storesrequisition->storesrequisition_uuid}}')" 
                                     wire:confirm="Do you want to recall delivery by rejection?" 
                                     spinner 
-                                    class="bg-red-600 btn-outline btn-sm" 
+                                    class="text-red-600 btn-outline btn-sm" 
                                     :disabled="$storesrequisition->status!=='O'"
                                 />
                             </div>
@@ -240,7 +221,7 @@
             </div>
             <x-slot:actions>
                 <x-button label="Send" type="submit" spinner="sendrequisition"
-                class="bg-gradient-to-bl from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white" /> 
+                class="bg-gradient-to-t from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white" /> 
             </x-slot:actions>
         </x-form>
     </x-modal> 
@@ -280,7 +261,7 @@
             </div>            
             <x-slot:actions>
                 <x-button label="Proceed" type="submit" spinner="acceptrequisition" 
-                class="bg-gradient-to-bl from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white"/> 
+                class="bg-gradient-to-t from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white"/> 
             </x-slot:actions>
         </x-form>
     </x-modal> 
@@ -299,7 +280,7 @@
             </div>            
             <x-slot:actions>
                 <x-button label="Recall" type="submit" spinner="recallrequisition"
-                class="bg-gradient-to-bl from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white" /> 
+                class="bg-gradient-to-t from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white" /> 
             </x-slot:actions>
         </x-form>
     </x-modal>
