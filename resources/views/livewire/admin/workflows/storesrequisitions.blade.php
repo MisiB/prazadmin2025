@@ -1,9 +1,8 @@
 <div>
-
     <x-modulewelcomebanner :breadcrumbs="$breadcrumbs"/>
    
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 my-8">
-        <x-card class="shadow-md bg-gradient-to-tl from-white to-yellow-500 rounded-xl">
+        <div class="shadow-md bg-gradient-to-t from-yellow-200 to-yellow-500 rounded-xl py-5 pl-4">
             <div class="flex items-center space-x-3">
                 <div class="grid grid-flow-row gap-2"> 
                     <div class="grid grid-flow-col gap-1">
@@ -18,9 +17,9 @@
                     </div>
                 </div>
             </div>
-        </x-card>
+        </div>
 
-        <x-card class="shadow-md bg-gradient-to-tl from-white to-blue-600 rounded-xl">
+        <div class="shadow-md bg-gradient-to-t from-blue-200 to-blue-600 rounded-xl  py-5 pl-4">
             <div class="flex items-center space-x-3">
                 <div class="grid grid-flow-row gap-2">
                     <div class="grid grid-flow-col gap-1">
@@ -35,9 +34,9 @@
                     </div>
                 </div>
             </div>
-        </x-card>
+        </div>
 
-        <x-card class="shadow-md bg-gradient-to-tl from-white to-orange-700 rounded-xl">
+        <div class="shadow-md bg-gradient-to-t from-orange-200 to-orange-700 rounded-xl  py-5 pl-4">
             <div class="flex items-center space-x-3">
                 <div class="grid grid-flow-row gap-2">
                     <div class="grid grid-flow-col gap-1">
@@ -53,9 +52,9 @@
                 </div>
 
             </div>
-        </x-card>
+        </div>
 
-        <x-card class="shadow-md bg-gradient-to-tl from-white to-green-500 rounded-xl">
+        <div class="shadow-md bg-gradient-to-t from-green-200 to-green-500 rounded-xl  py-5 pl-4">
             <div class="flex items-center space-x-3">
                 <div class="grid grid-flow-row gap-2">
                     <div class="grid grid-flow-col gap-1">
@@ -71,9 +70,9 @@
                 </div>
 
             </div>
-        </x-card>
+        </div>
 
-        <x-card class="shadow-md bg-gradient-to-tl from-white to-green-600 rounded-xl">
+        <div class="shadow-md bg-gradient-to-t from-green-400 to-green-600 rounded-xl  py-5 pl-4">
             <div class="flex items-center space-x-3">
                 <div class="grid grid-flow-row gap-2">
                     <div class="grid grid-flow-col gap-1">
@@ -88,9 +87,9 @@
                     </div>
                 </div>
             </div>
-        </x-card>
+        </div>
 
-        <x-card class="shadow-md bg-gradient-to-tl from-white to-red-600 rounded-xl">
+        <div class="shadow-md bg-gradient-to-t from-red-200 to-red-600 rounded-xl  py-5 pl-4">
             <div class="flex items-center space-x-3">
                 <div class="grid grid-flow-row gap-2">
                     <div class="grid grid-flow-col gap-1">                
@@ -105,7 +104,7 @@
                     </div>
                 </div>
             </div>
-        </x-card>
+        </div>
 
     </div>
 
@@ -115,7 +114,7 @@
                 <x-input placeholder="Search by emailed REF..." wire:model.live.debounce="searchuuid"/>
                 <x-select wire:model.live.debounce="statusfilter" placeholder="Filter by status" :options="$statuslist" option-label="name" option-value="id" />
                 <x-button icon="o-plus" label="Add Stores Requisition" wire:click="addrequisitionmodal=true"
-                class="bg-gradient-to-bl from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white"/>
+                class="bg-gradient-to-t from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white"/>
             </x-slot:menu>
             {{$storesrequisitions->links()}}
             <x-table :headers="$headersforpending" :rows="$storesrequisitions">
@@ -127,17 +126,17 @@
                 @endscope
                 @scope('cell_status', $storesrequisition)
                     @if($storesrequisition->status=='P')
-                        <span  class="badge bg-gradient-to-b from-yellow-200 to-yellow-500 text-white">Pending</span>
+                        <span  class="badge bg-gradient-to-t from-yellow-200 to-yellow-500 text-white">Pending</span>
                     @elseif($storesrequisition->status=='A')
-                        <span  class="badge bg-gradient-to-b from-green-200 to-green-400 text-white">Approved</span>
+                        <span  class="badge bg-gradient-to-t from-green-200 to-green-400 text-white">Approved</span>
                     @elseif($storesrequisition->status=='O')
-                        <span class="badge bg-gradient-to-b from-blue-300 to-blue-800 text-white">Opened</span>
+                        <span class="badge bg-gradient-to-t from-blue-300 to-blue-800 text-white">Opened</span>
                     @elseif($storesrequisition->status=='D')
-                        <span class="badge badge-warning">Delivered</span>
+                        <span class="badge badge-warning text-white">Delivered</span>
                     @elseif($storesrequisition->status=='C')
-                        <span class="badge bg-gradient-to-b from-green-500 to-green-800 text-white">Recieved</span>
+                        <span class="badge bg-gradient-to-t from-green-500 to-green-800 text-white">Recieved</span>
                     @else
-                        <span class="badge bg-gradient-to-b from-red-400 to-red-800 text-white">Rejected</span>
+                        <span class="badge bg-gradient-to-t from-red-400 to-red-800 text-white">Rejected</span>
                     @endif
                 @endscope 
                 @scope('cell_initiator',$storesrequisition)   
@@ -155,31 +154,31 @@
                     @haspermission('storesrequisitions.access')
                         @if($storesrequisition->status=== 'D')
                             <div>
-                                <x-button label="✅"
+                                <x-button icon="o-check-circle"
                                     wire:click="initiateacceptance('{{$storesrequisition->storesrequisition_uuid}}','{{$storesrequisition->initiator_id}}', true)" 
                                     wire:confirm="Do you want to accept delivery?" 
                                     spinner 
-                                    class="bg-green-600 btn-outline btn-sm" 
+                                    class="text-green-600 btn-outline btn-sm" 
                                     :disabled="$storesrequisition->status!=='D'"
                                 />
                             </div>
                             <div>
-                                <x-button label="❌"
+                                <x-button icon="o-x-mark"
                                     wire:click="initiateacceptance('{{$storesrequisition->storesrequisition_uuid}}','{{$storesrequisition->initiator_id}}', false)" 
                                     wire:confirm="Do you want to reject delivery?" 
                                     spinner 
-                                    class="bg-red-600 btn-outline btn-sm" 
+                                    class="text-red-600 btn-outline btn-sm" 
                                     :disabled="$storesrequisition->status!=='D'"
                                 />
                             </div>
                         @endif
                         @if($storesrequisition->status=== 'P')
                             <div>
-                                <x-button label="❌"
+                                <x-button icon="o-x-mark"
                                     wire:click="initiaterecall('{{$storesrequisition->storesrequisition_uuid}}')" 
                                     wire:confirm="Do you want to recall delivery by rejection?" 
                                     spinner 
-                                    class="bg-red-600 btn-outline btn-sm" 
+                                    class="text-red-600 btn-outline btn-sm" 
                                     :disabled="$storesrequisition->status!=='P'"
                                 />
                             </div>
@@ -187,11 +186,11 @@
                 
                         @if($storesrequisition->status=== 'O')
                             <div>
-                                <x-button label="❌"
+                                <x-button icon="o-x-mark"
                                     wire:click="initiaterecall('{{$storesrequisition->storesrequisition_uuid}}')" 
                                     wire:confirm="Do you want to recall delivery by rejection?" 
                                     spinner 
-                                    class="bg-red-600 btn-outline btn-sm" 
+                                    class="text-red-600 btn-outline btn-sm" 
                                     :disabled="$storesrequisition->status!=='O'"
                                 />
                             </div>
@@ -240,7 +239,7 @@
             </div>
             <x-slot:actions>
                 <x-button label="Send" type="submit" spinner="sendrequisition"
-                class="bg-gradient-to-bl from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white" /> 
+                class="bg-gradient-to-t from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white" /> 
             </x-slot:actions>
         </x-form>
     </x-modal> 
@@ -280,7 +279,7 @@
             </div>            
             <x-slot:actions>
                 <x-button label="Proceed" type="submit" spinner="acceptrequisition" 
-                class="bg-gradient-to-bl from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white"/> 
+                class="bg-gradient-to-t from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white"/> 
             </x-slot:actions>
         </x-form>
     </x-modal> 
@@ -299,7 +298,7 @@
             </div>            
             <x-slot:actions>
                 <x-button label="Recall" type="submit" spinner="recallrequisition"
-                class="bg-gradient-to-bl from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white" /> 
+                class="bg-gradient-to-t from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white" /> 
             </x-slot:actions>
         </x-form>
     </x-modal>

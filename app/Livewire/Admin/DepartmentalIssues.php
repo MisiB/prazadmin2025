@@ -4,6 +4,7 @@ namespace App\Livewire\Admin;
 
 use App\Interfaces\repositories\idepartmentInterface;
 use App\Interfaces\repositories\iissuelogInterface;
+use App\Interfaces\repositories\iroleRepository;
 use App\Models\Departmentuser;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -32,6 +33,9 @@ class DepartmentalIssues extends Component
 
     // Assignment modal
     public $showAssignModal = false;
+    
+    // Assignment modal for consultant
+    public $consultantAssignModal = false;
 
     public $assigningIssueId = null;
 
@@ -43,10 +47,24 @@ class DepartmentalIssues extends Component
 
     protected $departmentRepository;
 
-    public function boot(iissuelogInterface $issueRepository, idepartmentInterface $departmentRepository)
+    protected $roleRepository;//use this interface to access the getusersbyrole function
+
+    //Variable stores the issue id for consultant assignment
+    public $consultantissueId = null;
+
+    //Variable stores the selected consultant user id
+    public $selectedconsultantUser = null;
+
+    //Map to store consultants data
+    public $consultantsOptions=[];
+
+    public $egpconsultantrole='External Support';
+
+    public function boot(iissuelogInterface $issueRepository, idepartmentInterface $departmentRepository, iroleRepository $roleRepository)
     {
         $this->issueRepository = $issueRepository;
         $this->departmentRepository = $departmentRepository;
+        $this->roleRepository=$roleRepository;
     }
 
     public function mount()
@@ -131,6 +149,55 @@ class DepartmentalIssues extends Component
             $this->error($response['message']);
         }
     }
+    /**
+     * 
+     * This function triggers the variable initializations,
+     * that support the consultant assignment modal in the UI.
+     */
+    public function consultantAssigningTrigger($issueid)
+    {
+        $this->consultantsOptions=[];
+        $this->consultantissueId = $issueid;
+        $consultantsData= $this->roleRepository->getusersbyrole($this->egpconsultantrole);
+        $consultantsData->map(function ($consultant){
+            $this->consultantsOptions[]=[
+                'id'=>$consultant->id,
+                'name'=>$consultant->name
+            ];
+        });
+        $this->consultantAssignModal = true;
+    }
+    /**
+     * 
+     * This function allows a user to assign a consultant an issue.
+     * I supports the functionality of the department ticket button in the UI.
+     */
+    public function consultantIssue()
+    {
+        $this->validate([
+            'selectedconsultantUser' => 'required|exists:users,id',
+        ]);
+        $selectedconsultantUser=$this->selectedconsultantUser;
+
+        $response = $this->issueRepository->assignissue(
+            $this->consultantissueId,
+            $selectedconsultantUser,
+            $this->userDepartment->id
+        );
+
+        if ($response['status'] === 'success') {
+            if ($this->isReassigning) {
+                $this->success('Issue reassigned to consultant successfully');
+            } else {
+                $this->success($response['message']);
+            }
+            $this->consultantsOptions=[];
+            $this->closeAssignModal();
+            $this->redirect(route('admin.departmentalissues'));
+        } else {
+            $this->error($response['message']);
+        }
+    }
     public function assignIssue()
     {
         $this->validate([
@@ -145,7 +212,7 @@ class DepartmentalIssues extends Component
 
         if ($response['status'] === 'success') {
             if ($this->isReassigning) {
-                $this->success('Issue reassigned successfully');
+                $this->success('Issue reassigned  to user successfully');
             } else {
                 $this->success($response['message']);
             }
