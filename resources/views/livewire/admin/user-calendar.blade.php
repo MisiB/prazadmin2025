@@ -270,7 +270,7 @@
                     $pendingCount = $dayTasks->where('status', 'pending')->count();
                 @endphp
                 
-                <div class="bg-white rounded-xl shadow-sm border-2 border-gray-200 hover:border-blue-400 hover:shadow-lg transition-all duration-300 flex flex-col">
+                <div wire:key="day-{{ $day->id }}" class="bg-white rounded-xl shadow-sm border-2 border-gray-200 hover:border-blue-400 hover:shadow-lg transition-all duration-300 flex flex-col">
                     <!-- Day Card Header -->
                     <div class="bg-gradient-to-br from-blue-50 to-blue-100 px-4 py-4 border-b border-gray-200 rounded-t-xl">
                         <div class="flex items-center justify-between">
@@ -357,6 +357,82 @@
 
         <!-- Day Tasks Modal -->
         <x-modal wire:model="dayTasksModal" :title="$selectedDayTitle ?? 'Tasks'" box-class="max-w-4xl">
+            <!-- Custom Header with Bulk Actions -->
+            <div class="mb-4 pb-4 border-b border-gray-200">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div class="flex items-center gap-2">
+                        @if(count($selectedTaskIds) > 0)
+                            <x-badge value="{{ count($selectedTaskIds) }} selected" class="badge-sm badge-info" />
+                        @endif
+                    </div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        @if(count($selectedTaskIds) > 0)
+                            @php
+                                // Check if any selected tasks are eligible for rollover
+                                $hasEligibleForRollover = false;
+                                if ($selectedDayTasks) {
+                                    foreach ($selectedDayTasks as $group) {
+                                        foreach ($group as $task) {
+                                            if (in_array($task->id, $selectedTaskIds)) {
+                                                // Check if task is eligible: pending OR (ongoing with worked hours)
+                                                if ($task->status === 'pending') {
+                                                    $hasEligibleForRollover = true;
+                                                    break 2;
+                                                } elseif ($task->status === 'ongoing') {
+                                                    $activeInstance = $task->taskinstances?->where('status', 'ongoing')->sortByDesc('date')->first();
+                                                    if ($activeInstance && $activeInstance->worked_hours > 0) {
+                                                        $hasEligibleForRollover = true;
+                                                        break 2;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            @endphp
+                            @if($hasEligibleForRollover)
+                                <x-button 
+                                    icon="o-arrow-path" 
+                                    label="Bulk Rollover" 
+                                    class="btn-xs btn-outline btn-warning" 
+                                    wire:click="bulkRollover"
+                                    wire:confirm="Roll over eligible selected task(s) to tomorrow?"
+                                />
+                            @endif
+                        @endif
+                        @if($selectedDayTasks)
+                            @php
+                                $selectableCount = 0;
+                                foreach($selectedDayTasks as $group) {
+                                    foreach($group as $task) {
+                                        if ($task->status != 'completed' && $task->approvalstatus != 'Rejected') {
+                                            $selectableCount++;
+                                        }
+                                    }
+                                }
+                            @endphp
+                            @if($selectableCount > 0)
+                                @if(count($selectedTaskIds) === $selectableCount)
+                                    <x-button 
+                                        icon="o-x-mark" 
+                                        label="Deselect All" 
+                                        class="btn-xs btn-outline btn-ghost" 
+                                        wire:click="deselectAllTasks"
+                                    />
+                                @else
+                                    <x-button 
+                                        icon="o-check" 
+                                        label="Select All" 
+                                        class="btn-xs btn-outline btn-ghost" 
+                                        wire:click="selectAllTasks"
+                                    />
+                                @endif
+                            @endif
+                        @endif
+                    </div>
+                </div>
+            </div>
+
             <!-- Scrollable Task List Container -->
             <div class="max-h-[60vh] overflow-y-auto pr-2 -mr-2">
                 @if($selectedDayTasks && is_array($selectedDayTasks))
@@ -384,7 +460,13 @@
                                     @php
                                         $activeInstance = $task->taskinstances?->where('status', 'ongoing')->sortByDesc('date')->first();
                                     @endphp
-                                    @include('livewire.admin.partials.task-card', ['task' => $task, 'activeInstance' => $activeInstance])
+                                    <div wire:key="task-rejected-{{ $task->id }}">
+                                        @include('livewire.admin.partials.task-card', [
+                                            'task' => $task, 
+                                            'activeInstance' => $activeInstance,
+                                            'selectedTaskIds' => $selectedTaskIds
+                                        ])
+                                    </div>
                                 @endforeach
                             </div>
                         </div>
@@ -403,7 +485,13 @@
                                     @php
                                         $activeInstance = $task->taskinstances?->where('status', 'ongoing')->sortByDesc('date')->first();
                                     @endphp
-                                    @include('livewire.admin.partials.task-card', ['task' => $task, 'activeInstance' => $activeInstance])
+                                    <div wire:key="task-pending-approval-{{ $task->id }}">
+                                        @include('livewire.admin.partials.task-card', [
+                                            'task' => $task, 
+                                            'activeInstance' => $activeInstance,
+                                            'selectedTaskIds' => $selectedTaskIds
+                                        ])
+                                    </div>
                                 @endforeach
                             </div>
                         </div>
@@ -422,7 +510,13 @@
                                     @php
                                         $activeInstance = $task->taskinstances?->where('status', 'ongoing')->sortByDesc('date')->first();
                                     @endphp
-                                    @include('livewire.admin.partials.task-card', ['task' => $task, 'activeInstance' => $activeInstance])
+                                    <div wire:key="task-pending-{{ $task->id }}">
+                                        @include('livewire.admin.partials.task-card', [
+                                            'task' => $task, 
+                                            'activeInstance' => $activeInstance,
+                                            'selectedTaskIds' => $selectedTaskIds
+                                        ])
+                                    </div>
                                 @endforeach
                             </div>
                         </div>
@@ -441,7 +535,13 @@
                                     @php
                                         $activeInstance = $task->taskinstances?->where('status', 'ongoing')->sortByDesc('date')->first();
                                     @endphp
-                                    @include('livewire.admin.partials.task-card', ['task' => $task, 'activeInstance' => $activeInstance])
+                                    <div wire:key="task-ongoing-{{ $task->id }}">
+                                        @include('livewire.admin.partials.task-card', [
+                                            'task' => $task, 
+                                            'activeInstance' => $activeInstance,
+                                            'selectedTaskIds' => $selectedTaskIds
+                                        ])
+                                    </div>
                                 @endforeach
                             </div>
                         </div>
@@ -460,7 +560,13 @@
                                     @php
                                         $activeInstance = $task->taskinstances?->where('status', 'ongoing')->sortByDesc('date')->first();
                                     @endphp
-                                    @include('livewire.admin.partials.task-card', ['task' => $task, 'activeInstance' => $activeInstance])
+                                    <div wire:key="task-completed-{{ $task->id }}">
+                                        @include('livewire.admin.partials.task-card', [
+                                            'task' => $task, 
+                                            'activeInstance' => $activeInstance,
+                                            'selectedTaskIds' => $selectedTaskIds
+                                        ])
+                                    </div>
                                 @endforeach
                             </div>
                         </div>
@@ -494,6 +600,7 @@
                 />
             </x-slot:actions>
         </x-modal>
+
     </div>
            
 

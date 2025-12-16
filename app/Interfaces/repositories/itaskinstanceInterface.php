@@ -14,6 +14,10 @@ interface itaskinstanceInterface
 
     public function getinstancesbydateanduser($date, $userId);
 
+    public function getactiveinstancebytaskid($taskId);
+
+    public function getinstancesbytaskids(array $taskIds, $filters = []);
+
     public function create(array $data);
 
     public function update($id, array $data);

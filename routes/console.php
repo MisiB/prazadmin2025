@@ -13,5 +13,7 @@ Schedule::command('leavestatement:newuserstatementcreation'); // Manually run on
 Schedule::command('leavestatement:updateactinghod')->dailyAt('08:00');
 Schedule::command('leavestatement:accumulate')->monthly();
 Schedule::command('leavestatement:rollover')->yearly();
-Schedule::command('tasks:send-daily-reminders')->dailyAt('08:00');
+Schedule::command('tasks:send-daily-reminders')->dailyAt('07:40');
 Schedule::command('tasks:create-recurring')->dailyAt('06:00');
+Schedule::command('tasks:rollover-weekly')->weeklyOn(1, '08:00'); // Run every Monday at 8:00 AM
+Schedule::command('reviews:generate-weekly')->weeklyOn(1, '06:00'); // Generate weekly reviews every Monday at 8:30 AM

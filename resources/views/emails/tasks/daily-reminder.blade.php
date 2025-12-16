@@ -1,7 +1,7 @@
 <x-mail::message>
 # Good Morning, {{ $user->name }}!
 
-You have **{{ $pendingTasks->count() + $ongoingTasks->count() }}** outstanding task(s) for this week.
+You have **{{ $pendingTasks->count() + $ongoingTasks->count() }}** outstanding task(s) from previous days that need your attention.
 
 ---
 

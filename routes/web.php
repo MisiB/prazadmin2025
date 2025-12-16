@@ -91,9 +91,9 @@ Route::middleware('auth')->group(function () {
     Volt::route('/approvals/storesrequisitiondelivery', 'admin.workflows.approvals.storesrequisitiondelivery')->name('admin.workflows.approvals.storesrequisitiondelivery');
     Volt::route('/trackers/performancetracker', 'admin.trackers.performancetracker')->name('admin.trackers.performancetracker');
     Volt::route('/trackers/budgettracker', 'admin.trackers.budgettracker')->name('admin.trackers.budgettracker');
-    //Dashboards are disabled for now
-    // Volt::route('/trackers/departmentaldashboard', 'admin.trackers.departmentaldashboard')->name('admin.trackers.departmentaldashboard');
-    // Volt::route('/trackers/organisationdashboard', 'admin.trackers.organisationdashboard')->name('admin.trackers.organisationdashboard');
+    // Dashboards are disabled for now
+    Volt::route('/trackers/departmentaldashboard', 'admin.trackers.departmentaldashboard')->name('admin.trackers.departmentaldashboard');
+    Volt::route('/trackers/organisationdashboard', 'admin.trackers.organisationdashboard')->name('admin.trackers.organisationdashboard');
     Volt::route('/calendar', 'admin.weekday-calendar')->name('admin.calendar');
     Volt::route('/issues', 'admin.issues')->name('admin.issues');
     Volt::route('/myissues', 'admin.my-issues')->name('admin.myissues');

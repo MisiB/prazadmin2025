@@ -2,8 +2,8 @@
 
 namespace App\implementation\services;
 
-use App\Interfaces\services\ICalendarService;
 use App\Interfaces\repositories\icalendarInterface;
+use App\Interfaces\services\ICalendarService;
 use Carbon\Carbon;
 
 class _calendarService implements ICalendarService
@@ -30,7 +30,7 @@ class _calendarService implements ICalendarService
     {
         $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
         $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
-        
+
         return $this->calendarRepository->getweekdays($startDate->format('Y-m-d'), $endDate->format('Y-m-d'));
     }
 
@@ -42,7 +42,7 @@ class _calendarService implements ICalendarService
         $carbonDate = Carbon::parse($date);
         $monday = $carbonDate->copy()->startOfWeek();
         $friday = $monday->copy()->addDays(4);
-        
+
         return $this->calendarRepository->getweekdays($monday->format('Y-m-d'), $friday->format('Y-m-d'));
     }
 
@@ -54,14 +54,14 @@ class _calendarService implements ICalendarService
         $carbonDate = Carbon::parse($date);
         $monday = $carbonDate->copy()->startOfWeek();
         $friday = $monday->copy()->addDays(4);
-        
+
         return [
             'start_date' => $monday->format('Y-m-d'),
             'end_date' => $friday->format('Y-m-d'),
             'week_number' => $monday->weekOfYear,
             'month' => $monday->format('F'),
             'year' => $monday->year,
-            'days' => $this->calendarRepository->getweekdays($monday->format('Y-m-d'), $friday->format('Y-m-d'))
+            'days' => $this->calendarRepository->getweekdays($monday->format('Y-m-d'), $friday->format('Y-m-d')),
         ];
     }
 
@@ -72,18 +72,18 @@ class _calendarService implements ICalendarService
     {
         $results = [];
         $errors = [];
-        
+
         foreach ($dates as $date) {
             try {
                 $results[] = $this->calendarRepository->savedate($date);
             } catch (\Exception $e) {
-                $errors[] = "Failed to save {$date}: " . $e->getMessage();
+                $errors[] = "Failed to save {$date}: ".$e->getMessage();
             }
         }
-        
+
         return [
             'saved' => $results,
-            'errors' => $errors
+            'errors' => $errors,
         ];
     }
 
@@ -93,13 +93,13 @@ class _calendarService implements ICalendarService
     public function getYearStatistics($year)
     {
         $yearlyDates = $this->calendarRepository->getyearlydates($year);
-        
+
         return [
             'total_weekdays' => $yearlyDates->count(),
-            'by_month' => $yearlyDates->groupBy(function($date) {
+            'by_month' => $yearlyDates->groupBy(function ($date) {
                 return Carbon::parse($date->maindate)->format('F');
             })->map->count(),
-            'by_day' => $yearlyDates->groupBy('day')->map->count()
+            'by_day' => $yearlyDates->groupBy('day')->map->count(),
         ];
     }
 
@@ -109,10 +109,12 @@ class _calendarService implements ICalendarService
     public function isWeekday($date)
     {
         $carbonDate = Carbon::parse($date);
+
         return $carbonDate->dayOfWeek >= 1 && $carbonDate->dayOfWeek <= 5;
     }
 
-    public function getweeks($year){
+    public function getweeks($year)
+    {
         return $this->calendarRepository->getweeks($year);
     }
 
@@ -122,11 +124,11 @@ class _calendarService implements ICalendarService
     public function getNextWeekday($date)
     {
         $carbonDate = Carbon::parse($date);
-        
+
         do {
             $carbonDate->addDay();
         } while ($carbonDate->dayOfWeek < 1 || $carbonDate->dayOfWeek > 5);
-        
+
         return $carbonDate->format('Y-m-d');
     }
 
@@ -136,11 +138,11 @@ class _calendarService implements ICalendarService
     public function getPreviousWeekday($date)
     {
         $carbonDate = Carbon::parse($date);
-        
+
         do {
             $carbonDate->subDay();
         } while ($carbonDate->dayOfWeek < 1 || $carbonDate->dayOfWeek > 5);
-        
+
         return $carbonDate->format('Y-m-d');
     }
 
@@ -152,41 +154,63 @@ class _calendarService implements ICalendarService
         $start = Carbon::parse($startDate);
         $end = Carbon::parse($endDate);
         $weekdays = [];
-        
+
         while ($start->lte($end)) {
             if ($this->isWeekday($start->format('Y-m-d'))) {
                 $weekdays[] = [
                     'date' => $start->format('Y-m-d'),
                     'day' => $start->format('l'),
-                    'formatted' => $start->format('M d, Y')
+                    'formatted' => $start->format('M d, Y'),
                 ];
             }
             $start->addDay();
         }
-        
+
         return $weekdays;
     }
+
     public function getcalenderuserweektasks($startDate, $endDate)
     {
         return $this->calendarRepository->getcalenderuserweektasks($startDate, $endDate);
     }
-    public function getusercalendarweektasks($calendarweek_id){
+
+    public function getusercalendarweektasks($calendarweek_id)
+    {
         return $this->calendarRepository->getusercalendarweektasks($calendarweek_id);
     }
-    public function sendforapproval($calendarweek_id){
+
+    public function sendforapproval($calendarweek_id)
+    {
         return $this->calendarRepository->sendforapproval($calendarweek_id);
     }
-    public function gettasksbydepartment($department_id,$startDate,$endDate){
-        return $this->calendarRepository->gettasksbydepartment($department_id,$startDate,$endDate);
+
+    public function gettasksbydepartment($department_id, $startDate, $endDate)
+    {
+        return $this->calendarRepository->gettasksbydepartment($department_id, $startDate, $endDate);
     }
-    public function gettasksbydepartmentbycalenderweek($department_id,$calendarweek_id){
-        return $this->calendarRepository->gettasksbydepartmentbycalenderweek($department_id,$calendarweek_id);
+
+    public function gettasksbydepartmentbycalenderweek($department_id, $calendarweek_id)
+    {
+        return $this->calendarRepository->gettasksbydepartmentbycalenderweek($department_id, $calendarweek_id);
     }
-    public function gettasksbycalenderweek($calendarweek_id){
+
+    public function gettasksbycalenderweek($calendarweek_id)
+    {
         return $this->calendarRepository->gettasksbycalenderweek($calendarweek_id);
     }
-    public function updatecalenderworkusertask($calendarweek_id, $user_id, $data){
+
+    public function updatecalenderworkusertask($calendarweek_id, $user_id, $data)
+    {
         return $this->calendarRepository->updatecalenderworkusertask($calendarweek_id, $user_id, $data);
     }
-}
 
+    public function getcalendarweekbydaterange($startDate, $endDate)
+    {
+        return $this->calendarRepository->getcalendarweekbydaterange($startDate, $endDate);
+    }
+
+    public function getcalendarweekbyid($id)
+    {
+        return $this->calendarRepository->getcalendarweekbyid($id);
+    }
+}

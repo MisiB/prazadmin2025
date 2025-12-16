@@ -1,10 +1,23 @@
-<div class="group relative bg-white rounded-lg border-l-4 {{ $task->priority == 'High' ? 'border-red-500' : ($task->priority == 'Medium' ? 'border-yellow-500' : 'border-green-500') }} border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200">
+<div class="group relative bg-white rounded-lg border-l-4 {{ $task->priority == 'High' ? 'border-red-500' : ($task->priority == 'Medium' ? 'border-yellow-500' : 'border-green-500') }} border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 {{ isset($selectedTaskIds) && in_array($task->id, $selectedTaskIds) ? 'ring-2 ring-blue-500 ring-offset-2' : '' }}">
     <!-- Row 1: Title, Description, Badges -->
     <div class="p-3 pb-2">
         <div class="flex items-start justify-between gap-3 mb-2">
-            <div class="flex-1 min-w-0">
-                <h4 class="text-base font-bold text-gray-900 mb-0.5 truncate">{{ $task->title }}</h4>
-                <p class="text-xs text-gray-500 line-clamp-1">{{ $task->description }}</p>
+            <div class="flex items-start gap-2 flex-1 min-w-0">
+                <!-- Checkbox for bulk selection -->
+                @if(isset($selectedTaskIds) && $task->status != 'completed' && $task->approvalstatus != 'Rejected')
+                <div class="flex-shrink-0 mt-1">
+                    <input 
+                        type="checkbox" 
+                        wire:click="toggleTaskSelection({{ $task->id }})"
+                        @checked(isset($selectedTaskIds) && in_array($task->id, $selectedTaskIds))
+                        class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                </div>
+                @endif
+                <div class="flex-1 min-w-0">
+                    <h4 class="text-base font-bold text-gray-900 mb-0.5 truncate">{{ $task->title }}</h4>
+                    <p class="text-xs text-gray-500 line-clamp-1">{{ $task->description }}</p>
+                </div>
             </div>
             <div class="flex items-center gap-1.5 flex-shrink-0">
                 <x-badge 
@@ -115,12 +128,21 @@
                     
                     {{-- Rollover - For ongoing tasks with logged hours OR pending tasks --}}
                     @if(($task->status == 'ongoing' && $activeInstance->worked_hours > 0) || $task->status == 'pending')
+                    @php
+                        $rolloverMessage = 'Roll over this task to tomorrow? ';
+                        if ($task->status == 'ongoing' && $activeInstance) {
+                            $carriedHours = $activeInstance->planned_hours - $activeInstance->worked_hours;
+                            $rolloverMessage .= number_format($carriedHours, 2) . ' hours will be carried forward.';
+                        } else {
+                            $rolloverMessage .= 'The task will be moved to the next day.';
+                        }
+                    @endphp
                     <x-button 
                         icon="o-arrow-path" 
                         label="Rollover" 
                         class="btn-xs btn-outline btn-warning" 
                         wire:click="rolloverTask({{ $task->id }})"
-                        wire:confirm="Roll over this task to tomorrow? @if($task->status == 'ongoing' && $activeInstance){{ $activeInstance->planned_hours - $activeInstance->worked_hours }} hours will be carried forward.@else The task will be moved to the next day.@endif"
+                        wire:confirm="{{ $rolloverMessage }}"
                     />
                     @endif
                 @elseif($task->status == 'pending')
