@@ -10,13 +10,13 @@
 
         <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
             <div class="flex items-center gap-8 mb-4">
-                <div class="p-3 bg-gradient-to-br from-green-300 to-green-600 rounded-xl shadow-lg shadow-purple-500/30">
+                <div class="p-3 bg-gradient-to-b from-green-300 to-green-600 rounded-xl shadow-lg">
                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                     </svg>
                 </div>
-                <div>                    
-                    <div class="grid grid-cols-4 gap-12">
+                <div>
+                    <div class="grid grid-cols-3 gap-12">
                         <div class="text-center">
                             <div class="text-2xl font-bold text-gray-900">{{ $leavestatementbalances['vacation'] }}</div>
                             <div class="text-xs text-gray-600">Vacation</div>
@@ -36,27 +36,29 @@
 
         <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
             <div class="flex items-center gap-3 mb-4">
-                <div class="p-3 bg-gradient-to-br from-green-300 to-green-600 rounded-xl shadow-lg shadow-purple-500/30">
+                <div class="p-3 bg-gradient-to-b from-green-300 to-green-600 rounded-xl shadow-lg">
                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                     </svg>
                 </div>
                 <div>                    
-                    <div class="grid grid-cols-4 gap-3">
+                    <div class="grid grid-cols-3 gap-12">
                         <div class="text-center">
                             <div class="text-2xl font-bold text-gray-900">{{ $leavestatementbalances['sick'] }}</div>
                             <div class="text-xs text-gray-600">Sick</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-600">{{ $leavestatementbalances['compassionate'] }}</div>
+                            <div class="text-xs text-gray-600">Compassionate </div>
                         </div>
                         @if(strtolower($this->user->gender)==='f')
                         <div class="text-center">
                             <div class="text-2xl font-bold text-blue-600">{{ $leavestatementbalances['maternity'] }}</div>
                             <div class="text-xs text-gray-600">Maternity</div>
                         </div>
+                        @else
+                        <div></div>
                         @endif
-                        <div class="text-center">
-                            <div class="text-2xl font-bold text-green-600">{{ $leavestatementbalances['compassionate'] }}</div>
-                            <div class="text-xs text-gray-600">Compassionate </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -64,7 +66,7 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 my-8">
-        <x-card class="shadow-md bg-gradient-to-tl from-gray-100 to-white rounded-xl">
+        <div class="shadow-md bg-gradient-to-b from-gray-100 to-white rounded-xl py-5 pl-4">
             <div class="flex items-center space-x-3">
                 <div class="grid grid-flow-row gap-2">
                     <div class="grid grid-flow-col gap-2">
@@ -78,9 +80,9 @@
                     </div>
                 </div>
             </div>
-        </x-card>
+        </div>
 
-        <x-card class="shadow-md bg-gradient-to-tl from-gray-100 to-white rounded-xl">
+        <div class="shadow-md bg-gradient-to-b from-gray-100 to-white rounded-xl py-5 pl-4">
             <div class="flex items-center space-x-3">
                 <div class="grid grid-flow-row gap-2">
                     <div class="grid grid-flow-col gap-2">
@@ -94,9 +96,9 @@
                     </div>
                 </div>
             </div>
-        </x-card>
+        </div>
 
-        <x-card class="shadow-md bg-gradient-to-tl from-gray-100 to-white rounded-xl">
+        <div class="shadow-md bg-gradient-to-b from-gray-100 to-white rounded-xl py-5 pl-4">
             <div class="flex items-center space-x-3">
                 <div class="grid grid-flow-row gap-2">
                     <div class="grid grid-flow-col gap-1">
@@ -111,9 +113,9 @@
                     </div>
                 </div>
             </div>
-        </x-card>
+        </div>
 
-        <x-card class="shadow-md bg-gradient-to-tl from-gray-100 to-white rounded-xl">
+        <div class="shadow-md bg-gradient-to-b from-gray-100 to-white rounded-xl py-5 pl-4">
             <div class="flex items-center space-x-3">
 
                 <div class="grid grid-flow-row gap-2">
@@ -129,7 +131,7 @@
 
                 </div>
             </div>
-        </x-card>
+        </div>
     </div>
 
     <div>
@@ -138,7 +140,7 @@
                 <x-input placeholder="Search by emailed REF ..." wire:model.live="searchuuid"/>
                 <x-select wire:model.live="statusfilter" placeholder="Filter by status" :options="$statuslist" option-label="name" option-value="id" />
                 <x-button icon="o-plus" label="Add Leave Request" wire:click="initiateleaveaddition"
-                class="bg-gradient-to-bl from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white"/>
+                class="bg-gradient-to-b from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white"/>
             </x-slot:menu>
             
             <x-table :headers="$headers" :rows="$leaverequests">
@@ -218,7 +220,7 @@
             
             <x-slot:actions>
                 <x-button label="Send" type="submit" spinner="sendleaverequest" 
-                class="bg-gradient-to-bl from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white"/>
+                class="bg-gradient-to-b from-blue-600 to-blue-800 shadow-md shadow-gray-200 rounded-lg text-white"/>
             </x-slot:actions>
         </x-form>
     </x-modal>  

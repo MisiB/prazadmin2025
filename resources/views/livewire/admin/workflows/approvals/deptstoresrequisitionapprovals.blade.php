@@ -116,20 +116,20 @@
 
                                     @haspermission('storesrequisitions.approvals')
                                         <div>
-                                            <x-button label="✅"
+                                            <x-button icon="o-check-circle"
                                                 wire:click="initiateapproval('{{$storesrequisition->storesrequisition_uuid}}','{{$storesrequisition->initiator_id}}', true)" 
                                                 wire:confirm="Do you want to approve requisition?" 
                                                 spinner 
-                                                class="bg-green-600 btn-outline btn-sm" 
+                                                class="text-green-600 btn-outline btn-sm" 
                                                 :disabled="$storesrequisition->status!=='P'"
                                             />
                                         </div>
                                         <div>
-                                            <x-button label="❌"
+                                            <x-button icon="o-x-mark"
                                                 wire:click="initiateapproval('{{$storesrequisition->storesrequisition_uuid}}','{{$storesrequisition->initiator_id}}', false)" 
                                                 wire:confirm="Do you want to reject requisition?" 
                                                 spinner 
-                                                class="bg-red-600 btn-outline btn-sm" 
+                                                class="text-red-600 btn-outline btn-sm" 
                                                 :disabled="$storesrequisition->status!=='P'"
                                             />
                                         </div>
