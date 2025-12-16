@@ -75,9 +75,7 @@ class Weekytasks extends Component
         ];
 
         // Set initial week based on current week
-        $currentWeek = \App\Models\Calendarweek::where('start_date', '>=', $this->startDate)
-            ->where('end_date', '<=', $this->endDate)
-            ->first();
+        $currentWeek = $this->calendarService->getcalendarweekbydaterange($this->startDate, $this->endDate);
         if ($currentWeek) {
             $this->week = $currentWeek->id;
         }
@@ -140,17 +138,17 @@ class Weekytasks extends Component
     public function getUserActualTasks($user)
     {
         $tasks = collect();
-        
+
         // Get the current calendar week to filter tasks
         $departmentData = $this->gettasksbydepartment();
         $currentCalendarWeek = $departmentData['calendarweek'] ?? null;
-        
+
         if (! $currentCalendarWeek) {
             return $tasks;
         }
-        
+
         $currentWeekId = $currentCalendarWeek->id;
-        
+
         // Only get tasks from the current week
         $user->calenderworkusertasks->each(function ($calenderworkusertask) use ($tasks, $user, $currentWeekId) {
             // Only process tasks from the current week
@@ -239,11 +237,11 @@ class Weekytasks extends Component
     public function updatedWeek($value)
     {
         if ($value) {
-            $calendarWeek = \App\Models\Calendarweek::find($value);
+            $calendarWeek = $this->calendarService->getcalendarweekbyid($value);
             if ($calendarWeek) {
                 $this->startDate = $calendarWeek->start_date;
                 $this->endDate = $calendarWeek->end_date;
-                
+
                 // Close any open modals when week changes
                 $this->closeModal();
                 $this->closeBulkApprovalModal();

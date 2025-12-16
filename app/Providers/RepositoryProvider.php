@@ -56,12 +56,14 @@ use App\implementation\repositories\_taskTemplateRepository;
 use App\implementation\repositories\_tenderRepository;
 use App\implementation\repositories\_userRepository;
 use App\implementation\repositories\_wallettopupRepository;
+use App\implementation\repositories\_weeklyTaskReviewRepository;
 use App\implementation\repositories\_workflowRepository;
 use App\implementation\repositories\_workplanRepository;
 use App\implementation\repositories\_workshopRepository;
 use App\implementation\services\_leaverequestService;
 use App\implementation\services\_recurringTaskService;
 use App\implementation\services\_taskinstanceService;
+use App\implementation\services\_taskReminderService;
 use App\implementation\services\_taskTemplateService;
 use App\Interfaces\repositories\iaccountsettingInterface;
 use App\Interfaces\repositories\iaccounttypeInterface;
@@ -117,6 +119,7 @@ use App\Interfaces\repositories\itaskTemplateInterface;
 use App\Interfaces\repositories\itenderInterface;
 use App\Interfaces\repositories\iuserInterface;
 use App\Interfaces\repositories\iwallettopupInterface;
+use App\Interfaces\repositories\iweeklyTaskReviewInterface;
 use App\Interfaces\repositories\iworkflowInterface;
 use App\Interfaces\repositories\iworkplanInterface;
 use App\Interfaces\repositories\iworkshopInterface;
@@ -124,6 +127,7 @@ use App\Interfaces\services\iAzureEmailServiceInterface;
 use App\Interfaces\services\ileaverequestService;
 use App\Interfaces\services\irecurringTaskService;
 use App\Interfaces\services\itaskinstanceService;
+use App\Interfaces\services\itaskReminderService;
 use App\Interfaces\services\itaskTemplateService;
 use App\Services\AzureEmailService;
 use Illuminate\Support\ServiceProvider;
@@ -208,5 +212,7 @@ class RepositoryProvider extends ServiceProvider
         $this->app->bind(itaskTemplateService::class, _taskTemplateService::class);
         $this->app->bind(irecurringTaskInterface::class, _recurringTaskRepository::class);
         $this->app->bind(irecurringTaskService::class, _recurringTaskService::class);
+        $this->app->bind(itaskReminderService::class, _taskReminderService::class);
+        $this->app->bind(iweeklyTaskReviewInterface::class, _weeklyTaskReviewRepository::class);
     }
 }

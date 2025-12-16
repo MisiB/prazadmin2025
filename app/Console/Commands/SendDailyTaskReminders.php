@@ -2,8 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Interfaces\services\itaskReminderService;
 use App\Mail\DailyTaskReminderMail;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
 
@@ -21,7 +23,15 @@ class SendDailyTaskReminders extends Command
      *
      * @var string
      */
-    protected $description = 'Send daily email reminders to users about their outstanding tasks';
+    protected $description = 'Send daily email reminders to users about their outstanding tasks from previous days';
+
+    protected $taskReminderService;
+
+    public function __construct(itaskReminderService $taskReminderService)
+    {
+        parent::__construct();
+        $this->taskReminderService = $taskReminderService;
+    }
 
     /**
      * Execute the console command.
@@ -50,8 +60,8 @@ class SendDailyTaskReminders extends Command
         $usersWithNoTasks = 0;
 
         foreach ($users as $user) {
-            // Get user's outstanding tasks
-            $tasks = $this->getUserOutstandingTasks($user);
+            // Get user's outstanding tasks from previous days
+            $tasks = $this->taskReminderService->getpreviousdaystasks($user->id);
 
             if ($tasks->isEmpty()) {
                 $usersWithNoTasks++;
@@ -59,12 +69,15 @@ class SendDailyTaskReminders extends Command
                 continue;
             }
 
+            // Format tasks for email (convert Task model to format expected by email)
+            $formattedTasks = $this->formatTasksForEmail($tasks);
+
             // Separate pending and ongoing tasks
-            $pendingTasks = $tasks->where('status', 'pending');
-            $ongoingTasks = $tasks->where('status', 'ongoing');
+            $pendingTasks = $formattedTasks->where('status', 'pending');
+            $ongoingTasks = $formattedTasks->where('status', 'ongoing');
 
             // Calculate total hours
-            $totalHours = $tasks->sum('hours');
+            $totalHours = $formattedTasks->sum('hours');
 
             // Send email
             try {
@@ -89,48 +102,24 @@ class SendDailyTaskReminders extends Command
     }
 
     /**
-     * Get user's outstanding tasks from the current week
+     * Format tasks for email template
+     * Converts Task model to format expected by DailyTaskReminderMail
      *
+     * @param  \Illuminate\Support\Collection  $tasks
      * @return \Illuminate\Support\Collection
      */
-    protected function getUserOutstandingTasks(User $user)
+    protected function formatTasksForEmail($tasks)
     {
-        // Get current week's start and end dates
-        $weekStart = now()->startOfWeek();
-        $weekEnd = now()->endOfWeek();
+        return $tasks->map(function ($task) {
+            $dayName = $task->calendarday ? Carbon::parse($task->calendarday->maindate)->format('l') : 'Unknown';
 
-        // Get all tasks for this user in the current week
-        $tasks = collect();
-
-        // Check if we have a weekday calendar system
-        if (class_exists(\App\Models\Weekdaycalendar::class)) {
-            $weekdayCalendar = \App\Models\Weekdaycalendar::where('user_id', $user->id)
-                ->whereBetween('date', [$weekStart, $weekEnd])
-                ->first();
-
-            if ($weekdayCalendar) {
-                // Get tasks from all days
-                $days = [
-                    $weekdayCalendar->monday,
-                    $weekdayCalendar->tuesday,
-                    $weekdayCalendar->wednesday,
-                    $weekdayCalendar->thursday,
-                    $weekdayCalendar->friday,
-                ];
-
-                foreach ($days as $day) {
-                    if ($day && isset($day->tasks)) {
-                        foreach ($day->tasks as $task) {
-                            // Only include pending and ongoing tasks
-                            if (in_array($task->status, ['pending', 'ongoing'])) {
-                                $tasks->push($task);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return $tasks;
+            return (object) [
+                'name' => $task->title,
+                'hours' => $task->duration ?? 0,
+                'day' => $dayName,
+                'status' => $task->status,
+                'comment' => $task->approval_comment ?? null,
+            ];
+        });
     }
 }

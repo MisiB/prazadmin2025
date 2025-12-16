@@ -53,4 +53,8 @@ interface iissuelogInterface
     public function deletecomment($commentId);
 
     public function getcomment($commentId);
+
+    public function getissuesbyassigneduserids(array $userIds, $filters = []);
+
+    public function getallissues();
 }

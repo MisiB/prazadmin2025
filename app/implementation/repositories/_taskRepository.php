@@ -512,4 +512,127 @@ class _taskRepository implements itaskInterface
         // Fallback to direct supervisor (even if on leave, still notify)
         return $supervisorId;
     }
+
+    public function gettasksbyuseranddaterange($userId, $startDate, $endDate)
+    {
+        return $this->task->with(['calendarday', 'user', 'individualworkplan'])
+            ->where('user_id', $userId)
+            ->whereHas('calendarday', function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('maindate', [$startDate, $endDate]);
+            })
+            ->get();
+    }
+
+    public function getpendingorongoingtasksbyuseranddaterange($userId, $startDate, $endDate)
+    {
+        return $this->task->with(['calendarday', 'user', 'individualworkplan'])
+            ->where('user_id', $userId)
+            ->whereIn('status', ['pending', 'ongoing'])
+            ->whereHas('calendarday', function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('maindate', [$startDate, $endDate]);
+            })
+            ->get();
+    }
+
+    public function gettasksbyuseridsanddaterange($userIds, $startDate, $endDate)
+    {
+        return $this->task->with(['calendarday', 'user', 'individualworkplan'])
+            ->whereIn('user_id', $userIds)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->get();
+    }
+
+    public function gettasksbyuserids($userIds, $filters = [])
+    {
+        $withRelations = ['calendarday', 'user', 'individualworkplan'];
+        if (isset($filters['with'])) {
+            $withRelations = array_merge($withRelations, $filters['with']);
+        }
+
+        $query = $this->task->with($withRelations)
+            ->whereIn('user_id', $userIds);
+
+        if (isset($filters['status'])) {
+            if (is_array($filters['status'])) {
+                $query->whereIn('status', $filters['status']);
+            } else {
+                $query->where('status', $filters['status']);
+            }
+        }
+
+        if (isset($filters['approvalstatus'])) {
+            if (is_array($filters['approvalstatus'])) {
+                $query->whereIn('approvalstatus', $filters['approvalstatus']);
+            } else {
+                $query->where('approvalstatus', $filters['approvalstatus']);
+            }
+        }
+
+        if (isset($filters['whereNotNull'])) {
+            foreach ($filters['whereNotNull'] as $field) {
+                $query->whereNotNull($field);
+            }
+        }
+
+        if (isset($filters['whereNull'])) {
+            foreach ($filters['whereNull'] as $field) {
+                $query->whereNull($field);
+            }
+        }
+
+        if (isset($filters['orderBy'])) {
+            $query->orderBy($filters['orderBy']['column'], $filters['orderBy']['direction'] ?? 'asc');
+        }
+
+        if (isset($filters['limit'])) {
+            $query->limit($filters['limit']);
+        }
+
+        return $query->get();
+    }
+
+    public function getlinkedtaskscountbyuserids($userIds)
+    {
+        return $this->task->whereIn('user_id', $userIds)
+            ->whereNotNull('individualworkplan_id')
+            ->count();
+    }
+
+    public function gettotaltaskscountbyuserids($userIds)
+    {
+        return $this->task->whereIn('user_id', $userIds)->count();
+    }
+
+    public function gettaskidsbyuseridsanddaterange($userIds, $startDate, $endDate)
+    {
+        return $this->task->whereIn('user_id', $userIds)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->pluck('id');
+    }
+
+    public function gettasksbyuseridanddaterange($userId, $startDate, $endDate)
+    {
+        return $this->task->with(['calendarday', 'user', 'individualworkplan'])
+            ->where('user_id', $userId)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->get();
+    }
+
+    public function gettaskswithcalendardaybyuseridsanddaterange($userIds, $startDate, $endDate)
+    {
+        return $this->task->with('calendarday')
+            ->whereIn('user_id', $userIds)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->get();
+    }
+
+    public function gettasksbyuseridsandcalendarweek($userIds, $calendarweekId)
+    {
+        return $this->task->with('calendarday')
+            ->whereIn('user_id', $userIds)
+            ->whereHas('calendarday', function ($query) use ($calendarweekId) {
+                $query->where('calendarweek_id', $calendarweekId);
+            })
+            ->get();
+    }
 }

@@ -19,4 +19,6 @@ interface individualworkplanInterface
     public function approveindividualworkplan($id, $remarks = null);
 
     public function getapprovedworkplansbydepartment($department_id, $strategy_id, $year);
+
+    public function getworkplansbyuserids(array $userIds, $filters = []);
 }

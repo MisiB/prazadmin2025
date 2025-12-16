@@ -46,6 +46,25 @@ class _taskinstanceRepository implements itaskinstanceInterface
             ->get();
     }
 
+    public function getactiveinstancebytaskid($taskId)
+    {
+        return $this->taskinstance->where('task_id', $taskId)
+            ->where('status', 'ongoing')
+            ->orderBy('date', 'desc')
+            ->first();
+    }
+
+    public function getinstancesbytaskids(array $taskIds, $filters = [])
+    {
+        $query = $this->taskinstance->whereIn('task_id', $taskIds);
+
+        if (isset($filters['orderBy'])) {
+            $query->orderBy($filters['orderBy']['column'], $filters['orderBy']['direction'] ?? 'asc');
+        }
+
+        return $query->get();
+    }
+
     public function create(array $data)
     {
         try {

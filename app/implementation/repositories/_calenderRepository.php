@@ -144,9 +144,18 @@ class _calenderRepository implements icalendarInterface
 
     public function getusercalendarweektasks($calendarweek_id)
     {
-        return $this->calendarweek->with(['calenderworkusertasks' => function ($query) {
-            $query->where('user_id', Auth::user()->id);
-        }, 'calendardays.userTasks'])->where('id', $calendarweek_id)->first();
+        $userId = Auth::user()->id;
+
+        return $this->calendarweek->with([
+            'calenderworkusertasks' => function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            },
+            'calendardays' => function ($query) use ($userId) {
+                $query->with(['tasks' => function ($taskQuery) use ($userId) {
+                    $taskQuery->where('user_id', $userId)->with('taskinstances');
+                }]);
+            },
+        ])->where('id', $calendarweek_id)->first();
     }
 
     public function getcalenderuserweektasks($startDate, $endDate)
@@ -154,9 +163,17 @@ class _calenderRepository implements icalendarInterface
         $today = Carbon::parse($startDate);
         $monday = $today->copy()->startOfWeek();
         $endDate = $today->copy()->endOfWeek();
-        $calendarWeek = $this->calendarweek->with(['calenderworkusertasks' => function ($query) {
-            $query->where('user_id', Auth::user()->id);
-        }, 'calendardays.userTasks'])->where('start_date', '>=', $startDate)->where('end_date', '<=', $endDate)->first();
+        $userId = Auth::user()->id;
+        $calendarWeek = $this->calendarweek->with([
+            'calenderworkusertasks' => function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            },
+            'calendardays' => function ($query) use ($userId) {
+                $query->with(['tasks' => function ($taskQuery) use ($userId) {
+                    $taskQuery->where('user_id', $userId)->with('taskinstances');
+                }]);
+            },
+        ])->where('start_date', '>=', $startDate)->where('end_date', '<=', $endDate)->first();
 
         return $calendarWeek ? $calendarWeek : collect();
     }
@@ -439,5 +456,27 @@ class _calenderRepository implements icalendarInterface
         });
 
         return ['users' => $users, 'calendarweek' => $calenderweek];
+    }
+
+    public function getcalendardaybydate($date)
+    {
+        return $this->calendarday->where('maindate', $date)->first();
+    }
+
+    public function getcalendardaybyid($id)
+    {
+        return $this->calendarday->with('userTasks.taskinstances')->find($id);
+    }
+
+    public function getcalendarweekbydaterange($startDate, $endDate)
+    {
+        return $this->calendarweek->where('start_date', '>=', $startDate)
+            ->where('end_date', '<=', $endDate)
+            ->first();
+    }
+
+    public function getcalendarweekbyid($id)
+    {
+        return $this->calendarweek->find($id);
     }
 }

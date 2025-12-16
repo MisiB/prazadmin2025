@@ -150,4 +150,15 @@ class _individualworkplanRepository implements individualworkplanInterface
             ->where('status', 'APPROVED')
             ->get();
     }
+
+    public function getworkplansbyuserids(array $userIds, $filters = [])
+    {
+        $query = $this->individualworkplan->whereIn('user_id', $userIds);
+
+        if (isset($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        return $query->get();
+    }
 }

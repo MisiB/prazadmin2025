@@ -2,13 +2,14 @@
 
 namespace App\Livewire\Admin;
 
+use App\Interfaces\repositories\icalendarInterface;
 use App\Interfaces\repositories\individualworkplanInterface;
+use App\Interfaces\repositories\itaskinstanceInterface;
 use App\Interfaces\repositories\itaskInterface;
 use App\Interfaces\services\ICalendarService;
 use App\Interfaces\services\itaskinstanceService;
 use App\Interfaces\services\itaskTemplateService;
 use App\Models\Individualworkplan;
-use App\Models\Taskinstance;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -99,17 +100,29 @@ class UserCalendar extends Component
     public $saveAsTemplate = false;
 
     public bool $dayTasksModal = false;
+
     public $selectedDayId = null;
+
     public $selectedDayTasks = null;
+
     public $selectedDayTitle = null;
 
-    public function boot(ICalendarService $calendarService, itaskInterface $repository, individualworkplanInterface $workplanrepository, itaskinstanceService $taskinstanceService, itaskTemplateService $taskTemplateService)
+    // Bulk operations properties
+    public array $selectedTaskIds = [];
+
+    protected $calendarRepository;
+
+    protected $taskinstanceRepository;
+
+    public function boot(ICalendarService $calendarService, itaskInterface $repository, individualworkplanInterface $workplanrepository, itaskinstanceService $taskinstanceService, itaskTemplateService $taskTemplateService, icalendarInterface $calendarRepository, itaskinstanceInterface $taskinstanceRepository)
     {
         $this->calendarService = $calendarService;
         $this->repository = $repository;
         $this->workplanrepository = $workplanrepository;
         $this->taskinstanceService = $taskinstanceService;
         $this->taskTemplateService = $taskTemplateService;
+        $this->calendarRepository = $calendarRepository;
+        $this->taskinstanceRepository = $taskinstanceRepository;
     }
 
     public function mount()
@@ -152,12 +165,12 @@ class UserCalendar extends Component
 
     public function openDayModal($dayId)
     {
-        $day = \App\Models\Calendarday::with('userTasks.taskinstances')->find($dayId);
-        
+        $day = $this->calendarRepository->getcalendardaybyid($dayId);
+
         if ($day) {
             $this->selectedDayId = $dayId;
             $tasks = $day->userTasks ?? collect();
-            
+
             // Group tasks by status
             $this->selectedDayTasks = $this->groupTasksByStatus($tasks);
             $this->selectedDayTitle = Carbon::parse($day->maindate)->format('l, F d, Y');
@@ -210,6 +223,21 @@ class UserCalendar extends Component
         $this->selectedDayId = null;
         $this->selectedDayTasks = null;
         $this->selectedDayTitle = null;
+        $this->selectedTaskIds = []; // Reset selections
+    }
+
+    /**
+     * Refresh the day modal data if it's currently open
+     */
+    public function refreshDayModalIfOpen(): void
+    {
+        if ($this->dayTasksModal && $this->selectedDayId) {
+            $day = $this->calendarRepository->getcalendardaybyid($this->selectedDayId);
+            if ($day) {
+                $tasks = $day->userTasks ?? collect();
+                $this->selectedDayTasks = $this->groupTasksByStatus($tasks);
+            }
+        }
     }
 
     public function getmyindividualworkplans()
@@ -360,6 +388,8 @@ class UserCalendar extends Component
             } else {
                 $this->getcalenderuserweektasks();
             }
+            // Refresh day modal if open
+            $this->refreshDayModalIfOpen();
         } else {
             $this->error($response['message']);
         }
@@ -402,6 +432,8 @@ class UserCalendar extends Component
             } else {
                 $this->getcalenderuserweektasks();
             }
+            // Refresh day modal if open
+            $this->refreshDayModalIfOpen();
         } else {
             $this->error($response['message']);
         }
@@ -418,6 +450,8 @@ class UserCalendar extends Component
             } else {
                 $this->getcalenderuserweektasks();
             }
+            // Refresh day modal if open
+            $this->refreshDayModalIfOpen();
         } else {
             $this->error($response['message']);
         }
@@ -452,6 +486,14 @@ class UserCalendar extends Component
         $response = $this->repository->marktask($id, 'ongoing');
         if ($response['status'] == 'success') {
             $this->success($response['message']);
+            // Refresh the current week data to reflect updated status
+            if ($this->week_id) {
+                $this->getcalenderuserweektasksbyweekid();
+            } else {
+                $this->getcalenderuserweektasks();
+            }
+            // Refresh day modal if open
+            $this->refreshDayModalIfOpen();
         } else {
             $this->error($response['message']);
         }
@@ -463,6 +505,14 @@ class UserCalendar extends Component
         $response = $this->repository->marktask($id, 'pending');
         if ($response['status'] == 'success') {
             $this->success($response['message']);
+            // Refresh the current week data to reflect updated status
+            if ($this->week_id) {
+                $this->getcalenderuserweektasksbyweekid();
+            } else {
+                $this->getcalenderuserweektasks();
+            }
+            // Refresh day modal if open
+            $this->refreshDayModalIfOpen();
         } else {
             $this->error($response['message']);
         }
@@ -517,6 +567,8 @@ class UserCalendar extends Component
             } else {
                 $this->getcalenderuserweektasks();
             }
+            // Refresh day modal if open
+            $this->refreshDayModalIfOpen();
         } else {
             $this->error($response['message']);
         }
@@ -578,10 +630,7 @@ class UserCalendar extends Component
      */
     public function getActiveTaskInstance($taskId)
     {
-        return Taskinstance::where('task_id', $taskId)
-            ->where('status', 'ongoing')
-            ->orderBy('date', 'desc')
-            ->first();
+        return $this->taskinstanceRepository->getactiveinstancebytaskid($taskId);
     }
 
     /**
@@ -643,6 +692,8 @@ class UserCalendar extends Component
             } else {
                 $this->getcalenderuserweektasks();
             }
+            // Refresh day modal if open
+            $this->refreshDayModalIfOpen();
         } else {
             $this->error($result['message']);
         }
@@ -672,6 +723,8 @@ class UserCalendar extends Component
             } else {
                 $this->getcalenderuserweektasks();
             }
+            // Refresh day modal if open
+            $this->refreshDayModalIfOpen();
         } else {
             $this->error($result['message']);
         }
@@ -700,9 +753,167 @@ class UserCalendar extends Component
             } else {
                 $this->getcalenderuserweektasks();
             }
+            // Refresh day modal if open
+            $this->refreshDayModalIfOpen();
         } else {
             $this->error($result['message']);
         }
+    }
+
+    /**
+     * Toggle task selection for bulk operations
+     */
+    public function toggleTaskSelection($taskId)
+    {
+        if (in_array($taskId, $this->selectedTaskIds)) {
+            $this->selectedTaskIds = array_values(array_diff($this->selectedTaskIds, [$taskId]));
+        } else {
+            $this->selectedTaskIds[] = $taskId;
+        }
+    }
+
+    /**
+     * Select all tasks in the current day modal
+     */
+    public function selectAllTasks()
+    {
+        $this->selectedTaskIds = [];
+
+        if ($this->selectedDayTasks) {
+            foreach ($this->selectedDayTasks as $group) {
+                foreach ($group as $task) {
+                    // Only select tasks that can be rolled over or have status updated
+                    if ($task->status != 'completed' && $task->approvalstatus != 'Rejected') {
+                        $this->selectedTaskIds[] = $task->id;
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Deselect all tasks
+     */
+    public function deselectAllTasks()
+    {
+        $this->selectedTaskIds = [];
+    }
+
+    /**
+     * Check if a task is eligible for rollover
+     * Eligible: pending status OR ongoing status with logged hours
+     */
+    private function isTaskEligibleForRollover($taskId)
+    {
+        $task = $this->repository->gettask($taskId);
+
+        if (! $task) {
+            return false;
+        }
+
+        // Pending tasks are always eligible
+        if ($task->status === 'pending') {
+            return true;
+        }
+
+        // Ongoing tasks are only eligible if they have logged hours
+        if ($task->status === 'ongoing') {
+            $instance = $this->getActiveTaskInstance($taskId);
+            if ($instance && $instance->worked_hours > 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Bulk rollover selected tasks
+     */
+    public function bulkRollover()
+    {
+        if (empty($this->selectedTaskIds)) {
+            $this->error('Please select at least one task to rollover');
+
+            return;
+        }
+
+        // Filter to only eligible tasks
+        $eligibleTaskIds = [];
+        $ineligibleTasks = [];
+
+        foreach ($this->selectedTaskIds as $taskId) {
+            if ($this->isTaskEligibleForRollover($taskId)) {
+                $eligibleTaskIds[] = $taskId;
+            } else {
+                $task = $this->repository->gettask($taskId);
+                $ineligibleTasks[] = $task ? $task->title : "Task ID {$taskId}";
+            }
+        }
+
+        if (empty($eligibleTaskIds)) {
+            $this->error('No eligible tasks selected. Only pending tasks or ongoing tasks with logged hours can be rolled over.');
+
+            return;
+        }
+
+        if (! empty($ineligibleTasks)) {
+            $this->warning(count($ineligibleTasks).' task(s) were skipped because they are not eligible for rollover: '.implode(', ', array_slice($ineligibleTasks, 0, 3)));
+        }
+
+        $successCount = 0;
+        $errorCount = 0;
+        $errors = [];
+
+        foreach ($eligibleTaskIds as $taskId) {
+            $task = $this->repository->gettask($taskId);
+            $instance = $this->getActiveTaskInstance($taskId);
+
+            // For pending tasks, we need to handle the case where there might not be an instance yet
+            if (! $instance) {
+                if ($task && $task->status === 'pending') {
+                    // Pending tasks without instance cannot be rolled over yet
+                    $errorCount++;
+                    $errors[] = "Task '{$task->title}': Cannot rollover pending task without active instance";
+
+                    continue;
+                }
+
+                $errorCount++;
+                $errors[] = "Task ID {$taskId}: No active instance found";
+
+                continue;
+            }
+
+            $result = $this->taskinstanceService->rolloverinstance($instance->id);
+
+            if ($result['status'] === 'success') {
+                $successCount++;
+            } else {
+                $errorCount++;
+                $errors[] = "Task '{$task->title}': {$result['message']}";
+            }
+        }
+
+        // Show results
+        if ($successCount > 0) {
+            $this->success("Successfully rolled over {$successCount} task(s)");
+        }
+
+        if ($errorCount > 0) {
+            $this->error("Failed to rollover {$errorCount} task(s). ".implode('; ', array_slice($errors, 0, 3)));
+        }
+
+        // Reset selections
+        $this->selectedTaskIds = [];
+
+        // Refresh data
+        if ($this->week_id) {
+            $this->getcalenderuserweektasksbyweekid();
+        } else {
+            $this->getcalenderuserweektasks();
+        }
+        $this->refreshDayModalIfOpen();
     }
 
     public function render()

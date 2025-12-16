@@ -4,8 +4,8 @@ namespace App\Livewire\Admin\Trackers;
 
 use App\Interfaces\repositories\individualworkplanInterface;
 use App\Interfaces\repositories\itaskInterface;
+use App\Interfaces\repositories\iweeklyTaskReviewInterface;
 use App\Interfaces\services\ICalendarService;
-use App\Models\WeeklyTaskReview;
 use Carbon\Carbon;
 use Livewire\Component;
 
@@ -18,6 +18,8 @@ class Performancetracker extends Component
     protected $repository;
 
     protected $workplanrepository;
+
+    protected $weeklyTaskReviewRepository;
 
     public $currentWeek = null;
 
@@ -41,11 +43,12 @@ class Performancetracker extends Component
 
     public $selectedUserTasks = [];
 
-    public function boot(ICalendarService $calendarService, itaskInterface $repository, individualworkplanInterface $workplanrepository)
+    public function boot(ICalendarService $calendarService, itaskInterface $repository, individualworkplanInterface $workplanrepository, iweeklyTaskReviewInterface $weeklyTaskReviewRepository)
     {
         $this->calendarService = $calendarService;
         $this->repository = $repository;
         $this->workplanrepository = $workplanrepository;
+        $this->weeklyTaskReviewRepository = $weeklyTaskReviewRepository;
     }
 
     public function mount()
@@ -240,9 +243,7 @@ class Performancetracker extends Component
 
         // Directly fetch tasks for this user in the current week
         if ($this->currentWeekId && $this->selectedUser) {
-            $tasks = \App\Models\Task::whereHas('calendarday', function ($query) {
-                $query->where('calendarweek_id', $this->currentWeekId);
-            })->where('user_id', $this->selectedUser->id)->get();
+            $tasks = $this->repository->gettasksbyuseridsandcalendarweek([$this->selectedUser->id], $this->currentWeekId);
 
             $this->selectedUserTasks = $tasks;
         } else {
@@ -303,10 +304,10 @@ class Performancetracker extends Component
     public function getUserCompletionRate($userId)
     {
         // Get latest week completion rate
-        $latestReview = WeeklyTaskReview::where('user_id', $userId)
-            ->where('is_submitted', true)
-            ->latest('week_start_date')
-            ->first();
+        $latestReview = $this->weeklyTaskReviewRepository->getreviewbyuserid($userId, [
+            'orderBy' => ['column' => 'week_start_date', 'direction' => 'desc'],
+            'limit' => 1,
+        ])->where('is_submitted', true)->first();
 
         return $latestReview ? $latestReview->completion_rate : 0;
     }
@@ -314,11 +315,10 @@ class Performancetracker extends Component
     public function getUserAverageCompletionRate($userId)
     {
         // Get average completion rate over last 4 weeks
-        $reviews = WeeklyTaskReview::where('user_id', $userId)
-            ->where('is_submitted', true)
-            ->latest('week_start_date')
-            ->take(4)
-            ->get();
+        $reviews = $this->weeklyTaskReviewRepository->getreviewbyuserid($userId, [
+            'orderBy' => ['column' => 'week_start_date', 'direction' => 'desc'],
+            'limit' => 4,
+        ])->where('is_submitted', true);
 
         if ($reviews->isEmpty()) {
             return 0;

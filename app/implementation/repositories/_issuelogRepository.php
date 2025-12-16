@@ -430,4 +430,40 @@ class _issuelogRepository implements iissuelogInterface
             ];
         }
     }
+
+    public function getissuesbyassigneduserids(array $userIds, $filters = [])
+    {
+        $query = $this->issuelog->whereIn('assigned_to', $userIds);
+
+        if (isset($filters['dateRange'])) {
+            $query->whereBetween('created_at', [$filters['dateRange']['start'], $filters['dateRange']['end']]);
+        }
+
+        if (isset($filters['status'])) {
+            if (is_array($filters['status'])) {
+                $query->where(function ($q) use ($filters) {
+                    foreach ($filters['status'] as $status) {
+                        $q->orWhereRaw('LOWER(status) = ?', [strtolower($status)]);
+                    }
+                });
+            } else {
+                $query->whereRaw('LOWER(status) = ?', [strtolower($filters['status'])]);
+            }
+        }
+
+        if (isset($filters['priority'])) {
+            $query->whereRaw('LOWER(priority) = ?', [strtolower($filters['priority'])]);
+        }
+
+        if (isset($filters['orderBy'])) {
+            $query->orderBy($filters['orderBy']['column'], $filters['orderBy']['direction'] ?? 'asc');
+        }
+
+        return $query->get();
+    }
+
+    public function getallissues()
+    {
+        return $this->issuelog->all();
+    }
 }
