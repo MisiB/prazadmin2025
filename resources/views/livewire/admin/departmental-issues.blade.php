@@ -349,7 +349,7 @@
                                                             wire:click="openAssignModal({{ $issue->id }}, false)" 
                                                             class="btn-outline btn-purple btn-sm"
                                                         />
-                                                        @if($userDepartment->name === 'ICT')
+                                                        @if($userDepartment->name === 'Information and Communication Technology')
                                                             <x-button 
                                                                 icon="o-user-plus" 
                                                                 label="Assign consultant"  
