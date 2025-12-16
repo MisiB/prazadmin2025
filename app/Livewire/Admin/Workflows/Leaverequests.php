@@ -261,7 +261,6 @@ class Leaverequests extends Component
         if($leaverequestcopy->status==='A')
         {
             $leavestatementupdate=$this->leaverequestService->updateleavestatement($leavestatement->id, [
-                'daysattained'=>(float)$leavestatement->daysattained+(float)$leaverequestcopy->daysappliedfor,
                 'daystaken'=>(float)$leavestatement->daystaken-(float)$leaverequestcopy->daysappliedfor
             ]);
             if($leavestatementupdate['status']=='error')

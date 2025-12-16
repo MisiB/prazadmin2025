@@ -3,14 +3,11 @@
    
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 my-8">
         <div class="shadow-md bg-gradient-to-t from-yellow-200 to-yellow-500 rounded-xl py-5 pl-4">
-            <div class="flex items-center space-x-3">
+            <div class="grid items-center space-x-3">
                 <div class="grid grid-flow-row gap-2"> 
                     <div class="grid grid-flow-col gap-1">
-                        <div class="bg-white p-3 rounded-full">
-                            <x-icon name="o-clock" class="w-8 h-8 text-yellow-700"/>
-                        </div>
-
-                        <div class="text-sm text-white tracking-wide mt-4">Pending</div>
+                        <x-icon name="o-clock" class="w-14 h-14 text-yellow-700 bg-white inline p-3 rounded-full"/>
+                        <div class="text-lg text-white tracking-wide mt-4">Pending</div>
                     </div>
                     <div>
                         <div class="text-4xl font-bold text-white pl-3">{{ $totalpending }}</div>
@@ -20,14 +17,11 @@
         </div>
 
         <div class="shadow-md bg-gradient-to-t from-blue-200 to-blue-600 rounded-xl  py-5 pl-4">
-            <div class="flex items-center space-x-3">
+            <div class="grid items-center space-x-3">
                 <div class="grid grid-flow-row gap-2">
                     <div class="grid grid-flow-col gap-1">
-                        <div class="bg-white p-3 rounded-full">
-                            <x-icon name="o-check" class="w-8 h-8 text-green-600"/>
-                        </div>
-
-                        <div class="text-sm text-white tracking-wide mt-4">Approved</div>
+                        <x-icon name="o-check" class="w-14 h-14 text-green-600 bg-white inline p-3 rounded-full"/>
+                        <div class="text-lg text-white tracking-wide mt-4">Approved</div>
                     </div>
                     <div>
                         <div class="text-4xl font-bold text-white pl-3">{{ $totalapproved }}</div>
@@ -36,15 +30,12 @@
             </div>
         </div>
 
-        <div class="shadow-md bg-gradient-to-t from-orange-200 to-orange-700 rounded-xl  py-5 pl-4">
-            <div class="flex items-center space-x-3">
+        <div class="shadow-md bg-gradient-to-t from-cyan-200 to-cyan-700 rounded-xl  py-5 pl-4">
+            <div class="grid items-center space-x-3">
                 <div class="grid grid-flow-row gap-2">
                     <div class="grid grid-flow-col gap-1">
-                        <div class="bg-orange-600 p-3 rounded-full">
-                            <x-icon name="o-book-open" class="w-8 h-8 text-white"/>
-                        </div>
-
-                        <div class="text-sm text-white tracking-wide mt-4">Open</div>
+                            <x-icon name="o-book-open" class="w-14 h-14 text-white bg-cyan-600 inline p-3 rounded-full"/>
+                            <div class="text-lg text-white tracking-wide mt-4">Open</div>
                     </div>
                     <div>
                         <div class="text-4xl font-bold text-white pl-3">{{ $totalopened }}</div>
@@ -55,14 +46,11 @@
         </div>
 
         <div class="shadow-md bg-gradient-to-t from-green-200 to-green-500 rounded-xl  py-5 pl-4">
-            <div class="flex items-center space-x-3">
+            <div class="grid items-center space-x-3">
                 <div class="grid grid-flow-row gap-2">
                     <div class="grid grid-flow-col gap-1">
-                        <div class="bg-green-300 p-3 rounded-full">
-                            <x-icon name="m-clipboard-document-list" class="w-8 h-8 text-white"/>
-                        </div>
-
-                        <div class="text-sm text-white tracking-wide mt-4">Delivered</div>
+                            <x-icon name="m-clipboard-document-list" class="w-14 h-14 text-white bg-green-300 inline p-3 rounded-full"/>
+                            <div class="text-lg text-white tracking-wide mt-4">Delivered</div>
                     </div>
                     <div>
                         <div class="text-4xl font-bold text-white pl-3">{{ $totaldelivered }}</div>
@@ -73,14 +61,11 @@
         </div>
 
         <div class="shadow-md bg-gradient-to-t from-green-400 to-green-600 rounded-xl  py-5 pl-4">
-            <div class="flex items-center space-x-3">
+            <div class="grid items-center space-x-3">
                 <div class="grid grid-flow-row gap-2">
                     <div class="grid grid-flow-col gap-1">
-                        <div class="bg-green-400 p-3 rounded-full">
-                            <x-icon name="o-hand-thumb-up" class="w-8 h-8 text-white"/>
-                        </div>
-
-                        <div class="text-sm text-white tracking-wide mt-4">Received</div>
+                        <x-icon name="o-hand-thumb-up" class="w-14 h-14 text-white bg-green-400 inline p-3 rounded-full"/>
+                        <div class="text-lg text-white tracking-wide mt-4">Received</div>
                     </div>
                     <div>
                         <div class="text-4xl font-bold text-white pl-3">{{ $totalrecieved }}</div>
@@ -90,14 +75,11 @@
         </div>
 
         <div class="shadow-md bg-gradient-to-t from-red-200 to-red-600 rounded-xl  py-5 pl-4">
-            <div class="flex items-center space-x-3">
+            <div class="grid items-center space-x-3">
                 <div class="grid grid-flow-row gap-2">
-                    <div class="grid grid-flow-col gap-1">                
-                        <div class="bg-red-700 p-3 rounded-full">
-                            <x-icon name="c-arrow-left-end-on-rectangle" class="w-8 h-8 text-white"/>
-                        </div>
-
-                        <div class="text-sm text-white tracking-wide mt-4">Rejected</div>
+                    <div class="grid grid-flow-col gap-1">
+                        <x-icon name="c-arrow-left-end-on-rectangle" class="w-14 h-14 text-white bg-red-700 inline p-3 rounded-full"/>
+                        <div class="text-lg text-white tracking-wide mt-4">Rejected</div>
                     </div>
                     <div>
                         <div class="text-4xl font-bold text-white pl-3">{{ $totalrejected }}</div>
@@ -143,7 +125,7 @@
                     <span>{{$storesrequisition->initiator->name." ".$storesrequisition->initiator->surname}}</span>
                 @endscope 
                 @scope('cell_actions', $storesrequisition)
-                    <div class="flex space-x-2">
+                    <div class="grid grid-flow-col space-x-1">
                         <div>
                             <x-button icon="o-eye" 
                                 wire:click="viewrequisition('{{$storesrequisition->storesrequisition_uuid}}', '{{$storesrequisition->initiator_id}}')" 
