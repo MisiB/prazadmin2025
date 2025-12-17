@@ -338,7 +338,9 @@
                                                 </div>
                                             </div>
                                             @endif
-
+                                            @php
+                                                $ictdepartmentname= 'Information and Communication Technology';
+                                            @endphp
                                             <!-- Actions -->
                                             <div class="flex items-center gap-2 pt-3 border-t border-gray-200 flex-wrap">
                                                 @if($isPrimaryUser)
@@ -349,7 +351,7 @@
                                                             wire:click="openAssignModal({{ $issue->id }}, false)" 
                                                             class="btn-outline btn-purple btn-sm"
                                                         />
-                                                        @if($userDepartment->name === 'Information and Communication Technology')
+                                                        @if($userDepartment->name === $ictdepartmentname)
                                                             <x-button 
                                                                 icon="o-user-plus" 
                                                                 label="Assign consultant"  
@@ -374,8 +376,8 @@
                                                             wire:click="claimIssue({{ $issue->id }})" 
                                                             class="btn-outline btn-purple btn-sm"
                                                         />                                                
-                                                        <!--The assign consultant button allows users to assign tickets to a consultant-->
-                                                        @if($userDepartment->name === 'ICT')
+                                                        <!--The assign consultant button allows users to assign tickets to a consultant Changed ICT->Information and Communication Technology-->
+                                                        @if($userDepartment->name === $ictdepartmentname)
                                                             <x-button 
                                                                 icon="o-user-plus" 
                                                                 label="Assign consultant"  
