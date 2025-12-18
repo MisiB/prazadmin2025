@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Mary\Traits\Toast;
+use Carbon\Carbon;
 
 class Dashboard extends Component
 {
@@ -17,6 +18,10 @@ class Dashboard extends Component
     public $filterStatus = '';
     public $filterPriority = '';
     public $search = '';
+    
+    // Export date range
+    public $exportStartDate = '';
+    public $exportEndDate = '';
     
     // Comments modal
     public $showCommentsModal = false;
@@ -40,6 +45,10 @@ class Dashboard extends Component
         if (!Auth::user()->can('support.access')) {
             abort(403, 'Unauthorized access');
         }
+        
+        // Set default date range to last 30 days
+        $this->exportStartDate = Carbon::now()->subDays(30)->format('Y-m-d');
+        $this->exportEndDate = Carbon::now()->format('Y-m-d');
     }
 
     public function getAssignedIssues()
@@ -47,7 +56,7 @@ class Dashboard extends Component
         $issues = $this->issueRepository->getuserassignedissues(Auth::id());
         
         // Eager load comments relationship
-        $issues->load('comments');
+        $issues->load('comments', 'issuegroup', 'issuetype', 'department', 'assignedto', 'assignedby', 'createdby');
         
         if ($this->search) {
             $issues = $issues->filter(function ($issue) {
@@ -66,6 +75,140 @@ class Dashboard extends Component
         }
         
         return $issues;
+    }
+
+    public function getIssuesForExport()
+    {
+        $issues = $this->issueRepository->getuserassignedissues(Auth::id());
+        
+        // Eager load all relationships
+        $issues->load('comments', 'issuegroup', 'issuetype', 'department', 'assignedto', 'assignedby', 'createdby');
+        
+        // Filter by date range
+        if ($this->exportStartDate && $this->exportEndDate) {
+            $startDate = Carbon::parse($this->exportStartDate)->startOfDay();
+            $endDate = Carbon::parse($this->exportEndDate)->endOfDay();
+            
+            $issues = $issues->filter(function ($issue) use ($startDate, $endDate) {
+                return $issue->created_at >= $startDate && $issue->created_at <= $endDate;
+            });
+        }
+        
+        // Apply other filters
+        if ($this->filterStatus) {
+            $issues = $issues->where('status', $this->filterStatus);
+        }
+        
+        if ($this->filterPriority) {
+            $issues = $issues->where('priority', $this->filterPriority);
+        }
+        
+        if ($this->search) {
+            $issues = $issues->filter(function ($issue) {
+                return str_contains(strtolower($issue->title), strtolower($this->search)) ||
+                       str_contains(strtolower($issue->ticketnumber), strtolower($this->search)) ||
+                       str_contains(strtolower($issue->description), strtolower($this->search));
+            });
+        }
+        
+        return $issues;
+    }
+
+    public function exportToExcel()
+    {
+        $this->validate([
+            'exportStartDate' => 'required|date',
+            'exportEndDate' => 'required|date|after_or_equal:exportStartDate',
+        ], [
+            'exportStartDate.required' => 'Start date is required',
+            'exportEndDate.required' => 'End date is required',
+            'exportEndDate.after_or_equal' => 'End date must be after or equal to start date',
+        ]);
+
+        $issues = $this->getIssuesForExport();
+
+        if ($issues->isEmpty()) {
+            $this->error('No tickets found for the selected period.');
+            return;
+        }
+
+        // Create CSV data
+        $headers = [
+            'Ticket Number',
+            'Title',
+            'Description',
+            'Status',
+            'Priority',
+            'Group',
+            'Type',
+            'Reg Number',
+            'Name',
+            'Email',
+            'Phone',
+            'Department',
+            'Assigned To',
+            'Assigned By',
+            'Assigned At',
+            'Created By',
+            'Created At',
+            'Comments Count',
+        ];
+
+        $rows = [];
+        $rows[] = $headers;
+
+        foreach ($issues as $issue) {
+            $comments = $issue->comments->map(function ($comment) {
+                return $comment->user_email . ': ' . $comment->comment . ($comment->is_internal ? ' (Internal)' : '');
+            })->implode(' | ');
+
+            $rows[] = [
+                $issue->ticketnumber ?? '',
+                $issue->title ?? '',
+                $issue->description ?? '',
+                $issue->status ?? '',
+                $issue->priority ?? '',
+                $issue->issuegroup->name ?? 'N/A',
+                $issue->issuetype->name ?? 'N/A',
+                $issue->regnumber ?? '',
+                $issue->name ?? '',
+                $issue->email ?? '',
+                $issue->phone ?? '',
+                $issue->department->name ?? 'N/A',
+                $issue->assignedto ? ($issue->assignedto->name . ' ' . $issue->assignedto->surname) : 'N/A',
+                $issue->assignedby ? ($issue->assignedby->name . ' ' . $issue->assignedby->surname) : 'N/A',
+                $issue->assigned_at ? $issue->assigned_at->format('Y-m-d H:i:s') : 'N/A',
+                $issue->createdby ? ($issue->createdby->name . ' ' . $issue->createdby->surname) : 'N/A',
+                $issue->created_at ? $issue->created_at->format('Y-m-d H:i:s') : '',
+                $issue->comments->count(),
+            ];
+        }
+
+        // Generate filename with timestamp
+        $timestamp = date('Y-m-d_H-i-s');
+        $filename = "support_tickets_export_{$timestamp}.csv";
+
+        // Create a temporary file in storage path
+        $tempPath = storage_path('app/public/' . $filename);
+
+        // Ensure the directory exists
+        if (!file_exists(dirname($tempPath))) {
+            mkdir(dirname($tempPath), 0755, true);
+        }
+
+        // Write to the file
+        $file = fopen($tempPath, 'w');
+        
+        // Add BOM for UTF-8 to ensure Excel opens it correctly
+        fwrite($file, "\xEF\xBB\xBF");
+        
+        foreach ($rows as $row) {
+            fputcsv($file, $row);
+        }
+        fclose($file);
+
+        // Return download response
+        return response()->download($tempPath, $filename)->deleteFileAfterSend(true);
     }
 
     public function updateStatus($id, $status)

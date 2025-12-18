@@ -5,7 +5,7 @@
 
 <x-card class="mt-5 border-2 border-gray-200" title="Customers" separator progress-indicator>
     <x-slot:menu>
-        <x-input wire:model.live.debounce.500ms="search" placeholder="Search customers..." />
+        <x-input wire:model.live.debounce.5000ms="search" placeholder="Search customers..." />
         <x-button class="btn-outline" label="New Customer" icon="o-plus" @click="$wire.modal = true" />
     </x-slot:menu>
 

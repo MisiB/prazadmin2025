@@ -39,11 +39,11 @@
                                 wire:click="settle({{ $row->id }})" spinner wire:confirm="You are about to settle  invoice using wallet, Do you wish to proceed"/>
                                 @endif 
                         </div>
-                        @elseif($row->status=="PAID" && $row->invoicesource=="MANUAL")
+                        @elseif($row->status=="PAID")
                         <div class="flex items-center space-x-2">
                             <x-button icon="o-arrow-down-tray" class="btn-sm btn-secondary btn-outline" 
                                 wire:click="downloadReceipt({{ $row->id }})" spinner="downloadReceipt" />
-                                       </div>
+                        </div>
                     @endif
                     @endscope
                     <x-slot:empty>
