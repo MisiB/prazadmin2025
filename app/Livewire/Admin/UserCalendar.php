@@ -669,8 +669,7 @@ class UserCalendar extends Component
         $instance = $this->getActiveTaskInstance($this->loggingTaskId);
 
         if (! $instance) {
-            $this->error('No active task instance found');
-
+            $this->error('No active task instance found. Please mark the task as ongoing first.');
             return;
         }
 
