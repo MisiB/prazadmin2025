@@ -64,7 +64,7 @@
 
                 <!-- Filters -->
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                         <x-input 
                             wire:model.live.debounce.300ms="search" 
                             icon="o-magnifying-glass" 
@@ -104,6 +104,39 @@
                             wire:click="$set('search', ''); $set('filterStatus', ''); $set('filterPriority', '')" 
                             class="btn-outline"
                         />
+                    </div>
+                    
+                    <!-- Export Section -->
+                    <div class="border-t border-gray-200 pt-4 mt-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-sm font-semibold text-gray-700">Export Tickets to Excel</h3>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <x-input 
+                                type="date"
+                                wire:model="exportStartDate" 
+                                label="Start Date"
+                            />
+                            
+                            <x-input 
+                                type="date"
+                                wire:model="exportEndDate" 
+                                label="End Date"
+                            />
+                            
+                            <div class="flex items-end">
+                                <x-button 
+                                    icon="o-arrow-down-tray" 
+                                    label="Export to Excel" 
+                                    wire:click="exportToExcel"
+                                    spinner="exportToExcel"
+                                    class="btn-primary w-full"
+                                />
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">
+                            Select a date range to export all ticket details. The export will include all tickets assigned to you within the selected period.
+                        </p>
                     </div>
                 </div>
 
