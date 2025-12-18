@@ -672,11 +672,30 @@ class UserCalendar extends Component
             'additionalHours' => 'nullable|numeric|min:0',
         ]);
 
+        // Get fresh instance - refresh to ensure we have the latest data
         $instance = $this->getActiveTaskInstance($this->loggingTaskId);
 
+        // If no instance found, try to create one (shouldn't happen if task is ongoing)
         if (! $instance) {
-            $this->error('No active task instance found. Please mark the task as ongoing first.');
-            return;
+            $task = $this->repository->gettask($this->loggingTaskId);
+            if ($task && $task->status === 'ongoing') {
+                // Instance should exist, but if it doesn't, create it
+                $task->load('calendarday');
+                $date = $task->calendarday ? $task->calendarday->maindate : now()->format('Y-m-d');
+                
+                $newInstance = \App\Models\Taskinstance::create([
+                    'task_id' => $this->loggingTaskId,
+                    'date' => $date,
+                    'planned_hours' => $task->duration ?? 0,
+                    'worked_hours' => 0,
+                    'status' => 'ongoing',
+                ]);
+                
+                $instance = $newInstance;
+            } else {
+                $this->error('No active task instance found. Please mark the task as ongoing first.');
+                return;
+            }
         }
 
         // Log the worked hours
