@@ -235,6 +235,12 @@ class UserCalendar extends Component
             $day = $this->calendarRepository->getcalendardaybyid($this->selectedDayId);
             if ($day) {
                 $tasks = $day->userTasks ?? collect();
+                
+                // Reload taskinstances relationship on each task to get fresh data
+                foreach ($tasks as $task) {
+                    $task->load('taskinstances');
+                }
+                
                 $this->selectedDayTasks = $this->groupTasksByStatus($tasks);
             }
         }
