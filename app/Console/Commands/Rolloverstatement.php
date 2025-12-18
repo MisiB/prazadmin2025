@@ -28,7 +28,8 @@ class Rolloverstatement extends Command
      */
     public function handle(ileavetypeInterface $leavetyperepo, ileavestatementInterface $leavestatementrepo)
     {
-        if( Carbon::now()->format('d')==25 && Carbon::now()->format('m')==11)
+        /*Rollover only happens on the first day of the year*/ 
+        if( Carbon::now()->format('d')===1 && Carbon::now()->format('m')===1)
         {
             //Get the list of available leavetypes from the database   
             $leavetypes=$leavetyperepo->getleavetypes();
