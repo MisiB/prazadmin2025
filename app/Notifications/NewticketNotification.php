@@ -15,13 +15,17 @@ class NewticketNotification extends Notification implements ShouldQueue
      * Create a new notification instance.
      */
     public $name;
+
     public $surname;
+
     public $ticketnumber;
+
     public $comment;
-    public function __construct($name,$ticketnumber,$comment)
+
+    public function __construct($name, $ticketnumber, $comment)
     {
-        $this->name=$name;
-        $this->ticketnumber=$ticketnumber;
+        $this->name = $name;
+        $this->ticketnumber = $ticketnumber;
         $this->comment = $comment;
     }
 
@@ -41,11 +45,15 @@ class NewticketNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-        ->subject('PRAZ New Issue ticket')
-        ->greeting('Good day')
-                    ->line('An issue from '.$this->name.' has been logged in our issue manager please use the follow ticket number to track your issue :'.$this->ticketnumber)
-                    ->line("Issue: ".$this->comment)
-                    ->line('Thank you for using our application!');
+            ->subject('PRAZ New Issue Ticket - '.$this->ticketnumber)
+            ->greeting('Good day '.$this->name.',')
+            ->line('Your issue has been successfully logged in our issue management system.')
+            ->line('**Ticket Number:** '.$this->ticketnumber)
+            ->line('**Issue Description:**')
+            ->line($this->comment)
+            ->line('You can use the ticket number above to track the status of your issue.')
+            ->action('View Your Tickets', route('admin.issues'))
+            ->line('Thank you for using our application!');
     }
 
     /**
@@ -56,7 +64,8 @@ class NewticketNotification extends Notification implements ShouldQueue
     public function toArray(object $notifiable): array
     {
         return [
-            //
+            'ticketnumber' => $this->ticketnumber,
+            'name' => $this->name,
         ];
     }
 }

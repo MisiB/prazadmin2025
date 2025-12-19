@@ -3,14 +3,12 @@
 namespace App\implementation\repositories;
 
 use App\Interfaces\repositories\iissuelogInterface;
+use App\Interfaces\services\iissueService;
 use App\Models\Departmentuser;
 use App\Models\Issuecomment;
 use App\Models\Issuegroup;
 use App\Models\Issuelog;
 use App\Models\Issuetype;
-use App\Notifications\IssueCommentNotification;
-use App\Notifications\IssueResolvedNotification;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -22,11 +20,14 @@ class _issuelogRepository implements iissuelogInterface
 
     protected $issuetype;
 
-    public function __construct(Issuelog $issuelog, Issuegroup $issuegroup, Issuetype $issuetype)
+    protected $issueService;
+
+    public function __construct(Issuelog $issuelog, Issuegroup $issuegroup, Issuetype $issuetype, iissueService $issueService)
     {
         $this->issuelog = $issuelog;
         $this->issuegroup = $issuegroup;
         $this->issuetype = $issuetype;
+        $this->issueService = $issueService;
     }
 
     public function getissuelogsbyemail($email)
@@ -110,6 +111,9 @@ class _issuelogRepository implements iissuelogInterface
 
             $issue = $this->issuelog->create($data);
 
+            // Send notification for new issue
+            $this->issueService->notifyIssueCreated($issue);
+
             return [
                 'status' => 'success',
                 'message' => 'Issue ticket created successfully',
@@ -130,7 +134,17 @@ class _issuelogRepository implements iissuelogInterface
     {
         try {
             $issue = $this->issuelog->findOrFail($id);
+            $oldPriority = $issue->priority;
+
             $issue->update($data);
+
+            // Refresh to get updated attributes
+            $issue->refresh();
+
+            // Notify if priority changed
+            if (isset($data['priority']) && $oldPriority !== $data['priority']) {
+                $this->issueService->notifyIssuePriorityChanged($issue, $oldPriority, $data['priority']);
+            }
 
             return [
                 'status' => 'success',
@@ -210,13 +224,15 @@ class _issuelogRepository implements iissuelogInterface
     {
         try {
             $issue = $this->issuelog->findOrFail($id);
+            $oldStatus = $issue->status;
+
             $issue->update(['status' => $status]);
 
-            // Send email notification when issue is resolved
-            if ($status === 'resolved' && $issue->email) {
-                Notification::route('mail', $issue->email)
-                    ->notify(new IssueResolvedNotification($issue));
-            }
+            // Refresh to get updated status
+            $issue->refresh();
+
+            // Send notification for status change
+            $this->issueService->notifyIssueStatusChanged($issue, $oldStatus, $status);
 
             return [
                 'status' => 'success',
@@ -241,6 +257,12 @@ class _issuelogRepository implements iissuelogInterface
                 'assigned_at' => now(),
                 'department_id' => $departmentId,
             ]);
+
+            // Refresh to load relationships
+            $issue->refresh();
+
+            // Send notification to assigned user
+            $this->issueService->notifyIssueAssigned($issue, $userId);
 
             return [
                 'status' => 'success',
@@ -358,11 +380,8 @@ class _issuelogRepository implements iissuelogInterface
                 'is_internal' => $isInternal,
             ]);
 
-            // Send email notification to the issue creator if it's not an internal comment
-            if (! $isInternal && $issue->email) {
-                Notification::route('mail', $issue->email)
-                    ->notify(new IssueCommentNotification($commentRecord, $issue));
-            }
+            // Send notification for comment added
+            $this->issueService->notifyIssueCommentAdded($issue, $commentRecord, $isInternal);
 
             return [
                 'status' => 'success',
