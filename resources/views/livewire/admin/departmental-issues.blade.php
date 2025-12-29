@@ -351,6 +351,13 @@
                                                             wire:click="openAssignModal({{ $issue->id }}, false)" 
                                                             class="btn-outline btn-purple btn-sm"
                                                         />
+                                                        <!--The claim button allows users to claim unassigned tickets-->                                         
+                                                        <x-button 
+                                                            icon="o-user-plus" 
+                                                            label="Claim ticket"  
+                                                            wire:click="claimIssue({{ $issue->id }})" 
+                                                            class="btn-outline btn-purple btn-sm"
+                                                        />  
                                                         @if($userDepartment->name === $ictdepartmentname)
                                                             <x-button 
                                                                 icon="o-user-plus" 
