@@ -290,9 +290,16 @@ class Leaverequests extends Component
         $this->leaverequestService->getleavetypes()->map(function ($leavetype) use (&$leavestatementbalances){
             $daysattained=( (float)$this->leaverequestService->getleavestatementbyuseridandleavename($this->user->id, $leavetype->name)?->daysattained) ?? 0;
             $daystaken=( (float)$this->leaverequestService->getleavestatementbyuseridandleavename($this->user->id, $leavetype->name)?->daystaken ) ?? 0;  
-            $leavestatementbalances[]=[
-                strtolower($leavetype->name)=>$daysattained - $daystaken,
-            ];
+            if($leavetype->name!=='Compassionate')
+            {
+                $leavestatementbalances[]=[
+                    strtolower($leavetype->name)=>$daysattained - $daystaken,
+                ];
+            }else{
+                $leavestatementbalances[]=[
+                    strtolower($leavetype->name)=>$daystaken,
+                ];
+            }
         });
         $leavestatementbalances=array_merge(...$leavestatementbalances);
         return $leavestatementbalances;
