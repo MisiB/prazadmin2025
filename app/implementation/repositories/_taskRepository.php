@@ -135,7 +135,7 @@ class _taskRepository implements itaskInterface
     public function marktask($id, $status, $evidencePath = null, $originalName = null)
     {
         try {
-            $task = $this->task->find($id);
+            $task = $this->task->with('calendarday')->find($id);
 
             if (! $task) {
                 return ['status' => 'error', 'message' => 'Task not found'];
@@ -166,6 +166,28 @@ class _taskRepository implements itaskInterface
             }
 
             $this->task->where('id', "$id")->update($updateData);
+
+            // When marking as ongoing, create a task instance if one doesn't exist
+            if ($status == 'ongoing') {
+                // Check if there's already an active instance
+                $existingInstance = \App\Models\Taskinstance::where('task_id', $id)
+                    ->where('status', 'ongoing')
+                    ->first();
+
+                if (! $existingInstance) {
+                    // Get the date from the calendar day or use today's date
+                    $date = $task->calendarday ? $task->calendarday->maindate : now()->format('Y-m-d');
+                    
+                    // Create task instance with 0 worked hours
+                    \App\Models\Taskinstance::create([
+                        'task_id' => $id,
+                        'date' => $date,
+                        'planned_hours' => $task->duration ?? 0,
+                        'worked_hours' => 0,
+                        'status' => 'ongoing',
+                    ]);
+                }
+            }
 
             // Send notification to supervisor when task is marked as completed
             if ($status == 'completed') {
