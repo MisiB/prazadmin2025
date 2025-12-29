@@ -62,65 +62,65 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 my-8">
-        <div class="shadow-md bg-gradient-to-b from-gray-100 to-white rounded-xl py-5 pl-4">
-            <div class="grid items-center">
+        <div class="shadow-md bg-gradient-to-b from-gray-200 to-white rounded-xl py-5 pl-4">
+            <div class="grid justify-items-center">
                 <div class="grid grid-flow-row gap-2">
-                    <div class="grid grid-flow-col gap-1">
+                    <div class="grid grid-flow-col gap-5">
                         <x-icon name="o-clock" class="w-14 h-14 text-blue-600 bg-yellow-200 inline p-3 rounded-full"/>
                         <div class="text-lg text-gray-600 tracking-wide mt-4">Pending</div>
                         <div></div>
                     </div>
                     <div>
-                        <div class="text-4xl font-bold text-gray-600 pl-3">{{ $totalpending }}</div>
+                        <div class="text-4xl font-bold text-gray-600 pl-3 grid justify-items-center">{{ $totalpending }}</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="shadow-md bg-gradient-to-b from-gray-100 to-white rounded-xl py-5 pl-4">
-            <div class="grid items-center">
+        <div class="shadow-md bg-gradient-to-b from-gray-200 to-white rounded-xl py-5 pl-4">
+            <div class="grid justify-items-center">
                 <div class="grid grid-flow-row gap-2">
-                    <div class="grid grid-flow-col gap-1">
+                    <div class="grid grid-flow-col gap-5">
                         <x-icon name="o-check" class="w-14 h-14 text-green-600 bg-blue-200 inline p-3 rounded-full"/>
                         <div class="text-lg text-gray-600 tracking-wide mt-4">Approved</div>
                         <div></div>
                     </div>
                     <div>
-                        <div class="text-4xl font-bold text-gray-600 pl-3">{{ $totalapproved }}</div>
+                        <div class="text-4xl font-bold text-gray-600 pl-3 grid justify-items-center">{{ $totalapproved }}</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="shadow-md bg-gradient-to-b from-gray-100 to-white rounded-xl py-5 pl-4">
-            <div class="grid items-center">
+        <div class="shadow-md bg-gradient-to-b from-gray-200 to-white rounded-xl py-5 pl-4">
+            <div class="grid justify-items-center">
                 <div class="grid grid-flow-row gap-2">
-                    <div class="grid grid-flow-col gap-1">
+                    <div class="grid grid-flow-col gap-5">
                         <x-icon name="c-arrow-left-end-on-rectangle" class="w-14 h-14 text-white bg-red-700 inline p-3 rounded-full"/>
                         <div class="text-lg text-gray-600 tracking-wide mt-4">Rejected</div>
                         <div></div>
                     </div>
                     <div>
-                        <div class="text-4xl font-bold text-gray-600 pl-3">{{ $totalrejected }}</div>
+                        <div class="text-4xl font-bold text-gray-600 pl-3 grid justify-items-center">{{ $totalrejected }}</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="shadow-md bg-gradient-to-b from-gray-100 to-white rounded-xl py-5 pl-4">
-            <div class="grid items-center ">
+        <div class="shadow-md bg-gradient-to-b from-gray-200 to-white rounded-xl py-5 pl-4">
+            <div class="grid justify-items-center ">
                 <div class="grid grid-flow-row gap-2">
-                    <div class="grid grid-flow-col gap-1">
+                    <div class="grid grid-flow-col gap-5">
                         <x-icon name="o-clock" class="w-14 h-14 text-white bg-blue-700 inline p-3 rounded-full"/>
                         <div class="text-lg text-gray-600 tracking-wide mt-4">Cancelled</div>
                         <div></div>
                     </div>
                     <div>
-                        <div class="text-4xl font-bold text-gray-600 pl-3">{{ $totalcancelled }}</div>
+                        <div class="text-4xl font-bold text-gray-600 pl-3 grid justify-items-center">{{ $totalcancelled }}</div>
                     </div>
 
                 </div>
-            </div>
+            </div> 
         </div>
     </div>
 

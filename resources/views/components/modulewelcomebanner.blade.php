@@ -9,11 +9,7 @@
                 link-item-class="text-base" 
             />
             <h1 class="text-4xl font-bold text-white pb-6 pt-4"> 
-                @php
-                    $hour = date('H');
-                    $greeting = $hour <= 11 ? 'Good Morning' : ( $hour <= 16 ? 'Good Afternoon' : 'Good Evening');
-                @endphp
-                {{ $greeting }}, {{ auth()->user()->name ?? 'Admin' }}!
+                How are you, {{ auth()->user()->name ?? 'Admin' }}!
             </h1>
             <p class="text-sm text-white opacity-80 mt-1 pb-3">Here's an overview of your {{ $breadcrumbs[1]['label'] }}.</p>
             <p class="text-sm text-white opacity-80 mt-1">{{ now()->format('l, F j, Y') }}</p>

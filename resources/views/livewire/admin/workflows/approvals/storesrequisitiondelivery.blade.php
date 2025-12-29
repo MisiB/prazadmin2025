@@ -241,23 +241,23 @@
                                 
                             @scope('actions', $storesrequisition)
                                 <div class="flex space-x-2">
-                                    <x-button icon="o-eye" 
+                                    <x-button icon="o-eye"  
                                         wire:click="viewrequisition('{{$storesrequisition->storesrequisition_uuid}}', '{{$storesrequisition->initiator_id}}')" 
                                         spinner class="text-blue-500 btn-outline btn-sm" 
                                     />
                                     @hasrole('Admin Chair')
-                                        <x-button label="✅"
+                                        <x-button icon="o-check-circle"
                                             wire:click="initiatedelivery('{{$storesrequisition->storesrequisition_uuid}}','{{$storesrequisition->initiator_id}}', true)" 
                                             wire:confirm="Verify delivery?" 
                                             spinner 
-                                            class="bg-green-600 btn-outline btn-sm" 
+                                            class="text-green-600 btn-outline btn-sm" 
                                             :disabled="$storesrequisition->status!=='V'"
                                         />
-                                        <x-button label="❌"
+                                        <x-button icon="o-x-mark"
                                             wire:click="initiatedelivery('{{$storesrequisition->storesrequisition_uuid}}','{{$storesrequisition->initiator_id}}', false)" 
                                             wire:confirm="Do you want to reject delivery?" 
                                             spinner 
-                                            class="bg-red-600 btn-outline btn-sm" 
+                                            class="text-red-600 btn-outline btn-sm" 
                                             :disabled="$storesrequisition->status!=='V'"
                                         />
                                     @endhasrole

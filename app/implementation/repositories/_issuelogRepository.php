@@ -260,9 +260,11 @@ class _issuelogRepository implements iissuelogInterface
 
             // Refresh to load relationships
             $issue->refresh();
-
-            // Send notification to assigned user
-            $this->issueService->notifyIssueAssigned($issue, $userId);
+            if($userId != null)
+            {
+                // Send notification to assigned user
+                $this->issueService->notifyIssueAssigned($issue, $userId);
+            }
 
             return [
                 'status' => 'success',

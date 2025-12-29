@@ -96,6 +96,11 @@ class Leavestatements extends Component
              * */
             $statement=str_getcsv($statementcsvstr, ",");
             $user=$this->leaverequestService->getuserbyemail($statement[2]);
+            if(!$user)
+            {
+                $this->toast('error','User with email '.$statement[2].' has no leave statement records initiated in the system.');
+                return;
+            }
             $exists=$this->leaverequestService->getleavestatementbyuseridandleavename($user->id,$statement[3]);
             if(!$exists)
             {
