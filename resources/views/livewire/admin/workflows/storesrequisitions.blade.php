@@ -30,7 +30,7 @@
             </div>
         </div>
 
-        <div class="shadow-md bg-gradient-to-t from-blue-900 to-blue-700 rounded-xl  py-5 pl-4">
+        <div class="shadow-md bg-blue-600 rounded-xl  py-5 pl-4">
             <div class="grid justify-items-center space-x-3">
                 <div class="grid grid-flow-row gap-2">
                     <div class="grid grid-flow-col gap-5">
