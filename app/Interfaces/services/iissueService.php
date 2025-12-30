@@ -8,7 +8,8 @@ interface iissueService
 {
     public function notifyIssueCreated(Issuelog $issue): void;
 
-    public function notifyIssueAssigned(Issuelog $issue, int $assignedUserId): void;
+    //assignedUserId cannot be int because the userid is stored as uuid
+    public function notifyIssueAssigned(Issuelog $issue, $assignedUserId): void;
 
     public function notifyIssueStatusChanged(Issuelog $issue, string $oldStatus, string $newStatus): void;
 

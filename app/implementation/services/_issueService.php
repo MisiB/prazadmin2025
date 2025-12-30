@@ -53,7 +53,8 @@ class _issueService implements iissueService
         }
     }
 
-    public function notifyIssueAssigned(Issuelog $issue, int $assignedUserId): void
+    //assignedUserId cannot be int because the userid is stored as uuid
+    public function notifyIssueAssigned(Issuelog $issue, $assignedUserId): void
     {
         $assignedUser = $issue->assignedto;
 

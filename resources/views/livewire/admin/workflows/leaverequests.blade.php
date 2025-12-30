@@ -15,15 +15,18 @@
                     <div class="grid grid-cols-3 gap-12">
                         <div class="text-center">
                             <div class="text-2xl font-bold text-gray-900">{{ $leavestatementbalances['vacation'] }}</div>
-                            <div class="text-xs text-gray-600">Vacation</div>
+                            <div class="text-xs text-gray-600">Vacation Leave</div>
+                            <div class="text-xs text-gray-600">(days available)</div>
                         </div>
                         <div class="text-center">
                             <div class="text-2xl font-bold text-blue-600">{{ $leavestatementbalances['annual'] }}</div>
-                            <div class="text-xs text-gray-600">Annual</div>
+                            <div class="text-xs text-gray-600">Annual Leave</div>
+                            <div class="text-xs text-gray-600">(days available)</div>
                         </div>
                         <div class="text-center">
                             <div class="text-2xl font-bold text-purple-600">{{ $leavestatementbalances['study'] }}</div>
-                            <div class="text-xs text-gray-600">Study </div>
+                            <div class="text-xs text-gray-600">Study Leave</div>
+                            <div class="text-xs text-gray-600">(days available)</div>
                         </div>
                     </div>
                 </div>
@@ -41,16 +44,19 @@
                     <div class="grid grid-cols-3 gap-12">
                         <div class="text-center">
                             <div class="text-2xl font-bold text-gray-900">{{ $leavestatementbalances['sick'] }}</div>
-                            <div class="text-xs text-gray-600">Sick</div>
+                            <div class="text-xs text-gray-600">Sick Leave</div>
+                            <div class="text-xs text-gray-600">(days available)</div>
                         </div>
                         <div class="text-center">
                             <div class="text-2xl font-bold text-green-600">{{ $leavestatementbalances['compassionate'] }}</div>
-                            <div class="text-xs text-gray-600">Compassionate </div>
+                            <div class="text-xs text-gray-600">Compassionate Leave </div>
+                            <div class="text-xs text-gray-600">(days taken)</div>
                         </div>
                         @if(strtolower($this->user->gender)==='f')
                         <div class="text-center">
                             <div class="text-2xl font-bold text-blue-600">{{ $leavestatementbalances['maternity'] }}</div>
-                            <div class="text-xs text-gray-600">Maternity</div>
+                            <div class="text-xs text-gray-600">Maternity Leave</div>
+                            <div class="text-xs text-gray-600">(days available)</div>
                         </div>
                         @else
                         <div></div>
