@@ -30,7 +30,12 @@ class _revenuepostingRepository implements irevenuepostingInterface
         $this->invoice = $invoice;
         $this->revenuepostingjobitem = $revenuepostingjobitem;
         $this->palladiumservice = $palladiumservice;
-        $this->api = new Http();
+        $this->api = $this->get_palladium_api();
+    }
+
+    public function get_palladium_api(){
+        $api = config('httpconfig.palladium_mode') == "TEST" ? config('httpconfig.palladium_test') : config('httpconfig.palladium_live');
+        return $api;
     }
     public function getRevenuePostingJobs($year){
         
@@ -198,7 +203,7 @@ class _revenuepostingRepository implements irevenuepostingInterface
                         $invoicenumber = $item->invoice->invoicenumber;
                         if($item->invoice->receipts->count() > 0){
                             $receipt = $item->invoice->receipts->last();
-                            $invoicedate = $receipt->created_at;
+                            $invoicedate = $item->invoice->settled_at;
                             $suspense = $receipt->suspense;
                             if($suspense != null){
                                 $depositdate = "";
