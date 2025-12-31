@@ -43,6 +43,8 @@ Route::middleware('auth')->group(function () {
     Volt::route('/configuration/users', 'admin.configuration.users')->name('admin.configuration.users');
     Volt::route('/configuration/user/{id}', 'admin.configuration.user')->name('admin.configuration.user');
     Volt::route('/configuration/leavetypes', 'admin.configuration.leavetypes')->name('admin.configuration.leavetypes');
+    Route::get('/configuration/ts-allowance-configs', \App\Livewire\Admin\Configuration\TsAllowanceConfigs::class)->name('admin.configuration.ts-allowance-configs');
+    Route::get('/configuration/staff-welfare-loan-configs', \App\Livewire\Admin\Configuration\StaffWelfareLoanConfigs::class)->name('admin.configuration.staff-welfare-loan-configs');
     Volt::route('/configuration/issues', 'admin.configuration.issue-configuration')->name('admin.configuration.issues');
     Volt::route('/finances/configurations', 'admin.finance.configuration')->name('admin.finance.configurations');
     Volt::route('/finances/reports', 'admin.finance.reports.finacereports')->name('admin.finance.reports');
@@ -91,7 +93,6 @@ Route::middleware('auth')->group(function () {
     Volt::route('/approvals/storesrequisitiondelivery', 'admin.workflows.approvals.storesrequisitiondelivery')->name('admin.workflows.approvals.storesrequisitiondelivery');
     Volt::route('/trackers/performancetracker', 'admin.trackers.performancetracker')->name('admin.trackers.performancetracker');
     Volt::route('/trackers/budgettracker', 'admin.trackers.budgettracker')->name('admin.trackers.budgettracker');
-    // Dashboards are disabled for now
     Volt::route('/trackers/departmentaldashboard', 'admin.trackers.departmentaldashboard')->name('admin.trackers.departmentaldashboard');
     Volt::route('/trackers/organisationdashboard', 'admin.trackers.organisationdashboard')->name('admin.trackers.organisationdashboard');
     Volt::route('/calendar', 'admin.weekday-calendar')->name('admin.calendar');
@@ -108,6 +109,20 @@ Route::middleware('auth')->group(function () {
     // Task Templates and Recurring Tasks
     Route::get('/tasks/templates', TaskTemplates::class)->name('admin.tasks.templates');
     Route::get('/tasks/recurring', RecurringTasks::class)->name('admin.tasks.recurring');
+
+    // Staff Welfare Loan Routes
+    Route::get('/workflows/staff-welfare-loans', \App\Livewire\Admin\Workflows\StaffWelfareLoans::class)->name('admin.workflows.staff-welfare-loans');
+    Route::get('/workflows/staff-welfare-loan/{uuid}', \App\Livewire\Admin\Workflows\StaffWelfareLoan::class)->name('admin.workflows.staff-welfare-loan');
+    Route::get('/workflows/approvals/staff-welfare-loanlist', \App\Livewire\Admin\Workflows\Approvals\StaffWelfareLoanlist::class)->name('admin.workflows.approvals.staff-welfare-loanlist');
+    Route::get('/workflows/approvals/staff-welfare-loan-payments', \App\Livewire\Admin\Workflows\Approvals\StaffWelfareLoanPayments::class)->name('admin.workflows.approvals.staff-welfare-loan-payments');
+    Route::get('/workflows/reports/staff-welfare-loans', \App\Livewire\Admin\Workflows\Reports\StaffWelfareLoanReport::class)->name('admin.workflows.reports.staff-welfare-loans');
+
+    // T&S Allowances Routes
+    Route::get('/workflows/ts-allowances', \App\Livewire\Admin\Workflows\TsAllowances::class)->name('admin.workflows.ts-allowances');
+    Route::get('/workflows/ts-allowance/{uuid}', \App\Livewire\Admin\Workflows\TsAllowance::class)->name('admin.workflows.ts-allowance');
+    Route::get('/workflows/approvals/ts-allowancelist', \App\Livewire\Admin\Workflows\Approvals\TsAllowancelist::class)->name('admin.workflows.approvals.ts-allowancelist');
+    Route::get('/workflows/approvals/ts-allowance-finance', \App\Livewire\Admin\Workflows\Approvals\TsAllowancePayments::class)->name('admin.workflows.approvals.ts-allowance-finance');
+    Route::get('/workflows/reports/ts-allowances', \App\Livewire\Admin\Workflows\Reports\TsAllowanceReport::class)->name('admin.workflows.reports.ts-allowances');
 });
 // Email Approval Flows
 Route::get('/approval/{leaveapprovalitemuuid}/{leaveapproverid}/{storesapprovalitemuuid}/{storesapproverid}/{status}', function ($leaveapprovalitemuuid, $leaveapproverid, $storesapprovalitemuuid, $storesapproverid, $status) {

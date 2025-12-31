@@ -8,11 +8,23 @@ use Spatie\Permission\Models\Permission;
 
 class Workflowparameter extends Model
 {
-    public function permission():BelongsTo{
+    public function permission(): BelongsTo
+    {
         return $this->belongsTo(Permission::class);
     }
+
     public function purchaserequisitionapprovals()
     {
         return $this->hasMany(Purchaserequisitionapproval::class);
+    }
+
+    public function staffwelfareloanapprovals()
+    {
+        return $this->hasMany(StaffWelfareLoanApproval::class);
+    }
+
+    public function tsallowanceapprovals()
+    {
+        return $this->hasMany(TsAllowanceApproval::class);
     }
 }

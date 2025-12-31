@@ -43,6 +43,7 @@ use App\implementation\repositories\_receiverstoresrequisitionapprovalRepository
 use App\implementation\repositories\_recurringTaskRepository;
 use App\implementation\repositories\_revenuepostingRepository;
 use App\implementation\repositories\_roleRepository;
+use App\implementation\repositories\_staffwelfareloanRepository;
 use App\implementation\repositories\_storesrequisitionRepository;
 use App\implementation\repositories\_strategylogRepository;
 use App\implementation\repositories\_strategyRepository;
@@ -54,6 +55,8 @@ use App\implementation\repositories\_taskinstanceRepository;
 use App\implementation\repositories\_taskRepository;
 use App\implementation\repositories\_taskTemplateRepository;
 use App\implementation\repositories\_tenderRepository;
+use App\implementation\repositories\_tsallowanceconfigRepository;
+use App\implementation\repositories\_tsallowanceRepository;
 use App\implementation\repositories\_userRepository;
 use App\implementation\repositories\_wallettopupRepository;
 use App\implementation\repositories\_weeklyTaskReviewRepository;
@@ -107,6 +110,7 @@ use App\Interfaces\repositories\ireceiverstoresrequisitionapprovalInterface;
 use App\Interfaces\repositories\irecurringTaskInterface;
 use App\Interfaces\repositories\irevenuepostingInterface;
 use App\Interfaces\repositories\iroleRepository;
+use App\Interfaces\repositories\istaffwelfareloanInterface;
 use App\Interfaces\repositories\istoresrequisitionInterface;
 use App\Interfaces\repositories\istrategyInterface;
 use App\Interfaces\repositories\istrategylogInterface;
@@ -118,6 +122,8 @@ use App\Interfaces\repositories\itaskinstanceInterface;
 use App\Interfaces\repositories\itaskInterface;
 use App\Interfaces\repositories\itaskTemplateInterface;
 use App\Interfaces\repositories\itenderInterface;
+use App\Interfaces\repositories\itsallowanceconfigInterface;
+use App\Interfaces\repositories\itsallowanceInterface;
 use App\Interfaces\repositories\iuserInterface;
 use App\Interfaces\repositories\iwallettopupInterface;
 use App\Interfaces\repositories\iweeklyTaskReviewInterface;
@@ -128,9 +134,12 @@ use App\Interfaces\services\iAzureEmailServiceInterface;
 use App\Interfaces\services\iissueService;
 use App\Interfaces\services\ileaverequestService;
 use App\Interfaces\services\irecurringTaskService;
+use App\Interfaces\services\istaffwelfareloanService;
 use App\Interfaces\services\itaskinstanceService;
 use App\Interfaces\services\itaskReminderService;
 use App\Interfaces\services\itaskTemplateService;
+use App\Interfaces\services\itsallowanceconfigService;
+use App\Interfaces\services\itsallowanceService;
 use App\Services\AzureEmailService;
 use Illuminate\Support\ServiceProvider;
 
@@ -217,5 +226,11 @@ class RepositoryProvider extends ServiceProvider
         $this->app->bind(itaskReminderService::class, _taskReminderService::class);
         $this->app->bind(iweeklyTaskReviewInterface::class, _weeklyTaskReviewRepository::class);
         $this->app->bind(iissueService::class, _issueService::class);
+        $this->app->bind(istaffwelfareloanInterface::class, _staffwelfareloanRepository::class);
+        $this->app->bind(istaffwelfareloanService::class, \App\implementation\services\_staffwelfareloanService::class);
+        $this->app->bind(itsallowanceconfigInterface::class, _tsallowanceconfigRepository::class);
+        $this->app->bind(itsallowanceconfigService::class, \App\implementation\services\_tsallowanceconfigService::class);
+        $this->app->bind(itsallowanceInterface::class, _tsallowanceRepository::class);
+        $this->app->bind(itsallowanceService::class, \App\implementation\services\_tsallowanceService::class);
     }
 }
