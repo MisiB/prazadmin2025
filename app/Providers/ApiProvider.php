@@ -15,6 +15,7 @@ use App\implementation\services\_onlinepaymentService;
 use App\implementation\services\_palladiumService;
 use App\implementation\services\_payeeService;
 use App\implementation\services\_paynowService;
+use App\implementation\services\_staffwelfareloanService;
 use App\implementation\services\_storesrequisitionService;
 use App\implementation\services\_suspenseService;
 use App\implementation\services\_tenderService;
@@ -32,6 +33,7 @@ use App\Interfaces\services\ionlinepaymentService;
 use App\Interfaces\services\ipalladiumInterface;
 use App\Interfaces\services\ipayeeService;
 use App\Interfaces\services\ipaynowInterface;
+use App\Interfaces\services\istaffwelfareloanService;
 use App\Interfaces\services\istoresrequisitionService;
 use App\Interfaces\services\isuspenseService;
 use App\Interfaces\services\itenderService;
@@ -70,5 +72,6 @@ class ApiProvider extends ServiceProvider
         $this->app->bind(iepaymentService::class, _epaymentService::class);
         $this->app->bind(ipayeeService::class, _payeeService::class);
         $this->app->bind(iworkshopService::class, _workshopService::class);
+        $this->app->bind(istaffwelfareloanService::class, _staffwelfareloanService::class);
     }
 }
