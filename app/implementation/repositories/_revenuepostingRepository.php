@@ -219,7 +219,7 @@ class _revenuepostingRepository implements irevenuepostingInterface
                                 'currency' => $currency,
                             ];
                             $response = $item->invoice->inventoryitem->type == 'BIDBOND' ? $this->palladiumservice->create_supplier_account($formdata) : $this->palladiumservice->create_customer_account($formdata);
-                            Log::error('Palladium customer creation Response: '.$response);
+                            Log::error('Palladium customer creation Response: '.json_encode($response));
                             if ($response['status'] == 'error') {
                                 $item->comment = $response['message'];
                                 $item->save();
