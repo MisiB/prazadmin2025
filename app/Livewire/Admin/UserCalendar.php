@@ -165,11 +165,20 @@ class UserCalendar extends Component
 
     public function openDayModal($dayId)
     {
-        $day = $this->calendarRepository->getcalendardaybyid($dayId);
+        // Use fresh method to ensure we get uncached data
+        $day = $this->calendarRepository->getfreshcalendardaywithusertasks($dayId, Auth::id());
 
         if ($day) {
             $this->selectedDayId = $dayId;
             $tasks = $day->userTasks ?? collect();
+
+            // Load fresh taskinstances for each task
+            foreach ($tasks as $task) {
+                $task->unsetRelation('taskinstances');
+                $task->load(['taskinstances' => function ($query) {
+                    $query->orderBy('date', 'desc');
+                }]);
+            }
 
             // Group tasks by status
             $this->selectedDayTasks = $this->groupTasksByStatus($tasks);

@@ -48,7 +48,8 @@ class _taskinstanceRepository implements itaskinstanceInterface
 
     public function getactiveinstancebytaskid($taskId)
     {
-        return $this->taskinstance->where('task_id', $taskId)
+        // Use fresh query to avoid caching
+        return Taskinstance::where('task_id', $taskId)
             ->where('status', 'ongoing')
             ->orderBy('date', 'desc')
             ->first();
@@ -85,13 +86,17 @@ class _taskinstanceRepository implements itaskinstanceInterface
     public function update($id, array $data)
     {
         try {
-            $taskinstance = $this->taskinstance->find($id);
+            // Use fresh query to avoid any caching issues
+            $taskinstance = Taskinstance::find($id);
 
             if (! $taskinstance) {
                 return ['status' => 'error', 'message' => 'Task instance not found'];
             }
 
             $taskinstance->update($data);
+
+            // Refresh the model to get the updated data from database
+            $taskinstance->refresh();
 
             return ['status' => 'success', 'message' => 'Task instance updated successfully', 'data' => $taskinstance];
         } catch (\Exception $e) {
