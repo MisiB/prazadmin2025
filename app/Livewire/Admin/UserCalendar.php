@@ -232,6 +232,9 @@ class UserCalendar extends Component
     public function refreshDayModalIfOpen(): void
     {
         if ($this->dayTasksModal && $this->selectedDayId) {
+            // Reset the tasks array first to force Livewire to detect the change
+            $this->selectedDayTasks = null;
+
             // Get fresh data from database using fresh query (bypass repository caching)
             $day = $this->calendarRepository->getfreshcalendardaywithusertasks($this->selectedDayId, Auth::id());
 
@@ -732,11 +735,12 @@ class UserCalendar extends Component
                 $this->getcalenderuserweektasks();
             }
 
-            // Refresh day modal if open - this will reload all task instances with fresh data
-            $this->refreshDayModalIfOpen();
-
-            // Force full component refresh to ensure UI updates
-            $this->dispatch('$refresh');
+            // Force the day modal to reopen with fresh data (most reliable method)
+            if ($this->dayTasksModal && $this->selectedDayId) {
+                $dayId = $this->selectedDayId;
+                $this->closeDayModal();
+                $this->openDayModal($dayId);
+            }
         } else {
             $this->error($result['message']);
         }
