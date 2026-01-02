@@ -239,12 +239,12 @@ class _revenuepostingRepository implements irevenuepostingInterface
                                 if ($suspense != null) {
                                     $depositdate = '';
                                     if ($suspense->source = 'banktransactions') {
-                                        $depositdate = $suspense->banktransaction->created_at;
+                                        $depositdate = $suspense->banktransaction?->created_at;
                                     } elseif ($suspense->source = 'onlinepayments') {
-                                        $depositdate = $suspense->onlinepayment->created_at;
+                                        $depositdate = $suspense->onlinepayment?->created_at;
                                     } elseif ($suspense->source = 'wallettopups') {
-                                        if ($suspense->wallettopup->banktransaction != null) {
-                                            $depositdate = $suspense->wallettopup->banktransaction->created_at;
+                                        if ($suspense->wallettopup?->banktransaction != null) {
+                                            $depositdate = $suspense->wallettopup->banktransaction?->created_at;
                                         } else {
                                             $item->comment = 'Wallet topup not linked to bank transaction';
                                             $item->save();
