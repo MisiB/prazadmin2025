@@ -11,6 +11,7 @@ use Exception;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class _revenuepostingRepository implements irevenuepostingInterface
@@ -218,6 +219,7 @@ class _revenuepostingRepository implements irevenuepostingInterface
                                 'currency' => $currency,
                             ];
                             $response = $item->invoice->inventoryitem->type == 'BIDBOND' ? $this->palladiumservice->create_supplier_account($formdata) : $this->palladiumservice->create_customer_account($formdata);
+                            Log::error('Palladium customer creation Response: '.$response);
                             if ($response['status'] == 'error') {
                                 $item->comment = $response['message'];
                                 $item->save();
@@ -281,6 +283,7 @@ class _revenuepostingRepository implements irevenuepostingInterface
 
                                     $response = Http::asJson()->post($url, $postdata);
                                     $string = $response->body();
+                                    Log::error('Palladium invoice posting Response: '.$string);
                                     if (Str::contains(Str::lower($string), 'success', true)) {
                                         $item->invoice->posted = 1;
                                         $item->invoice->save();
@@ -329,6 +332,7 @@ class _revenuepostingRepository implements irevenuepostingInterface
 
             return ['status' => 'success', 'message' => "Revenue Posting Jobs Processed Successfully. Posted: {$posteditems}/{$countitems}"];
         } catch (Exception $e) {
+            Log::error('Palladium invoice posting Error: '.$e->getMessage());
             return ['status' => 'error', 'message' => $e->getMessage()];
         }
     }
