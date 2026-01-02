@@ -34,6 +34,8 @@ interface icalendarInterface
 
     public function getcalendardaybyid($id);
 
+    public function getfreshcalendardaywithusertasks($id, $userId);
+
     public function getcalendarweekbydaterange($startDate, $endDate);
 
     public function getcalendarweekbyid($id);

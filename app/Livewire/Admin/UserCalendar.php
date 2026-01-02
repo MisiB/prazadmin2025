@@ -232,23 +232,20 @@ class UserCalendar extends Component
     public function refreshDayModalIfOpen(): void
     {
         if ($this->dayTasksModal && $this->selectedDayId) {
-            // Get fresh data from database - don't use cached relationships
-            $day = $this->calendarRepository->getcalendardaybyid($this->selectedDayId);
+            // Get fresh data from database using fresh query (bypass repository caching)
+            $day = $this->calendarRepository->getfreshcalendardaywithusertasks($this->selectedDayId, Auth::id());
+
             if ($day) {
-                // Reload relationships to ensure fresh data
-                $day->load(['userTasks.taskinstances' => function ($query) {
-                    $query->orderBy('date', 'desc');
-                }]);
-                
                 $tasks = $day->userTasks ?? collect();
-                
-                // Reload taskinstances relationship on each task to get fresh worked hours
+
+                // Load fresh taskinstances for each task - unset first to force fresh load
                 foreach ($tasks as $task) {
+                    $task->unsetRelation('taskinstances');
                     $task->load(['taskinstances' => function ($query) {
-                        $query->where('status', 'ongoing')->orderBy('date', 'desc');
+                        $query->orderBy('date', 'desc');
                     }]);
                 }
-                
+
                 $this->selectedDayTasks = $this->groupTasksByStatus($tasks);
             }
         }
@@ -691,7 +688,7 @@ class UserCalendar extends Component
                 // Instance should exist, but if it doesn't, create it using service
                 $task->load('calendarday');
                 $date = $task->calendarday ? $task->calendarday->maindate : now()->format('Y-m-d');
-                
+
                 $result = $this->taskinstanceService->createinstance([
                     'task_id' => $this->loggingTaskId,
                     'date' => $date,
@@ -699,15 +696,17 @@ class UserCalendar extends Component
                     'worked_hours' => 0,
                     'status' => 'ongoing',
                 ]);
-                
+
                 if ($result['status'] === 'success') {
                     $instance = $result['data'];
                 } else {
                     $this->error($result['message'] ?? 'Failed to create task instance');
+
                     return;
                 }
             } else {
                 $this->error('No active task instance found. Please mark the task as ongoing first.');
+
                 return;
             }
         }
@@ -724,7 +723,7 @@ class UserCalendar extends Component
 
             $this->success('Hours logged successfully');
             $this->closeLogHoursModal();
-            
+
             // Force refresh of all data to ensure UI updates
             // Refresh current week data
             if ($this->week_id) {
@@ -732,9 +731,12 @@ class UserCalendar extends Component
             } else {
                 $this->getcalenderuserweektasks();
             }
-            
+
             // Refresh day modal if open - this will reload all task instances with fresh data
             $this->refreshDayModalIfOpen();
+
+            // Force full component refresh to ensure UI updates
+            $this->dispatch('$refresh');
         } else {
             $this->error($result['message']);
         }
