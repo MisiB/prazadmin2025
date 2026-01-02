@@ -468,6 +468,13 @@ class _calenderRepository implements icalendarInterface
         return $this->calendarday->with('userTasks.taskinstances')->find($id);
     }
 
+    public function getfreshcalendardaywithusertasks($id, $userId)
+    {
+        return Calendarday::with(['userTasks' => function ($query) use ($userId) {
+            $query->where('user_id', $userId);
+        }])->find($id);
+    }
+
     public function getcalendarweekbydaterange($startDate, $endDate)
     {
         return $this->calendarweek->where('start_date', '>=', $startDate)
