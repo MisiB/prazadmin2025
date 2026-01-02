@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use DB;
 use Illuminate\Console\Command;
+use App\Models\Invoice;
 
 class Updatepostedinvoices extends Command
 {
@@ -28,14 +29,15 @@ class Updatepostedinvoices extends Command
     {
          $ids = DB::table('invoiceposted')->get();
          foreach ($ids as $id) {
-            $invoice = DB::table('invoices')->where('id', $id->id)->first();
+            $invoice = Invoice::where('id', $id->id)->first();
             if ($invoice) {
                 $invoice->posted = 1;
                 $invoice->save();
-                $this->info('Invoice '.$invoice->id.' posted');
+                $this->info('Invoice '.$invoice->invoicenumber.' posted');
             } else {
                 $this->error('Invoice '.$id->id.' not found');
             }
          }
+         $this->info('All invoices posted');
     }
 }
