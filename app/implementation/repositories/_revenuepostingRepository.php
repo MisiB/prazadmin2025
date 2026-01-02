@@ -188,6 +188,9 @@ class _revenuepostingRepository implements irevenuepostingInterface
                     $currentItem = 0;
                     foreach ($job->revenuepostingjobitems as $item) {
                         $currentItem++;
+                        if ($item->comment == 'Posted') {
+                            continue;
+                        }
                         if ($progressCallback !== null) {
                             $progressCallback($countitems, $currentItem);
                         }
@@ -287,7 +290,7 @@ class _revenuepostingRepository implements irevenuepostingInterface
                                     if (Str::contains(Str::lower($string), 'success', true)) {
                                         $item->invoice->posted = 1;
                                         $item->invoice->save();
-                                        $item->status = 'POSTED';
+                                        $item->comment = 'Posted';
                                         $item->save();
 
                                         continue;
@@ -323,12 +326,14 @@ class _revenuepostingRepository implements irevenuepostingInterface
                         $job->processed = 'POSTED';
                         $job->save();
                     }
+
                 } else {
                     return ['status' => 'success', 'message' => 'No items to process'];
                 }
             } else {
                 return ['status' => 'success', 'message' => 'No pending revenue posting jobs found'];
             }
+        
 
             return ['status' => 'success', 'message' => "Revenue Posting Jobs Processed Successfully. Posted: {$posteditems}/{$countitems}"];
         } catch (Exception $e) {
