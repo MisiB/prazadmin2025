@@ -29,7 +29,7 @@ class Updatepostedinvoices extends Command
     {
          $ids = DB::table('invoiceposted')->get();
          foreach ($ids as $id) {
-            $invoice = Invoice::where('id', $id->id)->first();
+            $invoice = Invoice::where('id', $id->invoiceid)->first();
             if ($invoice) {
                 $invoice->posted = 1;
                 $invoice->save();
