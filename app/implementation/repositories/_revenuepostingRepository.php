@@ -321,7 +321,7 @@ class _revenuepostingRepository implements irevenuepostingInterface
                             continue;
                         }
                     }
-                    $posteditems = $this->revenuepostingjobitem->where('revenuepostingjob_id', $job->id)->where('status', 'POSTED')->count();
+                    $posteditems = $this->revenuepostingjobitem->where('revenuepostingjob_id', $job->id)->where('comment', 'Posted')->count();
                     if ($posteditems == $countitems) {
                         $job->processed = 'POSTED';
                         $job->save();

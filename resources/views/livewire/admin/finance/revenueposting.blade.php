@@ -89,9 +89,11 @@
                     <td>{{ $jobitem->customer_name }}</td>
                     <td>{{ $jobitem->inventoryitem_name }}</td>
                     <td>{{ $jobitem->invoicenumber }}</td>
-                    <td>{{ $jobitem->updated_at }}</td>
+                    <td>{{ $jobitem->updated_at }}</td> 
                     <td>{{ $jobitem->currency_name }}{{ number_format($jobitem->amount, 2) }}</td>
-                    <td>{{ $jobitem->posted }}</td>
+                    <td>
+                        <x-badge value="{{ $jobitem->comment }}" class="{{ $jobitem->comment == 'Posted' ? 'badge-success' : 'badge-error' }}" />
+                    </td>
                 </tr>
                 @endforeach
             </tbody>
