@@ -29,7 +29,7 @@ class Rolloverstatement extends Command
     public function handle(ileavetypeInterface $leavetyperepo, ileavestatementInterface $leavestatementrepo)
     {
         /*Rollover only happens on the first day of the year*/ 
-        if( Carbon::now()->format('d')===1 && Carbon::now()->format('m')===1)
+        if( Carbon::now()->format('d')==2 && Carbon::now()->format('m')==1)
         {
             //Get the list of available leavetypes from the database   
             $leavetypes=$leavetyperepo->getleavetypes();
@@ -49,23 +49,59 @@ class Rolloverstatement extends Command
                 {
                     //find all related statements and add their accumulation to the available days as long as the available days are less than the ceiling
                     $leavestatementrepo->getleavestatementByLeaveType($leavetypedetail['id'])->each(function($userstatement) use (&$leavetype){
-                        if($userstatement->daysattained < $leavetype->ceiling)
+                        //If leave type is  Vacation or Maternity check for users who are not entitled to Vacation or Maternity leaves , else rollover as normal 
+                        if(in_array($leavetype->name, ['Vacation', 'Maternity']))
                         {
-                            $attaineddaysupdate=$userstatement->daysattained + $leavetype->accumulation;
-                            $userstatement->update([
-                                'daysattained'=> ($attaineddaysupdate<$leavetype->ceiling) ? $attaineddaysupdate:$leavetype->ceiling,
-                                'daystaken'=>0
-                            ]);
-                            $userstatement->save();
-                        }else{
-                            $userstatement->update([
-                                'daysattained'=> $leavetype->ceiling,
-                                'daystaken'=>0
-                            ]);
-                            $userstatement->save();
+                             //If user had no days attained for Vacation leave, no rollover as it implies they are not entitled to it
+                            if($userstatement->daysattained == 0)
+                            {
+                                $userstatement->update([
+                                    'daysattained'=> 0,
+                                    'daystaken'=>0
+                                ]);
+                                $userstatement->save();
+                            }else{
+                                //Else rollover as normal
+                                if($userstatement->daysattained < $leavetype->ceiling)
+                                {
+                                    $attaineddaysupdate=$userstatement->daysattained + $leavetype->accumulation;
+                                    $userstatement->update([
+                                        'daysattained'=> ($attaineddaysupdate<$leavetype->ceiling) ? $attaineddaysupdate:$leavetype->ceiling,
+                                        'daystaken'=>0
+                                    ]);
+                                    $userstatement->save();
+                                }else{
+                                    $userstatement->update([
+                                        'daysattained'=> $leavetype->ceiling,
+                                        'daystaken'=>0
+                                    ]);
+                                    $userstatement->save();
+                                }
+                            }                           
+
+                        }
+                        else{
+                            //If user had no days attained for Vacation leave, no rollover as it implies they are not entitled to it
+                            if($userstatement->daysattained < $leavetype->ceiling)
+                            {
+                                $attaineddaysupdate=$userstatement->daysattained + $leavetype->accumulation;
+                                $userstatement->update([
+                                    'daysattained'=> ($attaineddaysupdate<$leavetype->ceiling) ? $attaineddaysupdate:$leavetype->ceiling,
+                                    'daystaken'=>0
+                                ]);
+                                $userstatement->save();
+                            }else{
+                                $userstatement->update([
+                                    'daysattained'=> $leavetype->ceiling,
+                                    'daystaken'=>0
+                                ]);
+                                $userstatement->save();
+                            } 
                         }  
                     });
+
                 }else{
+                    //Else if no rollover just reset the days attained and days taken to zero
                     $leavestatementrepo->getleavestatementByLeaveType($leavetypedetail['id'])->each(function($userstatement){
                         $userstatement->update([
                             'daysattained'=> 0,
