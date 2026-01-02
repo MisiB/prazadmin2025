@@ -179,14 +179,15 @@ class _revenuepostingRepository implements irevenuepostingInterface
         try {
             $job = $this->revenuepostingjob->with('revenuepostingjobitems.invoice.currency', 'revenuepostingjobitems.invoice.customer', 'revenuepostingjobitems.invoice.inventoryitem', 'revenuepostingjobitems.invoice.receipts.suspense.banktransaction', 'revenuepostingjobitems.invoice.receipts.suspense.onlinepayment', 'revenuepostingjobitems.invoice.receipts.suspense.wallettopup.banktransaction')->where('processed', 'PENDING')->where('status', 'APPROVED')->first();
             if ($job != null) {
-                $countitems = $job->revenuepostingjobitems->count();
+                $filtereditems = $job->revenuepostingjobitems->where('comment', '!=', 'Posted');
+                $countitems = $filtereditems->count();
                 $posteditems = 0;
                 if ($countitems > 0) {
                     if ($progressCallback !== null) {
                         $progressCallback($countitems, 0);
                     }
                     $currentItem = 0;
-                    foreach ($job->revenuepostingjobitems as $item) {
+                    foreach ($filtereditems as $item) {
                         $currentItem++;
                         if ($item->comment == 'Posted') {
                             continue;
