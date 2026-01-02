@@ -56,10 +56,10 @@ class PalladiumPostRevenue extends Command
         );
 
         if ($progressBar !== null) {
-            $progressBar->finish();
+            $progressBar->finish(); 
             $this->newLine();
         }
-
+          /// log the result to a file
         if ($result['status'] === 'success') {
             $this->info($result['message']);
         } else {
