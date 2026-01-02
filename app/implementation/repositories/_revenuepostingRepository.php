@@ -194,6 +194,7 @@ class _revenuepostingRepository implements irevenuepostingInterface
                         $inventoryitem = $item->invoice->inventoryitem->type;
                         $partnumber = $item->invoice->inventoryitem->code;
                         $regnumber = $item->invoice->customer->regnumber;
+
                         $tendertype = $currency == 'USD' ? 'CBZUSD' : 'CBZZWG';
                         $amount = number_format($item->invoice->amount, 2);
 
@@ -213,7 +214,7 @@ class _revenuepostingRepository implements irevenuepostingInterface
                         if (Str::contains(Str::lower($checkcustomer), 'record not found', true)) {
                             $formdata = [
                                 'accountname' => $item->invoice->customer->name,
-                                'accountregnumber' => $regnumber,
+                                'regnumber' => $regnumber,
                                 'currency' => $currency,
                             ];
                             $response = $item->invoice->inventoryitem->type == 'BIDBOND' ? $this->palladiumservice->create_supplier_account($formdata) : $this->palladiumservice->create_customer_account($formdata);
