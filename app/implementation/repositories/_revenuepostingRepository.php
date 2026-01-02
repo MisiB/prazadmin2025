@@ -293,7 +293,7 @@ class _revenuepostingRepository implements irevenuepostingInterface
                                         $item->invoice->save();
                                         $item->comment = 'Posted';
                                         $item->save();
-
+                                        $posteditems++;
                                         continue;
                                     } else {
                                         $item->comment = 'Invoice Posting Failed';
@@ -322,7 +322,7 @@ class _revenuepostingRepository implements irevenuepostingInterface
                             continue;
                         }
                     }
-                    $posteditems = $this->revenuepostingjobitem->where('revenuepostingjob_id', $job->id)->where('comment', 'Posted')->count();
+                  // $posteditems = $this->revenuepostingjobitem->where('revenuepostingjob_id', $job->id)->where('comment', 'Posted')->count();
                     if ($posteditems == $countitems) {
                         $job->processed = 'POSTED';
                         $job->save();
