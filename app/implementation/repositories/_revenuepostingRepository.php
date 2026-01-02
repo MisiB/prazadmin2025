@@ -60,8 +60,8 @@ class _revenuepostingRepository implements irevenuepostingInterface
         $revenuepostingjob = $this->revenuepostingjob->with('inventoryitem', 'currency')->where('id', $id)->first();
         $invoices = $this->invoice->with('inventoryitem', 'currency')->where('inventoryitem_id', $revenuepostingjob->inventoryitem_id)
             ->where('currency_id', $revenuepostingjob->currency_id)
-            ->where('updated_at', '>=', $revenuepostingjob->start_date)
-            ->where('updated_at', '<=', $revenuepostingjob->end_date)
+            ->where('settled_at', '>=', $revenuepostingjob->start_date)
+            ->where('settled_at', '<=', $revenuepostingjob->end_date)
             ->where('status', 'PAID')
             ->get();
 
