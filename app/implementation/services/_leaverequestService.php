@@ -222,6 +222,14 @@ class _leaverequestService implements ileaverequestService
         {  
            return ['status'=>'warning', 'message'=>'Male employees are not allowed to apply for Marternity Leave'];
         }
+        /**
+         * If leavebalance is zero leave request should not be allowed
+        */
+        $userrelatedleavestatement=$this->leavestatmentrepo->getleavestatementByUserAndLeaveType($userid, $selectedleavetypeid);
+        if( ((float)$userrelatedleavestatement->daysattained-(float)$userrelatedleavestatement->daysattained)==0 && $selectedleavetype->name!==$compassionateleave->name)
+        {
+            return ['status'=>'warning', 'message'=>'Your leave balance for '.$selectedleavetype->name.' leaves is exhausted'];    
+        }
         if($leavedetails['daysappliedfor'] > $leavedetails['validdays'] && $selectedleavetype->name!==$compassionateleave->name ){
            return ['status'=>'warning', 'message'=>'You have exceeded the number of days. You are only entitled to a maximum of '.$leavedetails['validdays'].' days '];
         }

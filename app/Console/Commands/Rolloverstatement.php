@@ -56,6 +56,7 @@ class Rolloverstatement extends Command
                             if($userstatement->daysattained == 0)
                             {
                                 $userstatement->update([
+                                    'year'=>now()->format('Y'),
                                     'daysattained'=> 0,
                                     'daystaken'=>0
                                 ]);
@@ -66,12 +67,14 @@ class Rolloverstatement extends Command
                                 {
                                     $attaineddaysupdate=$userstatement->daysattained + $leavetype->accumulation;
                                     $userstatement->update([
+                                        'year'=>now()->format('Y'),
                                         'daysattained'=> ($attaineddaysupdate<$leavetype->ceiling) ? $attaineddaysupdate:$leavetype->ceiling,
                                         'daystaken'=>0
                                     ]);
                                     $userstatement->save();
                                 }else{
                                     $userstatement->update([
+                                        'year'=>now()->format('Y'),
                                         'daysattained'=> $leavetype->ceiling,
                                         'daystaken'=>0
                                     ]);
@@ -86,12 +89,14 @@ class Rolloverstatement extends Command
                             {
                                 $attaineddaysupdate=$userstatement->daysattained + $leavetype->accumulation;
                                 $userstatement->update([
+                                    'year'=>now()->format('Y'),
                                     'daysattained'=> ($attaineddaysupdate<$leavetype->ceiling) ? $attaineddaysupdate:$leavetype->ceiling,
                                     'daystaken'=>0
                                 ]);
                                 $userstatement->save();
                             }else{
                                 $userstatement->update([
+                                    'year'=>now()->format('Y'),
                                     'daysattained'=> $leavetype->ceiling,
                                     'daystaken'=>0
                                 ]);
@@ -104,6 +109,7 @@ class Rolloverstatement extends Command
                     //Else if no rollover just reset the days attained and days taken to zero
                     $leavestatementrepo->getleavestatementByLeaveType($leavetypedetail['id'])->each(function($userstatement){
                         $userstatement->update([
+                            'year'=>now()->format('Y'),
                             'daysattained'=> 0,
                             'daystaken'=>0
                         ]);
