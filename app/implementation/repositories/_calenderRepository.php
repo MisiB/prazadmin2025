@@ -50,6 +50,7 @@ class _calenderRepository implements icalendarInterface
 
     /**
      * Create calendar year with only weekdays (Monday to Friday)
+     * Note: Year-end weeks may include days from the next year (e.g., Week 52 of 2025 includes Jan 1-2, 2026)
      */
     public function createcalendaryear($year)
     {
@@ -88,17 +89,15 @@ class _calenderRepository implements icalendarInterface
                 ]);
 
                 // Create days for Monday to Friday only
+                // Include ALL 5 days even if some fall into next year (for year-end weeks)
                 for ($dayOffset = 0; $dayOffset < 5; $dayOffset++) {
                     $dayDate = $monday->copy()->addDays($dayOffset);
 
-                    // Only create if the date is within the year
-                    if ($dayDate->year == $year) {
-                        $this->calendarday->create([
-                            'calendarweek_id' => $calendarWeek->id,
-                            'maindate' => $dayDate->format('Y-m-d'),
-                            'day' => $dayDate->format('l'), // Day name (Monday, Tuesday, etc.)
-                        ]);
-                    }
+                    $this->calendarday->create([
+                        'calendarweek_id' => $calendarWeek->id,
+                        'maindate' => $dayDate->format('Y-m-d'),
+                        'day' => $dayDate->format('l'), // Day name (Monday, Tuesday, etc.)
+                    ]);
                 }
 
                 $weekNumber++;
