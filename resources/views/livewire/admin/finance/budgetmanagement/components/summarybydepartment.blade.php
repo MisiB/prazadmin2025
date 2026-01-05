@@ -12,10 +12,10 @@
         <tbody>
             @foreach ($summarybydepartment as $department => $items)
                 <tr>
-                    <td>{{ $items->first()->department->name }}</td>
-                    <td class="text-blue-500">{{ $items->first()->currency->name }} {{ $items->sum('total') }}</td>
-                    <td class="text-red-500">{{ $items->first()->currency->name }} {{ $items->sum('utilized') }}</td>
-                    <td class="text-green-500">{{ $items->first()->currency->name }} {{ $items->sum('remaining') }}</td>
+                    <td>{{ $items->first()->department?->name ?? 'Unknown' }}</td>
+                    <td class="text-blue-500">{{ $items->first()->currency?->name }} {{ number_format($items->sum('total'), 2) }}</td>
+                    <td class="text-red-500">{{ $items->first()->currency?->name }} {{ number_format($items->sum('utilized'), 2) }}</td>
+                    <td class="text-green-500">{{ $items->first()->currency?->name }} {{ number_format($items->sum('remaining'), 2) }}</td>
                 </tr>
             @endforeach
         </tbody>
