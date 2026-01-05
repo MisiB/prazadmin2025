@@ -66,6 +66,7 @@ use App\implementation\repositories\_workshopRepository;
 use App\implementation\services\_issueService;
 use App\implementation\services\_leaverequestService;
 use App\implementation\services\_recurringTaskService;
+use App\implementation\services\_strategyImportService;
 use App\implementation\services\_taskinstanceService;
 use App\implementation\services\_taskReminderService;
 use App\implementation\services\_taskTemplateService;
@@ -135,6 +136,7 @@ use App\Interfaces\services\iissueService;
 use App\Interfaces\services\ileaverequestService;
 use App\Interfaces\services\irecurringTaskService;
 use App\Interfaces\services\istaffwelfareloanService;
+use App\Interfaces\services\IStrategyImportService;
 use App\Interfaces\services\itaskinstanceService;
 use App\Interfaces\services\itaskReminderService;
 use App\Interfaces\services\itaskTemplateService;
@@ -232,5 +234,6 @@ class RepositoryProvider extends ServiceProvider
         $this->app->bind(itsallowanceconfigService::class, \App\implementation\services\_tsallowanceconfigService::class);
         $this->app->bind(itsallowanceInterface::class, _tsallowanceRepository::class);
         $this->app->bind(itsallowanceService::class, \App\implementation\services\_tsallowanceService::class);
+        $this->app->bind(IStrategyImportService::class, _strategyImportService::class);
     }
 }

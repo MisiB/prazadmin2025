@@ -11,7 +11,10 @@
     </x-slot:menu>
     <x-card title="Programmes" separator class=" border-2 border-gray-200">
         <x-slot:menu>
-            <x-button icon="o-plus"  wire:click="openModal()" class="btn-circle btn-primary" />
+            <div class="flex gap-2">
+                <x-button icon="o-arrow-up-tray" wire:click="openImportModal()" class="btn-secondary" tooltip="Import Strategy Data" />
+                <x-button icon="o-plus" wire:click="openModal()" class="btn-circle btn-primary" />
+            </div>
         </x-slot:menu>
     <x-table :headers="$headers" :rows="$strategy?->programmes??[]" wire:model="expanded" expandable>
         @scope('actions', $programme)
@@ -239,6 +242,45 @@
             <x-button label="{{ $departmentoutput_id ? 'Update' : 'Save' }}" type="submit" class="btn-primary" spinner="saveassignsubprogramme" />
         </x-slot:actions>
     </x-form>
+</x-modal>
+
+<x-modal wire:model="importModal" title="Import Strategy Data" box-class="max-w-2xl">
+    <x-hr/>
+    <div class="space-y-4">
+        <div class="bg-base-200 p-4 rounded-lg">
+            <h4 class="font-semibold mb-2">Import Instructions:</h4>
+            <ul class="list-disc list-inside text-sm space-y-1">
+                <li>Download the template first to see the required format</li>
+                <li>Fill in programme code, title, outcomes, indicators and departments</li>
+                <li>Each row can create a full hierarchy from Programme to Output</li>
+                <li>Existing items will be matched and reused (no duplicates)</li>
+                <li>Only XLSX or XLS files are accepted</li>
+            </ul>
+        </div>
+
+        <div class="flex justify-center">
+            <x-button icon="o-arrow-down-tray" wire:click="downloadTemplate" class="btn-accent" spinner="downloadTemplate">
+                Download Template
+            </x-button>
+        </div>
+
+        <x-file wire:model="importFile" label="Select Excel File" accept=".xlsx,.xls" hint="Max file size: 10MB" />
+
+        @if(count($importErrors) > 0)
+            <div class="bg-error/10 p-4 rounded-lg max-h-48 overflow-y-auto">
+                <h4 class="font-semibold text-error mb-2">Import Errors:</h4>
+                <ul class="list-disc list-inside text-sm text-error space-y-1">
+                    @foreach($importErrors as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+    </div>
+    <x-slot:actions>
+        <x-button label="Cancel" @click="$wire.importModal = false" />
+        <x-button label="Import" wire:click="importStrategy" class="btn-primary" spinner="importStrategy" />
+    </x-slot:actions>
 </x-modal>
 </div> 
     
