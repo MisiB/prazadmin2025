@@ -54,6 +54,7 @@ interface ileaverequestService
     public function gethodrepresentatives($departmentid,$hodid);
     public function isactiveonleave($userid);
     public function getusersbyrole($rolename);
- 
+    public function getpaginatedstatements(array $leavestatements, string $pageName, int $perPage);
+    public function isstudent($userid);
 }
  

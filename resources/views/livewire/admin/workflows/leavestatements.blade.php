@@ -12,6 +12,10 @@
         </x-slot:menu>
 
         <x-table :headers="$headers" :rows="$leavestatements" show-empty-text empty-text="No leave statements found.">
+            @scope('cell_user',$leavestatement)
+                <div>{{$leavestatement['user']->name}}</div>
+                <div class="text-md text-gray-400">{{$leavestatement['user']->getRoleNames()->join(' | ')}}</div>
+            @endscope  
             @scope('cell_vacationleave',$leavestatement)
                 <span>{{$leavestatement['leavetypes']['Vacation']??'-'}}</span>
             @endscope       
@@ -34,6 +38,7 @@
                 <x-alert class="alert-error" title="No leave statement found." />
             </x-slot:empty>
         </x-table>
+        {{ $leavestatements->links() }}
     </x-card>
 
     <x-modal wire:model="exportmodal"  title="Export A Copy">

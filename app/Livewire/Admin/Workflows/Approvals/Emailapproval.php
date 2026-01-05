@@ -121,19 +121,34 @@ class Emailapproval extends Component
         //Notify HR about decision->Role: Human Resource Manager
         $sendtohrmanager=false;
         if($this->requestrecord->status==='A'){
-            collect($this->leaverequestService->getusersbyrole('Human Resource Manager'))->each(function($hrmanager) use ($sendtohrmanager){
-                $this->leaverequestService->getusers()->each(function($user) use ($hrmanager){
-                    if($user->department!=null &&$user->department->reportto===$hrmanager->id){
-                        $user->notify(new LeaverequestSubmitted($this->leaverequestService, $this->approvalrecord->leaverequest_uuid)); 
+            /**
+             * 
+             * If  getusersbyrole() function returns an error before notification because of no HR Manager Assigned alert message
+             * 
+             */
+            $response=$this->leaverequestService->getusersbyrole('Human Resource Manager');
+            if($response['status']==="error")
+            {
+                $this->toast($response['status'], $response['message']." -> Please assign a Human Resource Manager");
+            }else{
+                collect($response)->each(function($hrmanager) use ($sendtohrmanager){
+                    if($hrmanager !==null)
+                    {
+                        $this->leaverequestService->getusers()->each(function($user) use (&$hrmanager){
+                            if($user->department!=null && $user->department->reportto===$hrmanager->id){
+                                $user->notify(new LeaverequestSubmitted($this->leaverequestService, $this->approvalrecord->leaverequest_uuid)); 
+                            }
+                        
+                        });
+                        if(!$sendtohrmanager){
+                            $sendtohrmanager=true;
+                            $hrmanager->notify(new LeaverequestSubmitted($this->leaverequestService, $this->approvalrecord->leaverequest_uuid));
+                        }
                     }
                 });
-                if(!$sendtohrmanager){
-                    $sendtohrmanager=true;
-                    $hrmanager->notify(new LeaverequestSubmitted($this->leaverequestService, $this->approvalrecord->leaverequest_uuid));
-                }
-            });
 
-            $sendtohrmanager=false;
+                $sendtohrmanager=false;
+            }
         }
         //Notify applicant about decision
         $initiator=$this->leaverequestService->getuser($appliedleaverecord->user_id);

@@ -15,6 +15,7 @@ class Leavestatements extends Component
     use WithFileUploads, Toast;
     protected $leaverequestService;
     protected $userrepo;
+    protected string $pageName= "leavestatementspage";
     public $breadcrumbs = [];
     public $exportmodal = false;
     public $importmodal = false;
@@ -32,12 +33,18 @@ class Leavestatements extends Component
             ['label' => 'Home', 'link' => route('admin.home')],
             ['label' => "Leave Statements"]
         ];
+        
+    }
+
+    public function updated()
+    {
+        $this->resetPage($this->pageName);
     }
 
     public function headers(): array
     {
         return [
-            ['label' => 'User', 'key' => 'username'],
+            ['label' => 'User', 'key' => 'user'],
             ['label' => 'Vacation Leave', 'key' => 'vacationleave'],
             ['label' => 'Annual Leave', 'key' => 'annualleave'],
             ['label' => 'Study Leave', 'key' => 'studyleave'],
@@ -46,6 +53,7 @@ class Leavestatements extends Component
             ['label' => 'Compassionate Leave', 'key' => 'compassionateleave'],
             ['label' => 'Year', 'key' => 'year']
         ];
+        
     }
     public function getleavestatements()
     {
@@ -58,7 +66,7 @@ class Leavestatements extends Component
                 $daystaken=$this->leaverequestService->getleavestatementbyuserandleavetype($user->id, $leavetype->id)->daystaken??0;
                 $leavetypebalancedetails[] = [
                     'leavetype' => $leavetype->name,
-                    'balance' =>strtolower($leavetype->name)==="compassionate" ? "N/A ( ".(float)$daystaken." days taken )" : (float)$daysattained - (float)$daystaken,
+                    'balance' =>strtolower($leavetype->name)==="compassionate" || ($this->leaverequestService->isstudent($user->id) && strtolower($leavetype->name)==="vacation" ) ? "N/A ( ".(float)$daystaken." days taken )" : (float)$daysattained - (float)$daystaken,
                 ];
                 
             });
@@ -67,7 +75,8 @@ class Leavestatements extends Component
             $leavedetailmapping = array_combine($keys, $values);
 
             $leavestatements[]= [
-                'username' => $user->name . ' ' . $user->surname,
+                'user' => $user,
+                'username' => $user->name.' '.$user->surname,
                 'leavetypes'=> $leavedetailmapping,
                 'year'=>$this->leaverequestService->getleavestatementByUser($user->id)->first()->year??'-'
             ];
@@ -170,7 +179,7 @@ class Leavestatements extends Component
     public function render()
     {
         return view('livewire.admin.workflows.leavestatements',[
-            'leavestatements'=>$this->getleavestatements(),
+            'leavestatements'=>$this->leaverequestService->getpaginatedstatements($this->getleavestatements(), $this->pageName , 10),
             'headers'=> $this->headers()
         ]);
     }
