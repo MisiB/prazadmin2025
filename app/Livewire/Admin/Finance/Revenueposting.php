@@ -8,9 +8,10 @@ use App\Interfaces\repositories\irevenuepostingInterface;
 use Livewire\Component;
 use Mary\Traits\Toast;
 use Illuminate\Support\Collection;
+use Livewire\WithPagination;
 class Revenueposting extends Component
 {
-    use Toast;
+    use Toast,WithPagination;
     public $breadcrumbs;
     protected $inventoryitemrepo;
     protected $currencyrepo;

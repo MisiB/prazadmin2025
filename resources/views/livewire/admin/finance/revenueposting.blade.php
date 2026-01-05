@@ -4,7 +4,7 @@
         <x-slot:menu>
             <x-button label="New Revenue Posting" responsive icon="o-plus" class="btn-outline" @click="$wire.modal = true" />
         </x-slot:menu>
-        <x-table :headers="$headers" :rows="$jobs" class="table-zebra table-xs">
+        <x-table :headers="$headers" :rows="$jobs" class="table-zebra table-xs" with-pagination>
             @scope('cell_inventoryitem', $row)
                 {{ $row->inventoryitem->name }}
             @endscope
@@ -71,7 +71,7 @@
     <x-modal title="Revenue Posting Items" wire:model="showitemModal" box-class="max-w-5xl">
       
             <x-button label="Export" class="btn-sm btn-outline btn-info" wire:click="exportcsv" />
-      
+          
         <table class="table table-xs">
             <thead>
                 <tr>
