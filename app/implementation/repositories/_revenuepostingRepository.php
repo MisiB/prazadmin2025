@@ -270,7 +270,7 @@ class _revenuepostingRepository implements irevenuepostingInterface
                                             'Amount' => $amount,
                                             'Currency' => $currency,
                                             'PartNumber' => $partnumber,
-                                            'reference' => $invoicenumber.'-'.$invoicedate,
+                                            'reference' => $invoicenumber,
                                         ];
                                     } else {
                                         $url = $this->api.'ProcessSupplierInvoice';
