@@ -14,9 +14,15 @@
                 <div>
                     <div class="grid grid-cols-3 gap-12">
                         <div class="text-center">
-                            <div class="text-2xl font-bold text-gray-900">{{ $leavestatementbalances['vacation'] }}</div>
-                            <div class="text-xs text-gray-600">Vacation Leave</div>
-                            <div class="text-xs text-gray-600">(days available)</div>
+                            @if(!$this->isstudent)
+                                <div class="text-2xl font-bold text-gray-900">{{ $leavestatementbalances['vacation'] }}</div>
+                                <div class="text-xs text-gray-600">Vacation Leave</div>
+                                <div class="text-xs text-gray-600">(days available)</div>
+                            @else
+                                <div class="text-2xl font-bold text-gray-900">{{ $leavestatementbalances['vacation'] }}</div>
+                                <div class="text-xs text-gray-600">Vacation Leave</div>
+                                <div class="text-xs text-gray-600">(days taken)</div>
+                            @endif
                         </div>
                         <div class="text-center">
                             <div class="text-2xl font-bold text-blue-600">{{ $leavestatementbalances['annual'] }}</div>
@@ -193,8 +199,7 @@
     <x-modal wire:model="addleaverequestmodal"  title="Draft Leave Request Form" box-class="max-w-4xl">
         <x-form wire:submit="sendleaverequest" >
             <div class="grid grid-cols-2 gap-4" separator>
-                <x-input class="col-span-1" wire:model.live="firstname" label="Firstname" readonly></x-input>
-                <x-input class="col-span-1" wire:model.live="surname" label="Surname" readonly></x-input>
+                <x-input class="col-span-1" wire:model.live="firstname" label="Fullname" readonly></x-input>
                 <x-input class="col-span-1" wire:model.live="employeenumber" label="Employee Number"></x-input>
                 <x-input class="col-span-1" wire:model.live="leaveapprovername" label="Leave Request Approver" readonly></x-input>
                 <x-select class="col-span-1" :options="$leavetypesmap" wire:model.live="selectedleavetypeid" label="Selected Leave type" option-label="name" option-value="id" placeholder="Select leave type"/>

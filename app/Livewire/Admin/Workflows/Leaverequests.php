@@ -34,11 +34,13 @@ class Leaverequests extends Component
     public $usereporttoid, $leaveapprovername;
     public $searchuuid, $datesrange;
     public $assignedhodid;
+    public $isstudent;
 
     public function boot(ileaverequestService $leaverequestService)
     {
         $this->leaverequestService=$leaverequestService;
         $this->user=Auth::user();
+        $this->isstudent=$this->leaverequestService->isstudent($this->user->id);
     }
 
     public function mount(){
@@ -290,14 +292,14 @@ class Leaverequests extends Component
         $this->leaverequestService->getleavetypes()->map(function ($leavetype) use (&$leavestatementbalances){
             $daysattained=( (float)$this->leaverequestService->getleavestatementbyuseridandleavename($this->user->id, $leavetype->name)?->daysattained) ?? 0;
             $daystaken=( (float)$this->leaverequestService->getleavestatementbyuseridandleavename($this->user->id, $leavetype->name)?->daystaken ) ?? 0;  
-            if($leavetype->name!=='Compassionate')
+            if($leavetype->name==='Compassionate' || ($this->isstudent && $leavetype->name==='Vacation') )
             {
                 $leavestatementbalances[]=[
-                    strtolower($leavetype->name)=>$daysattained - $daystaken,
+                    strtolower($leavetype->name)=>$daystaken,
                 ];
             }else{
                 $leavestatementbalances[]=[
-                    strtolower($leavetype->name)=>$daystaken,
+                    strtolower($leavetype->name)=>$daysattained - $daystaken,
                 ];
             }
         });

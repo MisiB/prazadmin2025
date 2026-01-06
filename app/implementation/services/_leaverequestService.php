@@ -13,6 +13,7 @@ use App\Interfaces\repositories\iuserInterface;
 use App\Notifications\LeaverequestSubmission;
 use App\Notifications\LeaverequestSubmitted;
 use Carbon\Carbon;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Mary\Traits\Toast;
 use Livewire\WithFileUploads;
@@ -32,6 +33,8 @@ class _leaverequestService implements ileaverequestService
     protected $departmentrepo;
     protected $currentdate;
     protected $rolerepo;
+    public $graduatetraineerole;
+    public $internrole;
 
     public function __construct(ileaverequestInterface $leaverequestrepo, ileavetypeInterface $leavetyperepo, iuserInterface $userrepo, 
     ileavestatementInterface $leavestatmentrepo, ileaverequestapprovalInterface $leaverequestapprovalrepo, idepartmentInterface $departmentrepo, iroleRepository $rolerepo)
@@ -44,6 +47,10 @@ class _leaverequestService implements ileaverequestService
         $this->departmentrepo = $departmentrepo;
         $this->rolerepo = $rolerepo;
         $this->currentdate=Carbon::now();
+        //Role check variables
+        $this->graduatetraineerole="graduate trainee"; 
+        $this->internrole="intern";
+
     }
 
     public function getleaverequests()
@@ -217,16 +224,19 @@ class _leaverequestService implements ileaverequestService
         //Allow valid days check bypass for compassionate leave
         $user=$this->getuser($userid);
         $compassionateleave=$this->getleavetypebyname('Compassionate');
-        $selectedleavetype=$this->getleavetype($selectedleavetypeid);
+        /*get vacation leave detail*/
+        $vacationleave=$this->getleavetypebyname('Vacation');
+        $selectedleavetype=$this->getleavetype($selectedleavetypeid);     
+
         if(strtolower($user->gender)==='m' && strtolower($selectedleavetype->name)==='maternity')
         {  
            return ['status'=>'warning', 'message'=>'Male employees are not allowed to apply for Marternity Leave'];
         }
         /**
-         * If leavebalance is zero leave request should not be allowed
+         * If leavebalance is zero for a person who is not a student leave request should not be allowed
         */
         $userrelatedleavestatement=$this->leavestatmentrepo->getleavestatementByUserAndLeaveType($userid, $selectedleavetypeid);
-        if( ((float)$userrelatedleavestatement->daysattained-(float)$userrelatedleavestatement->daysattained)==0 && $selectedleavetype->name!==$compassionateleave->name)
+        if( ((float)$userrelatedleavestatement->daysattained-(float)$userrelatedleavestatement->daysattained)==0 && $selectedleavetype->name!==$compassionateleave->name  &&  !( $this->isstudent($userid) && $selectedleavetype->name==$vacationleave->name)  )
         {
             return ['status'=>'warning', 'message'=>'Your leave balance for '.$selectedleavetype->name.' leaves is exhausted'];    
         }
@@ -337,6 +347,39 @@ class _leaverequestService implements ileaverequestService
     public function getusersbyrole($rolename)
     {
         return $this->rolerepo->getusersbyrole($rolename);
+    }
+    /**
+     * This function paginates an array given wiith a current page parameter
+     */
+    public function getpaginatedstatements(array $leavestatements, string $pageName, int $perPage)
+    {
+        $statementscollection = collect($leavestatements);
+        $currentPage = LengthAwarePaginator::resolveCurrentPage($pageName);
+
+        return new LengthAwarePaginator(
+            $statementscollection->forPage($currentPage, $perPage),
+            $statementscollection->count(),
+            $perPage,
+            $currentPage,
+            [
+                'path' => request()->url(),
+                'pageName' => $pageName
+            ]
+        );
+    }
+    /***
+     * 
+     * Check if user is a student
+     */
+    public function isstudent($userid)
+    {
+        $user=$this->userrepo->getuser($userid);
+        if( str_contains( strtolower( $user->getRoleNames()->join(' | ') ), $this->graduatetraineerole) || str_contains(strtolower( $user->getRoleNames()->join(' | ')) , $this->internrole)  )
+        {
+            return true;
+        }
+        return false;
+                
     }
 }
   
