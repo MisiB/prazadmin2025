@@ -123,9 +123,7 @@
     <x-modal wire:model="modal" title="Make Decision">
          <x-form wire:submit="recommend">
             <x-select label="Decision" wire:model.live="decision" placeholder="Select Decision" :options="[['id'=>'RECOMMEND','name'=>'RECOMMEND'],['id'=>'REJECT','name'=>'REJECT']]"/>
-             @if($decision == "REJECT")
-                <x-textarea label="Comment" wire:model="comment"/>
-             @endif
+            <x-textarea label="Comment" wire:model="comment" placeholder="Enter your comment (optional)" hint="Comments are optional but recommended"/>
              <x-pin label="Approval Code" wire:model="approvalcode" size="6" hide/>
         <x-slot:actions>
             <x-button icon="o-check" class="btn-primary" label="Submit" type="submit" spinner="recommend"/>

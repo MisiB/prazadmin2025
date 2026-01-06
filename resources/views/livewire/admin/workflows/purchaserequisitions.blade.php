@@ -24,13 +24,35 @@
             
             <div>{{ $purchaserequisition->budgetitem->currency->name }} {{ $purchaserequisition->budgetitem->unitprice * $purchaserequisition->quantity }}</div>
             @endscope
+            @scope("cell_status", $purchaserequisition)
+            @php
+                $statusColors = [
+                    'DRAFT' => 'badge-warning',
+                    'AWAITING_RECOMMENDATION' => 'badge-info',
+                    'NOT_RECOMMENDED' => 'badge-error',
+                    'REJECTED' => 'badge-error',
+                    'AWAITING_PMU' => 'badge-warning',
+                    'AWAITING_DELIVERY' => 'badge-info',
+                ];
+                $color = $statusColors[$purchaserequisition->status] ?? 'badge-ghost';
+            @endphp
+            <x-badge :value="$purchaserequisition->status" class="{{ $color }} badge-sm" />
+            @endscope
             @scope("cell_action", $purchaserequisition)
             <div class="flex items-center space-x-2">
                 <x-button icon="o-eye" class="btn-xs btn-success btn-outline" link="{{ route('admin.workflows.purchaserequisition',$purchaserequisition->uuid) }}"/>
-                @if($purchaserequisition->status == "AWAITING_RECOMMENDATION"||$purchaserequisition->status == "PENDING")
-                
-                <x-button icon="o-pencil" class="btn-xs btn-info btn-outline" wire:click="edit({{ $purchaserequisition->id }})" spinner/>
-                <x-button icon="o-trash" class="btn-xs btn-outline btn-error" wire:click="delete({{ $purchaserequisition->id }})" wire:confirm="Are you sure?" spinner/>
+                @if($purchaserequisition->status == "DRAFT")
+                    @can("purchaserequisition.edit")
+                    <x-button icon="o-pencil" class="btn-xs btn-info btn-outline" wire:click="edit({{ $purchaserequisition->id }})" spinner/>
+                    @endcan
+                    @can("purchaserequisition.submit")
+                    <x-button icon="o-paper-airplane" class="btn-xs btn-success" 
+                        wire:click="submit({{ $purchaserequisition->id }})" 
+                        wire:confirm="Are you sure you want to submit this purchase requisition?" spinner/>
+                    @endcan
+                    @can("purchaserequisition.delete")
+                    <x-button icon="o-trash" class="btn-xs btn-outline btn-error" wire:click="delete({{ $purchaserequisition->id }})" wire:confirm="Are you sure?" spinner/>
+                    @endcan
                 @endif
             </div>
             @endscope
