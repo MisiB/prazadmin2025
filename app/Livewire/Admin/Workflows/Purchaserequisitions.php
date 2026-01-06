@@ -107,7 +107,7 @@ class Purchaserequisitions extends Component
         $budgetitem = $this->getbudgetitems()->where('id', $id)->first();
         $this->unitprice = $budgetitem->unitprice;
 
-        $totalquantity = $budgetitem->purchaserequisitions->sum('quantity');
+        $totalquantity = $budgetitem->purchaserequisitions->whereNotIn('status', ['DRAFT'])->sum('quantity');
         $totalprocured = $totalquantity * $budgetitem->unitprice;
         $outgoingvirements = $budgetitem->outgoingvirements->sum('amount');
         $incomingvirements = $budgetitem->incomingvirements->sum('amount');
@@ -142,7 +142,7 @@ class Purchaserequisitions extends Component
 
         $this->unitprice = $budgetitem->unitprice;
 
-        $totalquantity = $budgetitem->purchaserequisitions->sum('quantity');
+        $totalquantity = $budgetitem->purchaserequisitions->whereNotIn('status', ['DRAFT'])->sum('quantity');
         $totalprocured = $totalquantity * $budgetitem->unitprice;
         $outgoingvirements = $budgetitem->outgoingvirements->sum('amount');
         $incomingvirements = $budgetitem->incomingvirements->sum('amount');
@@ -185,6 +185,7 @@ class Purchaserequisitions extends Component
         ]);
         if ($response['status'] == 'success') {
             $this->success($response['message']);
+            $this->modal = false;
         } else {
             $this->error($response['message']);
         }
@@ -200,6 +201,7 @@ class Purchaserequisitions extends Component
         ]);
         if ($response['status'] == 'success') {
             $this->success($response['message']);
+            $this->modal = false;
         } else {
             $this->error($response['message']);
         }
@@ -208,6 +210,16 @@ class Purchaserequisitions extends Component
     public function delete($id)
     {
         $response = $this->purchaserequisitionrepo->deletepurchaseerequisition($id);
+        if ($response['status'] == 'success') {
+            $this->success($response['message']);
+        } else {
+            $this->error($response['message']);
+        }
+    }
+
+    public function submit($id)
+    {
+        $response = $this->purchaserequisitionrepo->submitpurchaserequisition($id);
         if ($response['status'] == 'success') {
             $this->success($response['message']);
         } else {

@@ -75,7 +75,7 @@
                 @endif
                 @if($purchaserequisition?->status == "AWAITING_PMU")
                 
-                <x-button icon="o-plus" class="btn-primary" label="Add Award" @click="$wire.awardmodal=true" />
+                <x-button icon="o-plus" class="btn-primary" label="Add Award" @click="$wire.openAwardModal()" />
               
                 @endif
             </x-slot:menu>
@@ -172,6 +172,43 @@
            
              
             </div>
+
+            {{-- Currency for Payment Section --}}
+            <x-card title="Currency for Payment" separator class="mt-5 border-2 border-gray-200">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <x-select 
+                        label="Currency for Payment" 
+                        wire:model.live="payment_currency_id" 
+                        placeholder="Select Currency"
+                        :options="$currencies->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->toArray()" />
+                    
+                    <x-checkbox 
+                        label="Split Payment (Payment in two currencies)" 
+                        wire:model.live="is_split_payment" 
+                        class="mt-8" />
+                </div>
+
+                {{-- Split Payment Fields --}}
+                @if($is_split_payment)
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-200">
+                        <x-select 
+                            label="Second Payment Currency" 
+                            wire:model="second_payment_currency_id" 
+                            placeholder="Select Second Currency"
+                            :options="$currencies->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->toArray()" />
+                    </div>
+                @endif
+
+                {{-- ZiG Prevailing Rate Checkbox --}}
+                @if($this->isZigCurrency)
+                    <div class="mt-4 pt-4 border-t border-gray-200">
+                        <x-checkbox 
+                            label="Pay at prevailing bank rate of the day" 
+                            wire:model="pay_at_prevailing_rate" />
+                    </div>
+                @endif
+            </x-card>
+
             <div class="grid gap-2">
             <x-textarea label="Description" placeholder="Description" wire:model="item"/>
             </div>
