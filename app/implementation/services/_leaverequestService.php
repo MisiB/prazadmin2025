@@ -236,10 +236,18 @@ class _leaverequestService implements ileaverequestService
          * If leavebalance is zero for a person who is not a student leave request should not be allowed
         */
         $userrelatedleavestatement=$this->leavestatmentrepo->getleavestatementByUserAndLeaveType($userid, $selectedleavetypeid);
-        if( ((float)$userrelatedleavestatement->daysattained-(float)$userrelatedleavestatement->daysattained)==0 && $selectedleavetype->name!==$compassionateleave->name  &&  !( $this->isstudent($userid) && $selectedleavetype->name==$vacationleave->name)  )
-        {
-            return ['status'=>'warning', 'message'=>'Your leave balance for '.$selectedleavetype->name.' leaves is exhausted'];    
-        }
+        /**
+         * Commented out subtraction logic as no longer needed for the students vacation flow
+         * 
+         * */
+        /**
+         * 
+         * if( ((float)$userrelatedleavestatement->daysattained-(float)$leavedetails['daysappliedfor'])<0 && $selectedleavetype->name!==$compassionateleave->name  &&  !( $this->isstudent($userid) && $selectedleavetype->name==$vacationleave->name)  )
+         * {
+         *  return ['status'=>'warning', 'message'=>'Your leave balance for '.$selectedleavetype->name.' leaves is exhausted'];    
+         * }
+        */
+        
         if($leavedetails['daysappliedfor'] > $leavedetails['validdays'] && $selectedleavetype->name!==$compassionateleave->name ){
            return ['status'=>'warning', 'message'=>'You have exceeded the number of days. You are only entitled to a maximum of '.$leavedetails['validdays'].' days '];
         }
