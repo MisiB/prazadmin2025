@@ -11,6 +11,7 @@ use App\Interfaces\repositories\iwallettopupInterface;
 use App\Models\Bankreconciliation;
 use App\Models\Bankreconciliationdata;
 use App\Models\Banktransaction;
+use Carbon\Carbon;
 
 class _banktransactionRepository implements ibanktransactionInterface
 {
@@ -262,12 +263,28 @@ class _banktransactionRepository implements ibanktransactionInterface
 
     public function gettransactionbydaterange($startdate, $enddate, $bankaccount = null)
     {
-        return $this->model->whereBetween('transactiondate', [$startdate, $enddate])
-                    ->when($bankaccount != null, function ($query) use ($bankaccount) {
-                            return $query->where('accountnumber', $bankaccount);
-                    })
-                    ->select('transactiondate','sourcereference','accountnumber', 'currency','amount','status')
-                    ->orderBy('created_at', 'desc')->get();
+        $startDateFormatted = Carbon::parse($startdate)->format('Y-m-d');
+        $endDateFormatted = Carbon::parse($enddate)->format('Y-m-d');
+
+        // Handle both date formats:
+        // - New format: Y-m-d (e.g., 2025-01-02)
+        // - Old format: d/m/Y (e.g., 11/12/2020)
+        $query = $this->model->whereRaw(
+            "CASE 
+                WHEN transactiondate LIKE '%/%' THEN STR_TO_DATE(transactiondate, '%d/%m/%Y')
+                ELSE STR_TO_DATE(transactiondate, '%Y-%m-%d')
+            END BETWEEN ? AND ?",
+            [$startDateFormatted, $endDateFormatted]
+        );
+
+        if ($bankaccount != null) {
+            $query->where('accountnumber', $bankaccount);
+        }
+
+        return $query->with('customer:id,name,regnumber')
+            ->select('id', 'transactiondate', 'referencenumber', 'statementreference', 'sourcereference', 'description', 'accountnumber', 'currency', 'amount', 'status', 'regnumber', 'customer_id', 'created_at')
+            ->orderBy('created_at', 'desc')
+            ->get();
     }
 
     public function getbankreconciliations($year)
