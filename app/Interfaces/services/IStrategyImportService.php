@@ -8,3 +8,4 @@ interface IStrategyImportService
 
     public function downloadTemplate(int $strategyId): mixed;
 }
+
