@@ -100,8 +100,8 @@
             </x-slot:menu>
             {{$storesrequisitions->links()}}
             <x-table :headers="$headersforpending" :rows="$storesrequisitions">
-                @scope('cell_itembanner', $storesrequisition)
-                    <img src="{{asset('images/img_placeholder.jpg')}}" alt="" class="w-[60px] h-auto">
+                @scope('cell_timebanner', $storesrequisition)
+                    <span>{{$storesrequisition->created_at}}</span>
                 @endscope
                 @scope('cell_itemscount', $storesrequisition)
                     <span>{{collect(json_decode($storesrequisition->requisitionitems,true))->count()}}</span>
@@ -113,6 +113,8 @@
                         <span  class="badge bg-gradient-to-t from-green-200 to-green-400 text-white">Approved</span>
                     @elseif($storesrequisition->status=='O')
                         <span class="badge bg-gradient-to-t from-blue-300 to-blue-800 text-white">Opened</span>
+                    @elseif($storesrequisition->status=='V')
+                        <span class="badge bg-gradient-to-t from-blue-300 to-blue-800 text-white">Awaiting Verification</span>
                     @elseif($storesrequisition->status=='D')
                         <span class="badge badge-warning text-white">Delivered</span>
                     @elseif($storesrequisition->status=='C')

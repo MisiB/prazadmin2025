@@ -43,6 +43,7 @@ class Storesrequisitions extends Component
             ['id'=>'P', 'name'=>'Pending'],
             ['id'=>'A', 'name'=>'Approved'],
             ['id'=>'O', 'name'=>'Opened'],
+            ['id'=>'V', 'name'=>'Awaiting Verification'],
             ['id'=>'D', 'name'=>'Delivered'],
             ['id'=>'C', 'name'=>'Received'],
             ['id'=>'R', 'name'=>'Rejected'],
@@ -73,7 +74,7 @@ class Storesrequisitions extends Component
     public function headersforpendingrequisitions(): array
     { 
         return [
-            ['label' => 'Item Banner', 'key' => 'itembanner'],
+            ['label' => 'Time Banner', 'key' => 'timebanner'],
             ['label' => 'Purpose of requisition', 'key' => 'purposeofrequisition'],
             ['label' => 'Item classes required', 'key' => 'itemscount'],
             ['label' => 'Initiator', 'key' => 'initiator'],
@@ -133,11 +134,7 @@ class Storesrequisitions extends Component
                 'storesrequisition_uuid'=>$storesrequuid,
                 'user_id'=>$this->hodid
             ]);
-            /*
-                //send email notification to approver
-                $approver=$this->storesrequisitionService->getrecordowner($this->hodid);
-                $approver->notify(new StoresrequisitionapprovalSubmitted($this->storesrequisitionService, $storesrequuid) );
-            */
+            
             $this->toast($createrequisition['status'], $createrequisition['message']);
             $this->addrequisitionmodal=false;
             return $this->redirect('/workflows/storesrequisitions', navigate:true);
@@ -176,13 +173,6 @@ class Storesrequisitions extends Component
         if($updaterequisitionrecord['status'] !== 'success') {
            return $this->toast($updaterequisitionrecord['status'], $updaterequisitionrecord['message']);         
         } 
-        /*
-            //send email notification to approver and issuer
-            $adminissuer=$this->storesrequisitionService->getrecordowner($this->adminissuerid);
-            $adminissuer->notify(new StoresrequisitionacceptanceNotification($this->storesrequisitionService, $this->deliveryrequisitionuuid) );
-            $hod=$this->storesrequisitionService->getrecordowner($this->hodid);
-            $hod->notify(new StoresrequisitionacceptanceNotification($this->storesrequisitionService, $this->deliveryrequisitionuuid) );
-        */
         $this->toast($updaterequisitionrecord['status'], $updaterequisitionrecord['message']);
         $this->acceptancerequisitionmodal=false;
         return $this->redirect(route('admin.workflows.storesrequisitions'), navigate:true);

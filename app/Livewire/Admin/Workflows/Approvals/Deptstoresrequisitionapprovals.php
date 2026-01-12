@@ -59,7 +59,7 @@ class Deptstoresrequisitionapprovals extends Component
     public function headersforpendingrequisitions(): array
     { 
         return [
-            ['label' => 'Item Banner', 'key' => 'itembanner'],
+            ['label' => 'Time Banner', 'key' => 'timebanner'],
             ['label' => 'Purpose of requisition', 'key' => 'purposeofrequisition'],
             ['label' => 'Item classes required', 'key' => 'itemscount'],
             ['label' => 'Initiator', 'key' => 'initiator'],
@@ -70,7 +70,7 @@ class Deptstoresrequisitionapprovals extends Component
     public function headersforapprovedrequisitions(): array
     { 
         return [
-            ['label' => 'Item Banner', 'key' => 'itembanner'],
+            ['label' => 'Time Banner', 'key' => 'timebanner'],
             ['label' => 'Purpose of requisition', 'key' => 'purposeofrequisition'],
             ['label' => 'Item classes required', 'key' => 'itemscount'],
             ['label' => 'Receiver', 'key' => 'initiator'],
