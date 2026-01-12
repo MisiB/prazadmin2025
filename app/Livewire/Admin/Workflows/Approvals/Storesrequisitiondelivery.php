@@ -57,7 +57,7 @@ class Storesrequisitiondelivery extends Component
     public function headersforpendingrequisitions(): array
     { 
         return [
-            ['label' => 'Item Banner', 'key' => 'itembanner'],
+            ['label' => 'Time Banner', 'key' => 'timebanner'],
             ['label' => 'Purpose of requisition', 'key' => 'purposeofrequisition'],
             ['label' => 'Item classes required', 'key' => 'itemscount'],
             ['label' => 'Initiator', 'key' => 'initiator'],
@@ -68,7 +68,7 @@ class Storesrequisitiondelivery extends Component
     public function headersforapprovedrequisitions(): array
     { 
         return [
-            ['label' => 'Item Banner', 'key' => 'itembanner'],
+            ['label' => 'Time Banner', 'key' => 'timebanner'],
             ['label' => 'Purpose of requisition', 'key' => 'purposeofrequisition'],
             ['label' => 'Item classes required', 'key' => 'itemscount'],
             ['label' => 'Receiver', 'key' => 'initiator'],
@@ -148,12 +148,13 @@ class Storesrequisitiondelivery extends Component
         $this->requisitionverificationmodal=true;
     }
     public function sendrequisitionforverification()
-    {
+    { 
         $this->validate([
             'issuercomment'=>'required',
             'deliveryfields.*.issuedquantity'=>'required|numeric',
         ]);
-
+        //Array to send to the verification notification
+        $storesrequisitionrecord=[];
         $updateissuerrecord=$this->storesrequisitionService->updateissuerrequisitionrecord($this->deliveryrequisitionuuid, [
             'comment' => $this->issuercomment,
             'decision'=>true
@@ -182,7 +183,14 @@ class Storesrequisitiondelivery extends Component
         }
         //send email notification to admin validator
         $adminvalidator=$this->storesrequisitionService->getrecordowner($this->adminvalidatorid);
-        $adminvalidator->notify(new StoresrequisitionverificationSubmitted($this->storesrequisitionService, $this->deliveryrequisitionuuid) );
+        $storesrequisitionrecord=[
+            'storesrequisitionuuid'=>$this->deliveryrequisitionuuid,
+            'adminuser_id'=>$this->adminvalidatorid,
+            'adminissuername'=>$this->storesrequisitionService->getrecordowner($this->deliveryissuerid)->name,
+            'adminissuersurname'=>$this->storesrequisitionService->getrecordowner($this->deliveryissuerid)->surname,
+            'purposeofrequisition'=>$this->storesrequisitionService->getstoresrequisition($this->deliveryrequisitionuuid)->purposeofrequisition
+        ];
+        $adminvalidator->notify(new StoresrequisitionverificationSubmitted($storesrequisitionrecord) );
         $this->toast($updateissuerrecord['status'], $updateissuerrecord['message']);
         $this->requisitionverificationmodal=false;
         return $this->redirect(route('admin.workflows.approvals.storesrequisitiondelivery'), navigate:true);

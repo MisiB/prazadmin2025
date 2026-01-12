@@ -80,8 +80,8 @@
                     <x-card title="Stores Requisitions Awaiting Delivery" separator class="mt-5 border-2 border-gray-200">
                         {{$storesrequisitionsawaitingdelivery->links()}}
                         <x-table :headers="$headersforapproved" :rows="$storesrequisitionsawaitingdelivery">
-                            @scope('cell_itembanner', $storesrequisition)
-                                <img src="{{asset('images/img_placeholder.jpg')}}" alt="" class="w-[60px] h-auto">
+                            @scope('cell_timebanner', $storesrequisition)
+                                <span>{{$storesrequisition->created_at}}</span>
                             @endscope
                             @scope('cell_itemscount', $storesrequisition)
                                 <span>{{collect(json_decode($storesrequisition->requisitionitems,true))->count()}}</span>
@@ -153,8 +153,8 @@
 
                         {{$storesrequisitionsopened->links()}}
                         <x-table :headers="$headersforapproved" :rows="$storesrequisitionsopened">
-                            @scope('cell_itembanner', $storesrequisition)
-                                <img src="{{asset('images/img_placeholder.jpg')}}" alt="" class="w-[60px] h-auto">
+                            @scope('cell_timebanner', $storesrequisition)
+                                <span>{{$storesrequisition->created_at}}</span>
                             @endscope
                             @scope('cell_itemscount', $storesrequisition)
                                 <span>{{collect(json_decode($storesrequisition->requisitionitems,true))->count()}}</span>
@@ -214,8 +214,8 @@
 
                         {{$storesrequisitionsawaitingclearance->links()}}
                         <x-table :headers="$headersforapproved" :rows="$storesrequisitionsawaitingclearance">
-                            @scope('cell_itembanner', $storesrequisition)
-                                <img src="{{asset('images/img_placeholder.jpg')}}" alt="" class="w-[60px] h-auto">
+                            @scope('cell_timebanner', $storesrequisition)
+                                <span>{{$storesrequisition->created_at}}</span>
                             @endscope
                             @scope('cell_itemscount', $storesrequisition)
                                 <span>{{collect(json_decode($storesrequisition->requisitionitems,true))->count()}}</span>
@@ -282,8 +282,8 @@
 
                         {{$storesrequisitionsdelivered->links()}}
                         <x-table :headers="$headersforapproved" :rows="$storesrequisitionsdelivered">
-                            @scope('cell_itembanner', $storesrequisition)
-                                <img src="{{asset('images/img_placeholder.jpg')}}" alt="" class="w-[60px] h-auto">
+                            @scope('cell_timebanner', $storesrequisition)
+                                <span>{{$storesrequisition->created_at}}</span>
                             @endscope
                             @scope('cell_itemscount', $storesrequisition)
                                 <span>{{collect(json_decode($storesrequisition->requisitionitems,true))->count()}}</span>
@@ -343,8 +343,8 @@
 
                         {{$storesrequisitionsrecieved->links()}}
                         <x-table :headers="$headersforapproved" :rows="$storesrequisitionsrecieved">
-                            @scope('cell_itembanner', $storesrequisition)
-                                <img src="{{asset('images/img_placeholder.jpg')}}" alt="" class="w-[60px] h-auto">
+                            @scope('cell_timebanner', $storesrequisition)
+                                <span>{{$storesrequisition->created_at}}</span>
                             @endscope
                             @scope('cell_itemscount', $storesrequisition)
                                 <span>{{collect(json_decode($storesrequisition->requisitionitems,true))->count()}}</span>
@@ -395,8 +395,8 @@
                     <x-card title="Rejected Stores Requisitions" separator class="mt-5 border-2 border-gray-200">
                         {{$storesrequisitionsrejected->links()}}
                         <x-table :headers="$headersforapproved" :rows="$storesrequisitionsrejected">
-                            @scope('cell_itembanner', $storesrequisition)
-                                <img src="{{asset('images/img_placeholder.jpg')}}" alt="" class="w-[60px] h-auto">
+                            @scope('cell_timebanner', $storesrequisition)
+                                <span>{{$storesrequisition->created_at}}</span>
                             @endscope
                             @scope('cell_itemscount', $storesrequisition)
                                 <span>{{collect(json_decode($storesrequisition->requisitionitems,true))->count()}}</span>

@@ -2,7 +2,6 @@
 
 namespace App\Notifications;
 
-use App\Interfaces\services\istoresrequisitionService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -12,12 +11,10 @@ class StoresrequisitionverificationSubmitted extends Notification implements Sho
 {
     use Queueable;
 
-    protected $storesrequisitionService, $storesrequisitionuuid, $adminrequisitionapproverrepo;
-    public function __construct(istoresrequisitionService $storesrequisitionService, $storesrequisitionuuid)
+    protected $storesrequisitionrecord;
+    public function __construct($storesrequisitionrecord)
     {
-        $this->storesrequisitionService=$storesrequisitionService;
-        $this->storesrequisitionuuid=$storesrequisitionuuid;
-        $this->adminrequisitionapproverrepo=$this->storesrequisitionService->getadminrequisitionapprovalrecord($this->storesrequisitionuuid);
+         $this->storesrequisitionrecord=$storesrequisitionrecord;
     }
  
     /**
@@ -33,14 +30,12 @@ class StoresrequisitionverificationSubmitted extends Notification implements Sho
     /**
      * Get the mail representation of the notification.
      */
-    public function toMail(object $notifiable): MailMessage
+    public function toMail(object $notifiable): MailMessage 
     {
-        $storesrequisition=$this->storesrequisitionService->getstoresrequisition($this->storesrequisitionuuid);
-        
         $leaveapprovalitemuuid='N';
         $leaveapproverid='N';
-        $storesapprovalitemuuid=$this->storesrequisitionuuid;
-        $storesapproverid=$this->adminrequisitionapproverrepo->getadminrequisitionapproval($storesapprovalitemuuid)->user_id;
+        $storesapprovalitemuuid=$this->storesrequisitionrecord['storesrequisitionuuid'];
+        $storesapproverid=$this->storesrequisitionrecord['adminuser_id'];
         $status='V';
         
         $finalizationurl=url('approval/'.$leaveapprovalitemuuid.'/'.$leaveapproverid.'/'.$storesapprovalitemuuid.'/'.$storesapproverid.'/'.$status);
@@ -49,11 +44,11 @@ class StoresrequisitionverificationSubmitted extends Notification implements Sho
             ->greeting('Good Day')
             ->subject('RE: STORES REQUISITION VERIFICATION SUBMISSION')
             ->line('')
-            ->line('A new verification request for '.$storesrequisition->purposeofrequisition.' stores requisition has been submitted by '.$storesrequisition->adminissuer->user->name.' '.$storesrequisition->adminissuer->user->surname)
+            ->line('A new verification request for '.$this->storesrequisitionrecord['purposeofrequisition'].' stores requisition has been submitted by '.$this->storesrequisitionrecord['adminissuername'].' '.$this->storesrequisitionrecord['adminissuersurname'])
             ->line('')
             ->action('Make decision', $finalizationurl)
             ->line('')
-            ->line('REF #:'.$storesrequisition->storesrequisition_uuid)
+            ->line('REF #:'.$this->storesrequisitionrecord['storesrequisitionuuid'])
             ->line('Thank you for using our application, we are here to serve!')
             ->line('');
     }

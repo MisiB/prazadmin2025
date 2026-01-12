@@ -79,8 +79,8 @@
                     <x-card title="Stores Requisitions Awaiting Approvals" separator class="mt-5 border-2 border-gray-200">
                         {{$storesrequisitionsawaitingapproval->links()}}
                         <x-table :headers="$headersforapproved" :rows="$storesrequisitionsawaitingapproval">
-                            @scope('cell_itembanner', $storesrequisition)
-                                <img src="{{asset('images/img_placeholder.jpg')}}" alt="" class="w-[60px] h-auto">
+                            @scope('cell_timebanner', $storesrequisition)
+                                <span>{{$storesrequisition->created_at}}</span>
                             @endscope
                             @scope('cell_itemscount', $storesrequisition)
                                 <span>{{collect(json_decode($storesrequisition->requisitionitems,true))->count()}}</span>
