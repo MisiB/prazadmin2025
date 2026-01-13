@@ -189,20 +189,19 @@ class _taskRepository implements itaskInterface
                 }
             }
 
-            // Notification to supervisor is now sent via scheduled command (tasks:send-supervisor-reminders)
-            // which runs twice daily at 10:00 AM and 3:00 PM to send comprehensive reminders
-            // if ($status == 'completed') {
-            //     $task = $this->task->where('id', $id)->first();
-            //     if ($task) {
-            //         $notifyUserId = $this->getNotificationRecipient($task->user_id);
-            //         if ($notifyUserId) {
-            //             $supervisor = \App\Models\User::find($notifyUserId);
-            //             if ($supervisor) {
-            //                 $supervisor->notify(new TaskCompletedForApproval($this, $id));
-            //             }
-            //         }
-            //     }
-            // }
+            // Send notification to supervisor when task is marked as completed
+            if ($status == 'completed') {
+                $task = $this->task->where('id', $id)->first();
+                if ($task) {
+                    $notifyUserId = $this->getNotificationRecipient($task->user_id);
+                    if ($notifyUserId) {
+                        $supervisor = \App\Models\User::find($notifyUserId);
+                        if ($supervisor) {
+                            $supervisor->notify(new TaskCompletedForApproval($this, $id));
+                        }
+                    }
+                }
+            }
 
             return ['status' => 'success', 'message' => 'Task marked successfully'];
         } catch (\Exception $e) {

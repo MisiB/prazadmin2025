@@ -70,9 +70,4 @@ class Budgetitem extends Model
     {
         return $this->hasMany(Purchaserequisition::class);
     }
-
-    public function paymentrequisitions()
-    {
-        return $this->hasMany(PaymentRequisition::class, 'budget_line_item_id');
-    }
 }

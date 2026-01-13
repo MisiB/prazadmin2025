@@ -2,14 +2,13 @@
 
 namespace App\Livewire\Admin\Workshops;
 
-use App\Interfaces\repositories\icurrencyInterface;
-use App\Interfaces\services\iworkshopService;
-use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use Livewire\WithPagination;
 use Mary\Traits\Toast;
-
+use App\Interfaces\services\iworkshopService;
+use App\Interfaces\repositories\icurrencyInterface;
+use Livewire\WithPagination;
+use Illuminate\Support\Facades\Auth;
 class Workshopindex extends Component
 {
     use Toast;
@@ -17,45 +16,26 @@ class Workshopindex extends Component
     use WithPagination;
 
     protected $workshopService;
-
     protected $currencyService;
 
     public $title;
-
     public $target;
-
     public $startDate;
-
     public $endDate;
-
     public $location;
-
     public $limit;
-
     public $status;
-
     public $search;
-
     public $currency;
-
     public $cost;
-
     public $document;
-
     public $editDocument;
-
     public $showCreateModal = false;
-
     public $showEditModal = false;
-
     public $showPreviewModal = false;
-
     public $previewUrl = null;
-
     public $editingWorkshop = null;
-
-    public $breadcrumbs = [];
-
+    public $breadcrumbs=[];
     protected $rules = [
         'title' => 'required|string|max:255',
         'target' => 'required|string',
@@ -65,8 +45,8 @@ class Workshopindex extends Component
         'limit' => 'required|integer|min:1',
         'status' => 'required',
         'cost' => 'required|numeric|min:0',
-        'currency' => 'required',
-        'document' => 'nullable|file|max:10240|mimes:pdf,doc,docx',
+        'currency'=>'required',
+        'document' => 'nullable|file|max:10240|mimes:pdf,doc,docx'
     ];
 
     public function boot(iworkshopService $workshopService, icurrencyInterface $currencyService)
@@ -79,13 +59,13 @@ class Workshopindex extends Component
     {
         $this->breadcrumbs = [
             ['label' => 'Home', 'link' => route('admin.home')],
-            ['label' => 'Workshops'],
+            ['label' => 'Workshops']
         ];
     }
 
-    public function headers(): array
+    public function headers():array
     {
-        return [
+       return [
             ['key' => 'title', 'label' => 'Title'],
             ['key' => 'target', 'label' => 'Target'],
             ['key' => 'start_date', 'label' => 'Start Date'],
@@ -94,7 +74,7 @@ class Workshopindex extends Component
             ['key' => 'limit', 'label' => 'Limit'],
             ['key' => 'Status', 'label' => 'Status'],
             ['key' => 'Cost', 'label' => 'Cost'],
-            ['key' => 'action', 'label' => 'Action'],
+            ['key' => 'action', 'label' => 'Action']
         ];
     }
 
@@ -106,15 +86,15 @@ class Workshopindex extends Component
 
     public function currencies()
     {
-        return $this->currencyService->getcurrencies()->where('status', 'ACTIVE');
+        return $this->currencyService->getcurrencies()->where('status','ACTIVE');
     }
 
-    public function statuslist(): array
+    public function statuslist():array
     {
         return $this->workshopService->getStatusList();
     }
 
-    public function targetlist(): array
+    public function targetlist():array
     {
         return $this->workshopService->getTargetList();
     }
@@ -134,11 +114,11 @@ class Workshopindex extends Component
             'status' => $this->status,
             'cost' => $this->cost,
             'created_by' => Auth::user()->id,
-            'document' => $this->document,
+            'document' => $this->document
         ];
 
         $result = $this->workshopService->createWorkshop($data);
-
+        
         if ($result['status'] === 'success') {
             $this->reset(['title', 'target', 'startDate', 'endDate', 'location', 'currency', 'limit', 'status', 'cost', 'document']);
             $this->showCreateModal = false;
@@ -176,8 +156,8 @@ class Workshopindex extends Component
             'limit' => 'required|integer|min:1',
             'status' => 'required',
             'cost' => 'required|numeric|min:0',
-            'currency' => 'required',
-            'document' => 'nullable|file|max:10240|mimes:pdf,doc,docx',
+            'currency'=>'required',
+            'document' => 'nullable|file|max:10240|mimes:pdf,doc,docx'
         ]);
 
         $data = [
@@ -190,11 +170,12 @@ class Workshopindex extends Component
             'limit' => $this->limit,
             'status' => $this->status,
             'cost' => $this->cost,
-            'document' => $this->document,
+            'document' => $this->document
         ];
+        
 
         $result = $this->workshopService->updateWorkshop($this->editingWorkshop->id, $data);
-
+        
         if ($result['status'] === 'success') {
             $this->reset(['title', 'target', 'startDate', 'endDate', 'location', 'currency', 'limit', 'status', 'cost', 'editingWorkshop', 'document']);
             $this->showEditModal = false;
@@ -207,7 +188,7 @@ class Workshopindex extends Component
     public function deleteWorkshop($id)
     {
         $result = $this->workshopService->deleteWorkshop($id);
-
+        
         if ($result['status'] === 'success') {
             $this->success('message', $result['message']);
         } else {
@@ -215,20 +196,20 @@ class Workshopindex extends Component
         }
     }
 
-    public function previewDocument($documentUrl)
+    public function previewDocument($workshop)
     {
-        $this->previewUrl = $documentUrl;
+        $this->previewUrl = $workshop->document_url;
         $this->showPreviewModal = true;
     }
 
     public function render()
     {
         return view('livewire.admin.workshops.workshopindex', [
-            'headers' => $this->headers(),
-            'workshops' => $this->workshops(),
-            'currencies' => $this->currencies(),
-            'statuslist' => $this->statuslist(),
-            'targetlist' => $this->targetlist(),
+            "headers" => $this->headers(),
+            "workshops" => $this->workshops(),
+            "currencies" => $this->currencies(),
+            "statuslist" => $this->statuslist(),
+            "targetlist" => $this->targetlist()
         ]);
     }
 }
