@@ -45,6 +45,7 @@ Route::middleware('auth')->group(function () {
     Volt::route('/configuration/leavetypes', 'admin.configuration.leavetypes')->name('admin.configuration.leavetypes');
     Route::get('/configuration/ts-allowance-configs', \App\Livewire\Admin\Configuration\TsAllowanceConfigs::class)->name('admin.configuration.ts-allowance-configs');
     Route::get('/configuration/staff-welfare-loan-configs', \App\Livewire\Admin\Configuration\StaffWelfareLoanConfigs::class)->name('admin.configuration.staff-welfare-loan-configs');
+    Route::get('/configuration/payment-voucher-configs', \App\Livewire\Admin\Configuration\PaymentVoucherConfigs::class)->name('admin.configuration.payment-voucher-configs');
     Volt::route('/configuration/issues', 'admin.configuration.issue-configuration')->name('admin.configuration.issues');
     Volt::route('/finances/configurations', 'admin.finance.configuration')->name('admin.finance.configurations');
     Volt::route('/finances/reports', 'admin.finance.reports.finacereports')->name('admin.finance.reports');
@@ -83,6 +84,14 @@ Route::middleware('auth')->group(function () {
     Volt::route('/awaitingpmu', 'admin.workflows.awaitingpmu')->name('admin.workflows.awaitingpmu');
     Volt::route('/approvals/purchaserequisitionlist', 'admin.workflows.approvals.purchaserequisitionlist')->name('admin.workflows.approvals.purchaserequisitionlist');
     Volt::route('/approvals/purchaserequisitionshow/{uuid}', 'admin.workflows.approvals.purchaserequisitionshow')->name('admin.workflows.approvals.purchaserequisitionshow');
+    Route::get('/paymentrequisitions', \App\Livewire\Admin\Workflows\PaymentRequisitions::class)->name('admin.paymentrequisitions');
+    Route::get('/paymentrequisition/{uuid}', \App\Livewire\Admin\Workflows\PaymentRequisitionshow::class)->name('admin.paymentrequisition');
+    Route::get('/approvals/paymentrequisitionlist', \App\Livewire\Admin\Workflows\Approvals\PaymentRequisitionlist::class)->name('admin.workflows.approvals.paymentrequisitionlist');
+
+    // Payment Voucher Routes
+    Route::get('/paymentvouchers', \App\Livewire\Admin\Workflows\PaymentVouchers::class)->name('admin.paymentvouchers');
+    Route::get('/paymentvoucher/{uuid}', \App\Livewire\Admin\Workflows\PaymentVouchershow::class)->name('admin.paymentvoucher.show');
+    Route::get('/approvals/paymentvoucherlist', \App\Livewire\Admin\Workflows\Approvals\PaymentVoucherlist::class)->name('admin.workflows.approvals.paymentvoucherlist');
     Volt::route('/awaitingdelivery', 'admin.workflows.awaitingdelivary')->name('admin.workflows.awaitingdelivery');
     Volt::route('/finances/revenueposting', 'admin.finance.revenueposting')->name('admin.finance.revenueposting');
     Volt::route('/workflows/leavestatements', 'admin.workflows.leavestatements')->name('admin.workflows.leavestatements');
@@ -123,6 +132,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/workflows/approvals/ts-allowancelist', \App\Livewire\Admin\Workflows\Approvals\TsAllowancelist::class)->name('admin.workflows.approvals.ts-allowancelist');
     Route::get('/workflows/approvals/ts-allowance-finance', \App\Livewire\Admin\Workflows\Approvals\TsAllowancePayments::class)->name('admin.workflows.approvals.ts-allowance-finance');
     Route::get('/workflows/reports/ts-allowances', \App\Livewire\Admin\Workflows\Reports\TsAllowanceReport::class)->name('admin.workflows.reports.ts-allowances');
+
+    // Purchase Requisition Report Routes
+    Route::get('/workflows/reports/purchase-requisitions', \App\Livewire\Admin\Workflows\Reports\PurchaseRequisitionReport::class)->name('admin.workflows.reports.purchase-requisitions');
+
+    // Payment Requisition Report Routes
+    Route::get('/workflows/reports/payment-requisitions', \App\Livewire\Admin\Workflows\Reports\PaymentRequisitionReport::class)->name('admin.workflows.reports.payment-requisitions');
+
+    // Payment Voucher Report Routes
+    Route::get('/workflows/reports/payment-vouchers', \App\Livewire\Admin\Workflows\Reports\PaymentVoucherReport::class)->name('admin.workflows.reports.payment-vouchers');
 });
 // Email Approval Flows
 Route::get('/approval/{leaveapprovalitemuuid}/{leaveapproverid}/{storesapprovalitemuuid}/{storesapproverid}/{status}', function ($leaveapprovalitemuuid, $leaveapproverid, $storesapprovalitemuuid, $storesapproverid, $status) {

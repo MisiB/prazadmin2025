@@ -6,9 +6,13 @@ use App\Interfaces\repositories\ibankaccountInterface;
 use App\Interfaces\repositories\ibanktransactionInterface;
 use Carbon\Carbon;
 use Livewire\Component;
+use Mary\Traits\Toast;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class Transactionreport extends Component
 {
+    use Toast;
+
     public $startdate = null;
 
     public $enddate = null;
@@ -21,8 +25,6 @@ class Transactionreport extends Component
 
     protected $banktransactionrepo;
 
-    public $transactions;
-
     public function boot(ibankaccountInterface $bankaccountrepo, ibanktransactionInterface $banktransactionrepo)
     {
         $this->bankaccountrepo = $bankaccountrepo;
@@ -33,16 +35,16 @@ class Transactionreport extends Component
     {
         $this->startdate = Carbon::now()->addDays(-7)->format('Y-m-d');
         $this->enddate = Carbon::now()->format('Y-m-d');
-        $this->loadTransactions();
     }
 
-    protected function loadTransactions(): void
+    protected function getTransactions()
     {
         try {
-            $this->transactions = $this->banktransactionrepo->gettransactionbydaterange($this->startdate, $this->enddate, $this->bankaccount) ?? collect();
+            return $this->banktransactionrepo->gettransactionbydaterange($this->startdate, $this->enddate, $this->bankaccount) ?? collect();
         } catch (\Exception $e) {
-            $this->transactions = collect();
             session()->flash('error', 'Failed to load transactions: '.$e->getMessage());
+
+            return collect();
         }
     }
 
@@ -60,22 +62,7 @@ class Transactionreport extends Component
             ]
         );
 
-        try {
-            $this->transactions = $this->banktransactionrepo->gettransactionbydaterange(
-                Carbon::parse($this->startdate)->format('Y-m-d'),
-                Carbon::parse($this->enddate)->format('Y-m-d'),
-                $this->bankaccount
-            ) ?? collect();
-
-            $this->modal = false;
-
-            if ($this->transactions->isEmpty()) {
-                session()->flash('info', 'No transactions found for the selected date range.');
-            }
-        } catch (\Exception $e) {
-            $this->transactions = collect();
-            session()->flash('error', 'Failed to retrieve transactions: '.$e->getMessage());
-        }
+        $this->modal = false;
     }
 
     public function headers(): array
@@ -94,63 +81,74 @@ class Transactionreport extends Component
         ];
     }
 
-    public function export()
+    public function export(): StreamedResponse
     {
-        if ($this->transactions->isEmpty()) {
-            session()->flash('error', 'No transactions to export.');
+        set_time_limit(600);
 
-            return;
-        }
+        $filename = 'transaction_report_'.$this->startdate.'_to_'.$this->enddate.'_'.date('Y-m-d_H-i-s').'.csv';
 
-        $filename = 'transactions_'.$this->startdate.'_to_'.$this->enddate.'_'.date('Y-m-d_H-i-s').'.csv';
-        $filePath = public_path($filename);
+        // Get transactions using repository
+        $transactions = $this->banktransactionrepo->gettransactionbydaterange(
+            $this->startdate,
+            $this->enddate,
+            $this->bankaccount
+        ) ?? collect();
 
-        $file = fopen($filePath, 'w');
+        return response()->streamDownload(function () use ($transactions) {
+            $handle = fopen('php://output', 'w');
 
-        // Write headers
-        fputcsv($file, [
-            'Date',
-            'Customer',
-            'Account Number',
-            'Description',
-            'Source Reference',
-            'Statement Reference',
-            'Reference Number',
-            'Currency',
-            'Amount',
-            'Status',
-        ]);
+            // Write CSV headers
+            fputcsv($handle, [
+                'Date',
+                'Customer',
+                'Account Number',
+                'Description',
+                'Source Reference',
+                'Statement Reference',
+                'Reference Number',
+                'Currency',
+                'Amount',
+                'Status',
+            ]);
 
-        // Write data rows
-        foreach ($this->transactions as $transaction) {
-            // Format date
-            $formattedDate = $transaction->transactiondate;
-            if (str_contains($transaction->transactiondate, '/')) {
-                $formattedDate = Carbon::createFromFormat('d/m/Y', $transaction->transactiondate)->format('Y-m-d');
+            foreach ($transactions as $transaction) {
+                // Format date
+                $formattedDate = $transaction->transactiondate;
+                if (str_contains($transaction->transactiondate, '/')) {
+                    try {
+                        $formattedDate = Carbon::createFromFormat('d/m/Y', $transaction->transactiondate)->format('Y-m-d');
+                    } catch (\Exception $e) {
+                        // Keep original if parsing fails
+                    }
+                }
+
+                fputcsv($handle, [
+                    $formattedDate,
+                    $transaction->customer?->name ?? '-',
+                    $transaction->accountnumber,
+                    $transaction->description,
+                    $transaction->sourcereference,
+                    $transaction->statementreference,
+                    $transaction->referencenumber,
+                    $transaction->currency,
+                    $transaction->amount,
+                    $transaction->status,
+                ]);
             }
 
-            fputcsv($file, [
-                $formattedDate,
-                $transaction->customer?->name ?? '-',
-                $transaction->accountnumber,
-                $transaction->description,
-                $transaction->sourcereference,
-                $transaction->statementreference,
-                $transaction->referencenumber,
-                $transaction->currency,
-                $transaction->amount,
-                $transaction->status,
-            ]);
-        }
-
-        fclose($file);
-
-        return response()->download($filePath)->deleteFileAfterSend(true);
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ]);
     }
 
     public function render()
     {
+        $transactions = $this->getTransactions();
+
         return view('livewire.admin.finance.transactionreport', [
+            'transactions' => $transactions,
             'bankaccounts' => $this->getBankAccounts(),
             'headers' => $this->headers(),
         ]);
