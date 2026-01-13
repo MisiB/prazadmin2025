@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Paymentvoucher extends Model
+class PaymentVoucher extends Model
 {
     protected $table = 'payment_vouchers';
   //
