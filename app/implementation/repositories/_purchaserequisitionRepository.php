@@ -6,7 +6,7 @@ use App\Interfaces\repositories\ibudgetInterface;
 use App\Interfaces\repositories\ipaymentrequisitionInterface;
 use App\Interfaces\repositories\ipurchaseerequisitionInterface;
 use App\Models\Departmentuser;
-use App\Models\Paymentrequisition;
+use App\Models\PaymentRequisition;
 use App\Models\Purchaserequisition;
 use App\Models\Purchaserequisitionapproval;
 use App\Models\Purchaserequisitionaward;
@@ -623,7 +623,7 @@ class _purchaserequisitionRepository implements ipurchaseerequisitionInterface
     {
         try {
             // Check if payment requisition already exists for this purchase requisition
-            $existingPaymentRequisition = Paymentrequisition::where('source_type', 'PURCHASE_REQUISITION')
+            $existingPaymentRequisition = PaymentRequisition::where('source_type', 'PURCHASE_REQUISITION')
                 ->where('source_id', $purchaserequisition->id)
                 ->first();
 

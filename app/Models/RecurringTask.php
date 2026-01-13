@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Recurringtask extends Model
+class RecurringTask extends Model
 {
     protected $guarded = [];
 
