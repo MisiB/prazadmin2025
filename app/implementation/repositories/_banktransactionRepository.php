@@ -287,6 +287,32 @@ class _banktransactionRepository implements ibanktransactionInterface
             ->get();
     }
 
+    public function gettransactionbydaterangePaginated($startdate, $enddate, $bankaccount = null, $perPage = 100)
+    {
+        $startDateFormatted = Carbon::parse($startdate)->format('Y-m-d');
+        $endDateFormatted = Carbon::parse($enddate)->format('Y-m-d');
+
+        // Handle both date formats:
+        // - New format: Y-m-d (e.g., 2025-01-02)
+        // - Old format: d/m/Y (e.g., 11/12/2020)
+        $query = $this->model->whereRaw(
+            "CASE 
+                WHEN transactiondate LIKE '%/%' THEN STR_TO_DATE(transactiondate, '%d/%m/%Y')
+                ELSE STR_TO_DATE(transactiondate, '%Y-%m-%d')
+            END BETWEEN ? AND ?",
+            [$startDateFormatted, $endDateFormatted]
+        );
+
+        if ($bankaccount != null) {
+            $query->where('accountnumber', $bankaccount);
+        }
+
+        return $query->with('customer:id,name,regnumber')
+            ->select('id', 'transactiondate', 'referencenumber', 'statementreference', 'sourcereference', 'description', 'accountnumber', 'currency', 'amount', 'status', 'regnumber', 'customer_id', 'created_at')
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+    }
+
     public function getbankreconciliations($year)
     {
         return $this->bankreconciliationmodel->with('currency', 'bankaccount', 'user')->where('year', '=', $year)->get();

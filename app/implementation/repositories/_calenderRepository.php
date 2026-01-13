@@ -305,14 +305,15 @@ class _calenderRepository implements icalendarInterface
             ]);
         }
 
-        // Send notification to supervisor using the priority chain
-        $notifyUserId = $this->getNotificationRecipient(Auth::user()->id);
-        if ($notifyUserId) {
-            $notifyUser = \App\Models\User::find($notifyUserId);
-            if ($notifyUser) {
-                $notifyUser->notify(new TaskSubmittedForApproval($this->taskRepository, $calendarweek_id, Auth::user()->id));
-            }
-        }
+        // Notification to supervisor is now sent via scheduled command (tasks:send-supervisor-reminders)
+        // which runs twice daily at 10:00 AM and 3:00 PM to send comprehensive reminders
+        // $notifyUserId = $this->getNotificationRecipient(Auth::user()->id);
+        // if ($notifyUserId) {
+        //     $notifyUser = \App\Models\User::find($notifyUserId);
+        //     if ($notifyUser) {
+        //         $notifyUser->notify(new TaskSubmittedForApproval($this->taskRepository, $calendarweek_id, Auth::user()->id));
+        //     }
+        // }
 
         return ['status' => 'success', 'message' => 'Sent for approval successfully'];
     }

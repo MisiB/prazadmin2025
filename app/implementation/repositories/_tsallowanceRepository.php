@@ -12,7 +12,6 @@ use App\Models\TsAllowanceApproval;
 use App\Models\User;
 use App\Models\Workflow;
 use App\Notifications\TsAllowanceAlert;
-use App\Notifications\TsAllowanceCompleted;
 use App\Notifications\TsAllowanceSendBack;
 use App\Notifications\TsAllowanceUpdate;
 use Exception;
@@ -590,8 +589,8 @@ class _tsallowanceRepository implements itsallowanceInterface
                 $record->status = $nextParameter->status;
                 $users = User::permission($nextParameter->permission->name)->get();
             } else {
-                // All approvals complete
-                $record->status = 'APPROVED';
+                // All approvals complete - set to AWAITING_PAYMENT for payment voucher
+                $record->status = 'AWAITING_PAYMENT';
             }
 
             // Update approval section if CEO
@@ -768,73 +767,13 @@ class _tsallowanceRepository implements itsallowanceInterface
 
     public function verifyfinance($id, $data)
     {
-        try {
-            $record = $this->tsallowance->where('id', $id)->first();
-
-            if ($record->status != 'APPROVED') {
-                return ['status' => 'error', 'message' => 'Finance Verification Can Only be Done for Approved Applications'];
-            }
-
-            // Update finance verification section
-            $record->verified_allowance_rates = $data['verified_allowance_rates'] ?? [];
-            $record->verified_total_amount = $data['verified_total_amount'];
-            $record->exchange_rate_id = $data['exchange_rate_id'] ?? null;
-            $record->exchange_rate_applied = $data['exchange_rate_applied'] ?? null;
-            $record->finance_officer_name = Auth::user()->name;
-            $record->finance_digital_signature = true;
-            $record->verification_date = now();
-            $record->finance_officer_user_id = Auth::user()->id;
-            $record->finance_comment = $data['finance_comment'] ?? '';
-            $record->status = 'FINANCE_VERIFIED';
-            $record->save();
-
-            return ['status' => 'success', 'message' => 'Finance Verification Completed Successfully'];
-        } catch (Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
-        }
+        // This method is deprecated - payment execution is now handled by Payment Voucher module
+        return ['status' => 'error', 'message' => 'Finance verification is no longer used. Payment is handled through Payment Voucher module.'];
     }
 
     public function processpayment($id, $data)
     {
-        try {
-            $record = $this->tsallowance->with('applicant')->where('id', $id)->first();
-
-            if ($record->status != 'APPROVED') {
-                return ['status' => 'error', 'message' => 'Payment can only be processed for CEO approved allowances'];
-            }
-
-            // Update payment section
-            $record->currency_id = $data['currency_id'] ?? null;
-            $record->amount_paid_usd = $data['amount_paid_usd'];
-            $record->amount_paid_original = $data['amount_paid_original'] ?? $data['amount_paid_usd'];
-            $record->payment_method = $data['payment_method'];
-            $record->payment_reference = $data['payment_reference'];
-            $record->payment_date = $data['payment_date'];
-            $record->proof_of_payment_path = $data['proof_of_payment_path'] ?? null;
-            $record->payment_capture_date = now();
-            $record->payment_notes = $data['payment_notes'] ?? null;
-            $record->status = 'PAYMENT_PROCESSED';
-            $record->save();
-
-            // Notify applicant of payment
-            if ($record->applicant) {
-                $array = [
-                    'application_number' => $record->application_number,
-                    'trip_start_date' => $record->trip_start_date?->format('Y-m-d') ?? 'N/A',
-                    'trip_end_date' => $record->trip_end_date?->format('Y-m-d') ?? 'N/A',
-                    'reason_for_allowances' => $record->reason_for_allowances,
-                    'amount_paid' => $data['amount_paid_usd'],
-                    'payment_method' => $data['payment_method'],
-                    'payment_reference' => $data['payment_reference'],
-                    'payment_date' => $data['payment_date'],
-                    'uuid' => $record->uuid,
-                ];
-                $record->applicant->notify(new TsAllowanceCompleted(collect($array)));
-            }
-
-            return ['status' => 'success', 'message' => 'Payment Processed Successfully'];
-        } catch (Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
-        }
+        // This method is deprecated - payment execution is now handled by Payment Voucher module
+        return ['status' => 'error', 'message' => 'Payment processing is no longer used. Payment is handled through Payment Voucher module.'];
     }
 }

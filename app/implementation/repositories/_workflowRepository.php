@@ -34,7 +34,7 @@ class _workflowRepository implements iworkflowInterface
 
     public function getworkflowbystatus($status)
     {
-        return $this->workflow->with('workflowparameters')->where('name', $status)->first();
+        return $this->workflow->with('workflowparameters.permission')->where('name', $status)->first();
     }
 
     public function createworkflow($data)

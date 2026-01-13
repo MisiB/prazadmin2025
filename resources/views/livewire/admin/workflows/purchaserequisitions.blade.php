@@ -33,6 +33,7 @@
                     'REJECTED' => 'badge-error',
                     'AWAITING_PMU' => 'badge-warning',
                     'AWAITING_DELIVERY' => 'badge-info',
+                    'Completed' => 'badge-success',
                 ];
                 $color = $statusColors[$purchaserequisition->status] ?? 'badge-ghost';
             @endphp
