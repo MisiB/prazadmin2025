@@ -3,8 +3,10 @@
 namespace App\implementation\repositories;
 
 use App\Interfaces\repositories\ibudgetInterface;
+use App\Interfaces\repositories\ipaymentrequisitionInterface;
 use App\Interfaces\repositories\ipurchaseerequisitionInterface;
 use App\Models\Departmentuser;
+use App\Models\PaymentRequisition;
 use App\Models\Purchaserequisition;
 use App\Models\Purchaserequisitionapproval;
 use App\Models\Purchaserequisitionaward;
@@ -16,6 +18,7 @@ use App\Notifications\AwaitingdeliveryNotification;
 use App\Notifications\PurchaseRequisitionAlert;
 use App\Notifications\PurchaseRequisitionNotification;
 use App\Notifications\PurchaseRequisitionUpdate;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -43,7 +46,9 @@ class _purchaserequisitionRepository implements ipurchaseerequisitionInterface
 
     protected $departmentuser;
 
-    public function __construct(Purchaserequisition $purchaserequisition, Purchaserequisitionapproval $purchaserequisitionapproval, Purchaserequisitionaward $purchaserequisitionaward, Purchaserequisitionawarddocument $purchaserequisitionawarddocument, Purchaserequisitionawarddelivery $purchaserequisitionawarddelivery, Workflow $workflow, ibudgetInterface $budgetrepo, Departmentuser $departmentuser)
+    protected $paymentrequisitionrepo;
+
+    public function __construct(Purchaserequisition $purchaserequisition, Purchaserequisitionapproval $purchaserequisitionapproval, Purchaserequisitionaward $purchaserequisitionaward, Purchaserequisitionawarddocument $purchaserequisitionawarddocument, Purchaserequisitionawarddelivery $purchaserequisitionawarddelivery, Workflow $workflow, ibudgetInterface $budgetrepo, Departmentuser $departmentuser, ipaymentrequisitionInterface $paymentrequisitionrepo)
     {
         $this->purchaserequisition = $purchaserequisition;
         $this->purchaserequisitionapproval = $purchaserequisitionapproval;
@@ -53,6 +58,7 @@ class _purchaserequisitionRepository implements ipurchaseerequisitionInterface
         $this->workflow = $workflow;
         $this->budgetrepo = $budgetrepo;
         $this->departmentuser = $departmentuser;
+        $this->paymentrequisitionrepo = $paymentrequisitionrepo;
     }
 
     public function getpurchaseerequisitions($year)
@@ -472,13 +478,14 @@ class _purchaserequisitionRepository implements ipurchaseerequisitionInterface
     public function recorddelivery($awardId, $data)
     {
         try {
-            $award = $this->purchaserequisitionaward->find($awardId);
+            $award = $this->purchaserequisitionaward->with('purchaserequisition.budgetitem', 'purchaserequisition.department', 'purchaserequisition.requestedby', 'customer')->find($awardId);
             if (! $award) {
                 return ['status' => 'error', 'message' => 'Award not found'];
             }
 
             $quantityDelivered = (int) $data['quantity_delivered'];
             $currentDelivered = $award->quantity_delivered ?? 0;
+            $currentPaid = $award->quantity_paid ?? 0;
             $newTotalDelivered = $currentDelivered + $quantityDelivered;
 
             if ($newTotalDelivered > $award->quantity) {
@@ -486,7 +493,7 @@ class _purchaserequisitionRepository implements ipurchaseerequisitionInterface
             }
 
             // Create delivery record
-            $this->purchaserequisitionawarddelivery->create([
+            $deliveryRecord = $this->purchaserequisitionawarddelivery->create([
                 'purchaserequisitionaward_id' => $awardId,
                 'quantity_delivered' => $quantityDelivered,
                 'delivery_date' => $data['delivery_date'] ?? now(),
@@ -504,6 +511,14 @@ class _purchaserequisitionRepository implements ipurchaseerequisitionInterface
             $award->delivered_by = Auth::user()->id;
             $award->save();
 
+            // Calculate payment eligible quantity (delivered - paid)
+            $paymentEligibleQuantity = $newTotalDelivered - $currentPaid;
+
+            // If there's payment eligible quantity, create payment requisition immediately
+            if ($paymentEligibleQuantity > 0) {
+                $this->createPaymentRequisitionForDeliveredQuantities($award, $paymentEligibleQuantity, $deliveryRecord);
+            }
+
             // Check if all awards for this requisition are fully delivered
             $requisition = $award->purchaserequisition;
             $allAwards = $requisition->awards;
@@ -511,15 +526,178 @@ class _purchaserequisitionRepository implements ipurchaseerequisitionInterface
                 return ($award->quantity_delivered ?? 0) >= $award->quantity;
             });
 
-            // If all awards are fully delivered, update requisition status to AWAITING_PAYMENT
+            // Update requisition status based on delivery status
             if ($allFullyDelivered && $requisition->status == 'AWAITING_DELIVERY') {
-                $requisition->status = 'AWAITING_PAYMENT';
+                // All items fully delivered - mark requisition as Completed
+                $requisition->status = 'Completed';
                 $requisition->save();
             }
 
             return ['status' => 'success', 'message' => 'Delivery recorded successfully'];
         } catch (Exception $e) {
             return ['status' => 'error', 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Create payment requisition for delivered quantities (Alternate Flow - PR-driven)
+     * This is called immediately when delivery is recorded
+     */
+    private function createPaymentRequisitionForDeliveredQuantities($award, int $paymentEligibleQuantity, $deliveryRecord)
+    {
+        try {
+            $requisition = $award->purchaserequisition;
+            $pr = $requisition->load('budgetitem', 'department', 'requestedby');
+
+            // Calculate unit price (amount / quantity or use unitprice if available)
+            $unitPrice = $award->unitprice ?? ($award->quantity > 0 ? $award->amount / $award->quantity : 0);
+            $lineTotal = $paymentEligibleQuantity * $unitPrice;
+
+            if ($lineTotal <= 0) {
+                return; // No amount to pay
+            }
+
+            // Get currency from award or budget item
+            $currencyId = $award->currency_id ?? $pr->budgetitem->currency_id ?? 1;
+
+            // Prepare delivery documents for attachment
+            $attachments = [];
+            if ($deliveryRecord->invoice_filepath) {
+                $attachments['invoice'] = $deliveryRecord->invoice_filepath;
+            }
+            if ($deliveryRecord->delivery_note_filepath) {
+                $attachments['delivery_note'] = $deliveryRecord->delivery_note_filepath;
+            }
+            if ($deliveryRecord->tax_clearance_filepath) {
+                $attachments['tax_clearance'] = $deliveryRecord->tax_clearance_filepath;
+            }
+
+            // Format delivery date
+            $deliveryDateFormatted = $deliveryRecord->delivery_date instanceof Carbon
+                ? $deliveryRecord->delivery_date->format('Y-m-d')
+                : Carbon::parse($deliveryRecord->delivery_date)->format('Y-m-d');
+
+            // Create payment requisition data
+            $paymentRequisitionData = [
+                'source_type' => 'PURCHASE_REQUISITION',
+                'source_id' => $pr->id,
+                'budget_id' => $pr->budgetitem->budget_id,
+                'budget_line_item_id' => $pr->budgetitem_id,
+                'purpose' => 'Payment for Purchase Requisition: '.$pr->prnumber.' - '.$pr->purpose.' (Delivery: '.$deliveryDateFormatted.')',
+                'department_id' => $pr->department_id,
+                'currency_id' => $currencyId,
+                'status' => 'HOD_RECOMMENDED', // Skip DRAFT, SUBMITTED - enter at HOD_RECOMMENDED
+                'created_by' => $pr->requested_by,
+                'line_items' => [
+                    [
+                        'quantity' => $paymentEligibleQuantity,
+                        'description' => 'Payment for delivery to '.($award->customer->name ?? 'Supplier').' - Tender: '.$award->tendernumber.($deliveryRecord->delivery_notes ? ' - '.$deliveryRecord->delivery_notes : ''),
+                        'unit_amount' => $unitPrice,
+                        'line_total' => $lineTotal,
+                    ],
+                ],
+                'attachments' => $attachments,
+            ];
+
+            // Create the payment requisition
+            $result = $this->paymentrequisitionrepo->createpaymentrequisition($paymentRequisitionData);
+
+            // Update paid quantity if payment requisition was created successfully
+            if ($result['status'] == 'success') {
+                $award->quantity_paid = ($award->quantity_paid ?? 0) + $paymentEligibleQuantity;
+                $award->save();
+            }
+
+        } catch (Exception $e) {
+            // Log error but don't fail the delivery process
+            \Log::error('Failed to auto-create payment requisition for delivered quantities: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Auto-create payment requisition from purchase requisition when it reaches AWAITING_PAYMENT status
+     *
+     * @deprecated This method is kept for backward compatibility but is replaced by createPaymentRequisitionForDeliveredQuantities
+     */
+    private function createPaymentRequisitionFromPurchaseRequisition(Purchaserequisition $purchaserequisition)
+    {
+        try {
+            // Check if payment requisition already exists for this purchase requisition
+            $existingPaymentRequisition = PaymentRequisition::where('source_type', 'PURCHASE_REQUISITION')
+                ->where('source_id', $purchaserequisition->id)
+                ->first();
+
+            if ($existingPaymentRequisition) {
+                return; // Already created
+            }
+
+            // Get purchase requisition with relationships
+            $pr = $purchaserequisition->load('budgetitem', 'department', 'requestedby', 'awards.customer');
+
+            // Calculate total amount from unpaid delivered quantities only
+            $totalAmount = 0;
+            $lineItems = [];
+
+            foreach ($pr->awards as $award) {
+                $quantityDelivered = $award->quantity_delivered ?? 0;
+                $quantityPaid = $award->quantity_paid ?? 0;
+                $paymentEligibleQuantity = $quantityDelivered - $quantityPaid;
+
+                if ($paymentEligibleQuantity > 0) {
+                    $unitPrice = $award->unitprice ?? ($award->quantity > 0 ? $award->amount / $award->quantity : 0);
+                    $lineTotal = $paymentEligibleQuantity * $unitPrice;
+                    $totalAmount += $lineTotal;
+
+                    $lineItems[] = [
+                        'quantity' => $paymentEligibleQuantity,
+                        'description' => 'Payment for award to '.($award->customer->name ?? 'Supplier').' - Tender: '.$award->tendernumber,
+                        'unit_amount' => $unitPrice,
+                        'line_total' => $lineTotal,
+                    ];
+                }
+            }
+
+            if ($totalAmount <= 0) {
+                return; // No amount to pay
+            }
+
+            // Get currency from budget item or first award
+            $currencyId = $pr->budgetitem->currency_id ?? $pr->awards->first()?->currency_id ?? 1;
+
+            // Create payment requisition data
+            $paymentRequisitionData = [
+                'source_type' => 'PURCHASE_REQUISITION',
+                'source_id' => $pr->id,
+                'budget_id' => $pr->budgetitem->budget_id,
+                'budget_line_item_id' => $pr->budgetitem_id,
+                'purpose' => 'Payment for Purchase Requisition: '.$pr->prnumber.' - '.$pr->purpose,
+                'department_id' => $pr->department_id,
+                'currency_id' => $currencyId,
+                'status' => 'HOD_RECOMMENDED', // Skip DRAFT, SUBMITTED - enter at HOD_RECOMMENDED
+                'created_by' => $pr->requested_by,
+                'line_items' => $lineItems,
+            ];
+
+            // Create the payment requisition
+            $result = $this->paymentrequisitionrepo->createpaymentrequisition($paymentRequisitionData);
+
+            // Update paid quantities if payment requisition was created successfully
+            if ($result['status'] == 'success') {
+                foreach ($pr->awards as $award) {
+                    $quantityDelivered = $award->quantity_delivered ?? 0;
+                    $quantityPaid = $award->quantity_paid ?? 0;
+                    $paymentEligibleQuantity = $quantityDelivered - $quantityPaid;
+
+                    if ($paymentEligibleQuantity > 0) {
+                        $award->quantity_paid = $quantityPaid + $paymentEligibleQuantity;
+                        $award->save();
+                    }
+                }
+            }
+
+        } catch (Exception $e) {
+            // Log error but don't fail the delivery process
+            \Log::error('Failed to auto-create payment requisition from purchase requisition: '.$e->getMessage());
         }
     }
 }

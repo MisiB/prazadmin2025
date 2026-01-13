@@ -367,8 +367,8 @@ class _staffwelfareloanRepository implements istaffwelfareloanInterface
                 $record->status = $nextParameter->status;
                 $users = User::permission($nextParameter->permission->name)->get();
             } else {
-                // All approvals complete
-                $record->status = 'APPROVED';
+                // All approvals complete - set to AWAITING_PAYMENT for payment voucher
+                $record->status = 'AWAITING_PAYMENT';
             }
 
             $record->save();
@@ -528,53 +528,8 @@ class _staffwelfareloanRepository implements istaffwelfareloanInterface
 
     public function executepayment($id, $data)
     {
-        try {
-            $record = $this->staffwelfareloan->where('id', $id)->first();
-
-            if ($record->status != 'APPROVED') {
-                return ['status' => 'error', 'message' => 'Payment Can Only be Executed for Approved Loans'];
-            }
-
-            // Create payment record
-            $this->staffwelfareloanpayment->create([
-                'staff_welfare_loan_id' => $record->id,
-                'currency_id' => $data['currency_id'] ?? null,
-                'exchangerate_id' => $data['exchangerate_id'] ?? null,
-                'amount_paid' => $data['amount_paid'],
-                'amount_paid_original' => $data['amount_paid_original'] ?? $data['amount_paid'],
-                'amount_paid_usd' => $data['amount_paid_usd'] ?? $data['amount_paid'],
-                'exchange_rate_used' => $data['exchange_rate_used'] ?? null,
-                'payment_method' => $data['payment_method'],
-                'payment_reference' => $data['payment_reference'],
-                'payment_date' => $data['payment_date'],
-                'proof_of_payment_path' => $data['proof_of_payment_path'],
-                'finance_officer_user_id' => Auth::user()->id,
-                'notes' => $data['notes'] ?? null,
-            ]);
-
-            // Update loan record
-            $record->amount_paid = $data['amount_paid_usd'] ?? $data['amount_paid'];
-            $record->payment_method = $data['payment_method'];
-            $record->payment_reference = $data['payment_reference'];
-            $record->payment_date = $data['payment_date'];
-            $record->proof_of_payment_path = $data['proof_of_payment_path'];
-            $record->finance_officer_user_id = Auth::user()->id;
-            $record->finance_officer_confirmation = true;
-            $record->payment_capture_date = now();
-            $record->status = 'AWAITING_ACKNOWLEDGEMENT';
-            $record->save();
-
-            // Notify applicant
-            $array = [];
-            $array['loan_number'] = $record->loan_number;
-            $array['amount_paid'] = $data['amount_paid_usd'] ?? $data['amount_paid'];
-            $array['uuid'] = $record->uuid;
-            $record->applicant->notify(new StaffWelfareLoanNotification(collect($array)));
-
-            return ['status' => 'success', 'message' => 'Payment Executed Successfully'];
-        } catch (Exception $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
-        }
+        // This method is deprecated - payment execution is now handled by Payment Voucher module
+        return ['status' => 'error', 'message' => 'Payment execution is no longer used. Payment is handled through Payment Voucher module.'];
     }
 
     public function acknowledgedebt($id, $data)
