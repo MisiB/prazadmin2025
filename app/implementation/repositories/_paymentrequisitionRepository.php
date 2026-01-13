@@ -5,10 +5,10 @@ namespace App\implementation\repositories;
 use App\Interfaces\repositories\ibudgetInterface;
 use App\Interfaces\repositories\ipaymentrequisitionInterface;
 use App\Models\Departmentuser;
-use App\Models\Paymentrequisition;
-use App\Models\Paymentrequisitionapproval;
-use App\Models\Paymentrequisitiondocument;
-use App\Models\Paymentrequisitionlineitem;
+use App\Models\PaymentRequisition;
+use App\Models\PaymentRequisitionApproval;
+use App\Models\PaymentRequisitionDocument;
+use App\Models\PaymentRequisitionLineItem;
 use App\Models\User;
 use App\Models\Workflow;
 use App\Notifications\PaymentRequisitionAlert;
@@ -35,7 +35,7 @@ class _paymentrequisitionRepository implements ipaymentrequisitionInterface
 
     protected $paymentrequisitiondocument;
 
-    public function __construct(Paymentrequisition $paymentrequisition, Paymentrequisitionapproval $paymentrequisitionapproval, Paymentrequisitionlineitem $paymentrequisitionlineitem, Paymentrequisitiondocument $paymentrequisitiondocument, Workflow $workflow, ibudgetInterface $budgetrepo, Departmentuser $departmentuser)
+    public function __construct(PaymentRequisition $paymentrequisition, PaymentRequisitionApproval $paymentrequisitionapproval, PaymentRequisitionLineItem $paymentrequisitionlineitem, PaymentRequisitionDocument $paymentrequisitiondocument, Workflow $workflow, ibudgetInterface $budgetrepo, Departmentuser $departmentuser)
     {
         $this->paymentrequisition = $paymentrequisition;
         $this->paymentrequisitionapproval = $paymentrequisitionapproval;

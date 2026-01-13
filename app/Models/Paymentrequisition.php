@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Paymentrequisition extends Model
+class PaymentRequisition extends Model
 {
     protected $table = 'payment_requisitions';
 
@@ -85,6 +85,6 @@ class Paymentrequisition extends Model
 
     public function documents(): HasMany
     {
-        return $this->hasMany(Paymentrequisitiondocument::class, 'paymentrequisition_id');
+        return $this->hasMany(PaymentRequisitionDocument::class, 'paymentrequisition_id');
     }
 }

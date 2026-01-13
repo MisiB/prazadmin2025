@@ -3,8 +3,8 @@
 namespace App\implementation\repositories;
 
 use App\Interfaces\repositories\ipaymentvoucherInterface;
-use App\Models\Paymentrequisition;
-use App\Models\Paymentrequisitionlineitem;
+use App\Models\PaymentRequisition;
+use App\Models\PaymentRequisitionLineItem;
 use App\Models\Paymentvoucher;
 use App\Models\Paymentvoucherapproval;
 use App\Models\Paymentvoucherauditlog;
