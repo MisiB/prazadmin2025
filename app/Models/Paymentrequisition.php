@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class PaymentRequisition extends Model
+class Paymentrequisition extends Model
 {
     protected $table = 'payment_requisitions';
 

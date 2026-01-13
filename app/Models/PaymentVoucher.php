@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class PaymentVoucher extends Model
+class Paymentvoucher extends Model
 {
     protected $table = 'payment_vouchers';
-
+  //
+  
     protected function casts(): array
     {
         return [

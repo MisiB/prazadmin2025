@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class PaymentVoucherItem extends Model
+class Paymentvoucheritem extends Model
 {
     protected $table = 'payment_voucher_items';
 

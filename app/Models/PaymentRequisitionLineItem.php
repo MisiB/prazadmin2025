@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class PaymentRequisitionLineItem extends Model
+class Paymentrequisitionlineitem extends Model
 {
     protected $table = 'payment_requisition_line_items';
 
