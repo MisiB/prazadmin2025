@@ -27,14 +27,4 @@ class Workflowparameter extends Model
     {
         return $this->hasMany(TsAllowanceApproval::class);
     }
-
-    public function paymentrequisitionapprovals()
-    {
-        return $this->hasMany(PaymentRequisitionApproval::class);
-    }
-
-    public function paymentvoucherapprovals()
-    {
-        return $this->hasMany(PaymentVoucherApproval::class);
-    }
 }
