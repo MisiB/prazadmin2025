@@ -39,6 +39,8 @@ class Returnsoverview extends Component
         $this->schoolexpensecategories = $this->getschoolexpesnsecategories()??[];
         $this->year = $this->schoolService->year;
         $this->month = $this->schoolService->month;
+        $this->schoolname=null;
+        $this->schoolid=null;
     }
 
     public function getschooltotalapprovedexpenditure()
@@ -95,6 +97,7 @@ class Returnsoverview extends Component
 
     public function backtoschoolsearch()
     {
+        $this->currentschool=null;
         $this->redirect(route('admin.trackers.returnsoverview'));
     }
 

@@ -43,10 +43,17 @@ class _schoolRepository implements ischoolInterface
         return $this->model->where("school_number", $schoolnumber)->first();
     }
     public function getschoolbynameornumber($schoolname=null, $schoolnumber=null)
-    {
-        return $this->model->orWhere('name', 'like', '%' . $schoolname . '%')
-            ->orWhere('school_number', '=', $schoolnumber)
-            ->first();
+    { 
+        if($schoolname!==null)
+        {
+            return $this->model->orWhere('name', 'like', '%' . $schoolname . '%')->first();
+        }elseif($schoolnumber!=null)
+        {
+            return $this->model->where("school_number", $schoolnumber)->first();
+        }else{
+            return false;
+        }
+
     }
     public function updateschool($schoolnumber, $data)
     {
