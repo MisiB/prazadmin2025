@@ -100,10 +100,14 @@ Route::middleware('auth')->group(function () {
     Volt::route('/workflows/storesrequisitions', 'admin.workflows.storesrequisitions')->name('admin.workflows.storesrequisitions');
     Volt::route('/approvals/storesrequisitions', 'admin.workflows.approvals.deptstoresrequisitionapprovals')->name('admin.workflows.approvals.deptstoresrequisitionapprovals');
     Volt::route('/approvals/storesrequisitiondelivery', 'admin.workflows.approvals.storesrequisitiondelivery')->name('admin.workflows.approvals.storesrequisitiondelivery');
+    //Trackers routes
     Volt::route('/trackers/performancetracker', 'admin.trackers.performancetracker')->name('admin.trackers.performancetracker');
     Volt::route('/trackers/budgettracker', 'admin.trackers.budgettracker')->name('admin.trackers.budgettracker');
     Volt::route('/trackers/departmentaldashboard', 'admin.trackers.departmentaldashboard')->name('admin.trackers.departmentaldashboard');
     Volt::route('/trackers/organisationdashboard', 'admin.trackers.organisationdashboard')->name('admin.trackers.organisationdashboard');
+    // M'n'e admin dashboard routes
+    Volt::route('/trackers/returnsoverview', 'admin.trackers.returnsoverview')->name('admin.trackers.returnsoverview');
+    
     Volt::route('/calendar', 'admin.weekday-calendar')->name('admin.calendar');
     Volt::route('/issues', 'admin.issues')->name('admin.issues');
     Volt::route('/myissues', 'admin.my-issues')->name('admin.myissues');

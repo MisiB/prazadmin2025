@@ -45,6 +45,10 @@ use App\implementation\repositories\_receiverstoresrequisitionapprovalRepository
 use App\implementation\repositories\_recurringTaskRepository;
 use App\implementation\repositories\_revenuepostingRepository;
 use App\implementation\repositories\_roleRepository;
+use App\implementation\repositories\_schoolexpensecategoryRepository;
+use App\implementation\repositories\_schoolmonthlyreturndataRepository;
+use App\implementation\repositories\_schoolmonthlyreturnRepository;
+use App\implementation\repositories\_schoolRepository;
 use App\implementation\repositories\_staffwelfareloanRepository;
 use App\implementation\repositories\_storesrequisitionRepository;
 use App\implementation\repositories\_strategylogRepository;
@@ -70,6 +74,7 @@ use App\implementation\services\_leaverequestService;
 use App\implementation\services\_paymentrequisitionService;
 use App\implementation\services\_paymentvoucherService;
 use App\implementation\services\_recurringTaskService;
+use App\implementation\services\_schoolService;
 use App\implementation\services\_strategyImportService;
 use App\implementation\services\_taskinstanceService;
 use App\implementation\services\_taskReminderService;
@@ -117,6 +122,10 @@ use App\Interfaces\repositories\ireceiverstoresrequisitionapprovalInterface;
 use App\Interfaces\repositories\irecurringTaskInterface;
 use App\Interfaces\repositories\irevenuepostingInterface;
 use App\Interfaces\repositories\iroleRepository;
+use App\Interfaces\repositories\ischoolexpensecategoryInterface;
+use App\Interfaces\repositories\ischoolInterface;
+use App\Interfaces\repositories\ischoolmonthlyreturndataInterface;
+use App\Interfaces\repositories\ischoolmonthlyreturnInterface;
 use App\Interfaces\repositories\istaffwelfareloanInterface;
 use App\Interfaces\repositories\istoresrequisitionInterface;
 use App\Interfaces\repositories\istrategyInterface;
@@ -143,6 +152,7 @@ use App\Interfaces\services\ileaverequestService;
 use App\Interfaces\services\ipaymentrequisitionService;
 use App\Interfaces\services\ipaymentvoucherService;
 use App\Interfaces\services\irecurringTaskService;
+use App\Interfaces\services\ischoolService;
 use App\Interfaces\services\istaffwelfareloanService;
 use App\Interfaces\services\IStrategyImportService;
 use App\Interfaces\services\itaskinstanceService;
@@ -214,6 +224,10 @@ class RepositoryProvider extends ServiceProvider
         $this->app->bind(ireceiverstoresrequisitionapprovalInterface::class, _receiverstoresrequisitionapprovalRepository::class);
         $this->app->bind(iadminstoresrequisitionapprovalInterface::class, _adminstoresrequisitionapprovalRepository::class);
         $this->app->bind(icalendarInterface::class, _calenderRepository::class);
+        $this->app->bind(ischoolexpensecategoryInterface::class, _schoolexpensecategoryRepository::class);
+        $this->app->bind(ischoolmonthlyreturndataInterface::class, _schoolmonthlyreturndataRepository::class);
+        $this->app->bind(ischoolmonthlyreturnInterface::class, _schoolmonthlyreturnRepository::class);
+        $this->app->bind(ischoolInterface::class, _schoolRepository::class);
 
         //   $this->app->bind(ihodstoresrequisitionapprovalInterface::class, _hodstoresrequisitionapprovalRepository::class);
         $this->app->bind(iworkshopInterface::class, _workshopRepository::class);
@@ -247,5 +261,6 @@ class RepositoryProvider extends ServiceProvider
         $this->app->bind(itsallowanceInterface::class, _tsallowanceRepository::class);
         $this->app->bind(itsallowanceService::class, \App\implementation\services\_tsallowanceService::class);
         $this->app->bind(IStrategyImportService::class, _strategyImportService::class);
+        $this->app->bind(ischoolService::class, _schoolService::class);
     }
 }
