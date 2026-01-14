@@ -12,7 +12,7 @@
     
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen font-sans antialiased bg-white">
+<body class="min-h-screen font-sans antialiased bg-white overflow-x-hidden">
  
     
     {{-- MAIN --}}

@@ -4,6 +4,7 @@ namespace App\implementation\repositories;
 
 use App\Interfaces\repositories\icurrencyInterface;
 use App\Models\Currency;
+use Illuminate\Support\Collection;
 
 class _currencyRepository implements icurrencyInterface
 {
@@ -26,6 +27,11 @@ class _currencyRepository implements icurrencyInterface
 
     public function getCurrencyByCode($code){
         return $this->model->where('name', $code)->first();
+    }
+    
+    public function getcurrenciesbystatus($status):Collection
+    {
+        return $this->model->where('status', $status)->get();
     }
 
     public function createcurrency($data){
