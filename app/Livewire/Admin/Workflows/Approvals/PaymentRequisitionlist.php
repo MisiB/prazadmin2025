@@ -92,9 +92,34 @@ class PaymentRequisitionlist extends Component
 
     public function getpaymentrequisitionlist()
     {
-        $result = $this->repository->getpaymentrequisitions($this->year);
+        // Get all requisitions for all workflow stages (not just paginated first page)
+        // We need to get requisitions for all statuses that are part of the workflow
+        $allRequisitions = collect();
 
-        return $result instanceof \Illuminate\Pagination\LengthAwarePaginator ? $result->getCollection() : collect($result);
+        // Get requisitions for each workflow status
+        $workflow = $this->getworkflowbystatus();
+        if ($workflow && $workflow->workflowparameters) {
+            foreach ($workflow->workflowparameters as $wp) {
+                $result = $this->repository->getpaymentrequisitionbystatus($this->year, $wp->status);
+                $requisitions = $result instanceof \Illuminate\Pagination\LengthAwarePaginator
+                    ? $result->getCollection()
+                    : collect($result);
+                $allRequisitions = $allRequisitions->merge($requisitions);
+            }
+        }
+
+        // Also get any other statuses that might exist
+        $otherStatuses = ['HOD_RECOMMENDED', 'ADMIN_REVIEWED', 'ADMIN_RECOMMENDED', 'AWAITING_PAYMENT', 'AWAITING_PAYMENT_VOUCHER'];
+        foreach ($otherStatuses as $status) {
+            $result = $this->repository->getpaymentrequisitionbystatus($this->year, $status);
+            $requisitions = $result instanceof \Illuminate\Pagination\LengthAwarePaginator
+                ? $result->getCollection()
+                : collect($result);
+            $allRequisitions = $allRequisitions->merge($requisitions);
+        }
+
+        // Remove duplicates by ID
+        return $allRequisitions->unique('id');
     }
 
     public function getawaitingrecommendation()

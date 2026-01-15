@@ -139,7 +139,7 @@
                                 @if($award->is_split_payment && $award->secondpaymentcurrency)
                                     <div class="text-xs text-gray-600">+ {{ $award->secondpaymentcurrency->name }}</div>
                                 @endif
-                                @if($award->pay_at_prevailing_rate && strtoupper($award->paymentcurrency->name) === 'ZIG')
+                                @if($award->pay_at_prevailing_rate && in_array(strtoupper($award->paymentcurrency->name), ['ZIG', 'USD']))
                                     <x-badge value="Prevailing Rate" class="badge-info badge-xs" />
                                 @endif
                             </div>
@@ -191,10 +191,13 @@
                                    @php
                                        $quantityDelivered = $award->quantity_delivered ?? 0;
                                        $remaining = $award->quantity - $quantityDelivered;
+                                       $hasPartialDelivery = $quantityDelivered > 0 && $remaining > 0;
+                                       $paymentEligibleQuantity = $quantityDelivered - ($award->quantity_paid ?? 0);
+                                       $canCreatePR = $hasPartialDelivery && $paymentEligibleQuantity > 0;
                                    @endphp
                                    <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
                                        <div class="flex items-center justify-between mb-2">
-                                           <div>
+                                           <div class="flex-1">
                                                <div class="font-semibold text-sm">{{ $award->customer->name }}</div>
                                                <div class="text-xs text-gray-600">{{ $award->tendernumber }}</div>
                                                @if($award->paymentcurrency)
@@ -203,23 +206,41 @@
                                                        @if($award->is_split_payment && $award->secondpaymentcurrency)
                                                            <span> + {{ $award->secondpaymentcurrency->name }}</span>
                                                        @endif
-                                                       @if($award->pay_at_prevailing_rate && strtoupper($award->paymentcurrency->name) === 'ZIG')
+                                                       @if($award->pay_at_prevailing_rate && in_array(strtoupper($award->paymentcurrency->name), ['ZIG', 'USD']))
                                                            <x-badge value="Prevailing Rate" class="badge-info badge-xs ml-1" />
                                                        @endif
                                                    </div>
                                                @endif
+                                               {{-- Delivery Status --}}
+                                               <div class="text-xs mt-2 space-y-1">
+                                                   <div class="flex items-center gap-2">
+                                                       <span class="font-medium text-gray-700">Delivered:</span>
+                                                       <x-badge :value="$quantityDelivered . ' / ' . $award->quantity" class="badge-success badge-xs" />
+                                                   </div>
+                                                   <div class="flex items-center gap-2">
+                                                       <span class="font-medium text-gray-700">Remaining:</span>
+                                                       <x-badge :value="$remaining" class="badge-warning badge-xs" />
+                                                   </div>
+                                               </div>
                                            </div>
-                                           <x-badge :value="$remaining . ' remaining'" class="badge-warning badge-sm" />
                                        </div>
-                                       <div class="flex gap-2">
-                                           <x-button icon="o-truck" class="btn-success btn-sm flex-1" 
-                                               label="Record Delivery" 
-                                               wire:click="openDeliveryModal({{ $award->id }})" />
-                                           @if($award->delivery_notes)
-                                               <x-button icon="o-information-circle" class="btn-info btn-sm btn-outline" 
-                                                   wire:click="$wire.deliveryNotesModal = true; $wire.selectedAwardId = {{ $award->id }}" 
-                                                   title="View delivery notes" />
+                                       <div class="flex flex-col gap-2">
+                                           @if($canCreatePR)
+                                               <x-button icon="o-document-plus" class="btn-primary btn-sm w-full" 
+                                                   label="Create Payment Requisition" 
+                                                   wire:click="createPaymentRequisition({{ $award->id }})"
+                                                   wire:confirm="Create payment requisition for {{ $paymentEligibleQuantity }} delivered item(s)?" />
                                            @endif
+                                           <div class="flex gap-2">
+                                               <x-button icon="o-truck" class="btn-success btn-sm flex-1" 
+                                                   label="Record Delivery" 
+                                                   wire:click="openDeliveryModal({{ $award->id }})" />
+                                               @if($award->delivery_notes)
+                                                   <x-button icon="o-information-circle" class="btn-info btn-sm btn-outline" 
+                                                       wire:click="$wire.deliveryNotesModal = true; $wire.selectedAwardId = {{ $award->id }}" 
+                                                       title="View delivery notes" />
+                                               @endif
+                                           </div>
                                        </div>
                                    </div>
                                @endforeach

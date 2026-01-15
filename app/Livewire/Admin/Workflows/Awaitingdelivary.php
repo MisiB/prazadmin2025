@@ -168,6 +168,21 @@ class Awaitingdelivary extends Component
         }
     }
 
+    public function createPaymentRequisition($awardId): void
+    {
+        $response = $this->repository->createPaymentRequisitionForAward($awardId);
+
+        if ($response['status'] == 'success') {
+            $this->success($response['message']);
+            // Refresh the requisition data to show updated information
+            if ($this->purchaserequisition) {
+                $this->purchaserequisition = $this->repository->getpurchaseerequisition($this->purchaserequisition->id);
+            }
+        } else {
+            $this->error($response['message']);
+        }
+    }
+
     public function render()
     {
         return view('livewire.admin.workflows.awaitingdelivary', [

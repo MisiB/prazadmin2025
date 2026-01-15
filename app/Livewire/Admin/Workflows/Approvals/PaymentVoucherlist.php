@@ -3,6 +3,9 @@
 namespace App\Livewire\Admin\Workflows\Approvals;
 
 use App\Interfaces\repositories\iauthInterface;
+use App\Interfaces\repositories\ipaymentrequisitionInterface;
+use App\Interfaces\repositories\istaffwelfareloanInterface;
+use App\Interfaces\repositories\itsallowanceInterface;
 use App\Interfaces\repositories\iworkflowInterface;
 use App\Interfaces\services\ipaymentvoucherService;
 use Illuminate\Support\Facades\Auth;
@@ -37,11 +40,39 @@ class PaymentVoucherlist extends Component
 
     public $approvalcode;
 
+    public $viewItemModal = false;
+
+    public $viewedItemDetails = null;
+
+    public $viewedItemSourceType = null;
+
+    public $viewedItemLineId = null;
+
+    public $bulkapprovalmodal = false;
+
+    public $selectedForBulk = [];
+
+    public $bulkComment = '';
+
+    public $bulkApprovalCode = '';
+
+    public $bulkStepOrder;
+
+    public $bulkStepName;
+
+    public $bulkStatus;
+
     protected $paymentvoucherService;
 
     protected $authrepo;
 
     protected $workflowRepository;
+
+    protected $paymentrequisitionrepo;
+
+    protected $tsallowancerepo;
+
+    protected $staffwelfareloanrepo;
 
     public $user;
 
@@ -55,11 +86,20 @@ class PaymentVoucherlist extends Component
         ];
     }
 
-    public function boot(ipaymentvoucherService $paymentvoucherService, iauthInterface $authrepo, iworkflowInterface $workflowRepository)
-    {
+    public function boot(
+        ipaymentvoucherService $paymentvoucherService,
+        iauthInterface $authrepo,
+        iworkflowInterface $workflowRepository,
+        ipaymentrequisitionInterface $paymentrequisitionrepo,
+        itsallowanceInterface $tsallowancerepo,
+        istaffwelfareloanInterface $staffwelfareloanrepo
+    ) {
         $this->paymentvoucherService = $paymentvoucherService;
         $this->authrepo = $authrepo;
         $this->workflowRepository = $workflowRepository;
+        $this->paymentrequisitionrepo = $paymentrequisitionrepo;
+        $this->tsallowancerepo = $tsallowancerepo;
+        $this->staffwelfareloanrepo = $staffwelfareloanrepo;
     }
 
     public function toggleStage($status)
@@ -233,12 +273,172 @@ class PaymentVoucherlist extends Component
                 $this->success($response['message']);
                 $this->reset(['decision', 'comment', 'approvalcode', 'selectedVoucherUuid', 'selectedVoucherId']);
                 $this->decisionmodal = false;
+                // Force component refresh to show updated voucher list
+                $this->dispatch('$refresh');
             } else {
                 $this->error($response['message'] ?? 'An error occurred');
             }
         } else {
             $this->error($checkcode['message']);
         }
+    }
+
+    public function viewItemDetails($itemId)
+    {
+        $item = \App\Models\PaymentVoucherItem::with('paymentVoucher')->find($itemId);
+
+        if (! $item) {
+            $this->error('Item not found');
+
+            return;
+        }
+
+        $this->viewedItemSourceType = $item->source_type;
+        $this->viewedItemDetails = null;
+        $this->viewedItemLineId = $item->source_line_id;
+
+        try {
+            if ($this->viewedItemSourceType === 'PAYMENT_REQUISITION') {
+                $pr = \App\Models\PaymentRequisition::find($item->source_id);
+                if ($pr && $pr->uuid) {
+                    $this->viewedItemDetails = $this->paymentrequisitionrepo->getpaymentrequisitionbyuuid($pr->uuid);
+                }
+            } elseif ($this->viewedItemSourceType === 'TNS') {
+                $ts = \App\Models\TsAllowance::find($item->source_id);
+                if ($ts && $ts->uuid) {
+                    $this->viewedItemDetails = $this->tsallowancerepo->getallowancebyuuid($ts->uuid);
+                }
+            } elseif ($this->viewedItemSourceType === 'STAFF_WELFARE') {
+                $loan = \App\Models\StaffWelfareLoan::find($item->source_id);
+                if ($loan && $loan->uuid) {
+                    $this->viewedItemDetails = $this->staffwelfareloanrepo->getloanbyuuid($loan->uuid);
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error loading item details: '.$e->getMessage());
+            $this->error('Failed to load item details');
+
+            return;
+        }
+
+        if (! $this->viewedItemDetails) {
+            $this->error('Item details not found');
+
+            return;
+        }
+
+        $this->viewItemModal = true;
+    }
+
+    public function closeViewItemModal()
+    {
+        $this->viewItemModal = false;
+        $this->viewedItemDetails = null;
+        $this->viewedItemSourceType = null;
+        $this->viewedItemLineId = null;
+    }
+
+    // Bulk Approval Methods
+    public function toggleBulkSelection($uuid)
+    {
+        if (in_array($uuid, $this->selectedForBulk)) {
+            $this->selectedForBulk = array_values(array_diff($this->selectedForBulk, [$uuid]));
+        } else {
+            $this->selectedForBulk[] = $uuid;
+        }
+    }
+
+    public function selectAllForBulk($status)
+    {
+        $allVouchers = $this->getvouchers();
+        $vouchers = $allVouchers->where('status', $status);
+        $this->selectedForBulk = $vouchers->pluck('uuid')->toArray();
+    }
+
+    public function clearBulkSelection()
+    {
+        $this->selectedForBulk = [];
+    }
+
+    public function openBulkApprovalModal($status)
+    {
+        if (empty($this->selectedForBulk)) {
+            $this->error('Please select at least one voucher to approve');
+
+            return;
+        }
+
+        // Determine the step info based on status
+        $workflow = $this->getworkflow();
+        if ($workflow) {
+            $step = $workflow->workflowparameters->where('status', $status)->first();
+            if ($step) {
+                $this->bulkStepOrder = $step->order;
+                $this->bulkStepName = $step->name;
+                $this->bulkStatus = $status;
+            }
+        }
+
+        $this->bulkapprovalmodal = true;
+    }
+
+    public function getBulkDecisionLabelProperty()
+    {
+        return 'APPROVE';
+    }
+
+    public function executeBulkApproval()
+    {
+        $this->validate([
+            'bulkApprovalCode' => 'required',
+        ]);
+
+        $checkcode = $this->authrepo->checkapprovalcode($this->bulkApprovalCode);
+        if ($checkcode['status'] != 'success') {
+            $this->error($checkcode['message']);
+
+            return;
+        }
+
+        $successCount = 0;
+        $failCount = 0;
+        $errors = [];
+
+        foreach ($this->selectedForBulk as $uuid) {
+            $voucher = $this->getVoucherByUuid($uuid);
+            if (! $voucher) {
+                $failCount++;
+                $errors[] = "Voucher {$uuid} not found";
+
+                continue;
+            }
+
+            // Use the dynamic approve method
+            $response = $this->paymentvoucherService->approve($voucher->id, [
+                'comment' => $this->bulkComment ?? 'Bulk approved',
+                'authorization_code' => $this->bulkApprovalCode,
+            ]);
+
+            if ($response && $response['status'] == 'success') {
+                $successCount++;
+            } else {
+                $failCount++;
+                $errors[] = "{$voucher->voucher_number}: ".($response['message'] ?? 'Failed');
+            }
+        }
+
+        if ($successCount > 0) {
+            $this->success("{$successCount} voucher(s) approved successfully");
+        }
+
+        if ($failCount > 0) {
+            $this->error("{$failCount} voucher(s) failed: ".implode(', ', array_slice($errors, 0, 3)));
+        }
+
+        $this->reset(['selectedForBulk', 'bulkComment', 'bulkApprovalCode', 'bulkStepOrder', 'bulkStepName', 'bulkStatus']);
+        $this->bulkapprovalmodal = false;
+        // Force component refresh to show updated voucher list
+        $this->dispatch('$refresh');
     }
 
     public function render()

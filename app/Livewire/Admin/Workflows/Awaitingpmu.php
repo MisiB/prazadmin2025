@@ -127,11 +127,11 @@ class Awaitingpmu extends Component
 
     }
 
-    public function updatedPaymentCurrencyId()
+    public function updatedPaymentCurrencyId(): void
     {
-        // Reset pay_at_prevailing_rate if currency is not ZiG
+        // Reset pay_at_prevailing_rate if currency is not ZiG or USD
         $selectedCurrency = $this->currencies->firstWhere('id', $this->payment_currency_id);
-        if ($selectedCurrency && strtoupper($selectedCurrency->name) !== 'ZIG') {
+        if ($selectedCurrency && ! in_array(strtoupper($selectedCurrency->name), ['ZIG', 'USD'])) {
             $this->pay_at_prevailing_rate = false;
         }
     }
@@ -155,6 +155,32 @@ class Awaitingpmu extends Component
         return $selectedCurrency && strtoupper($selectedCurrency->name) === 'ZIG';
     }
 
+    public function getShowPrevailingRateProperty(): bool
+    {
+        if (! $this->payment_currency_id) {
+            return false;
+        }
+        $selectedCurrency = $this->currencies->firstWhere('id', $this->payment_currency_id);
+
+        if (! $selectedCurrency) {
+            return false;
+        }
+
+        $currencyName = strtoupper($selectedCurrency->name);
+
+        return in_array($currencyName, ['ZIG', 'USD']);
+    }
+
+    public function getAvailableQuantityProperty(): int
+    {
+        return $this->computequantitylimit();
+    }
+
+    public function getPurchaseRequisitionQuantityProperty(): int
+    {
+        return $this->purchaserequisition->quantity ?? 0;
+    }
+
     public function openAwardModal()
     {
         // Initialize payment currency to budget item's currency for new awards
@@ -171,22 +197,25 @@ class Awaitingpmu extends Component
         $this->purchaserequisitionaward_id = $id;
     }
 
-    public function save()
+    public function save(): void
     {
         $this->validate([
             'customer_id' => 'required',
             'tendernumber' => 'required',
             'item' => 'required',
-            'quantity' => 'required|numeric',
+            'quantity' => 'required|numeric|min:1',
             'amount' => 'required',
             'payment_currency_id' => 'required',
             'is_split_payment' => 'boolean',
             'second_payment_currency_id' => 'required_if:is_split_payment,true',
             'pay_at_prevailing_rate' => 'boolean',
         ]);
+
         $maxquantity = $this->computequantitylimit();
+        $prQuantity = $this->purchaserequisition->quantity ?? 0;
+
         if ($this->quantity > $maxquantity) {
-            $this->error('Quantity cannot exceed the Purchase Requisition Quantity');
+            $this->error("Quantity cannot exceed the available Purchase Requisition quantity. Available: {$maxquantity} of {$prQuantity}");
 
             return;
         }
@@ -366,16 +395,36 @@ class Awaitingpmu extends Component
         }
     }
 
-    public function computequantitylimit()
+    public function computequantitylimit(): int
     {
-        $quantity = $this->purchaserequisition->quantity;
-        $awarded = $this->purchaserequisition->awards()->sum('quantity');
+        if (! $this->purchaserequisition) {
+            return 0;
+        }
 
-        return $quantity - $awarded;
+        $prQuantity = $this->purchaserequisition->quantity;
+        $awardedQuantity = $this->purchaserequisition->awards()->sum('quantity');
+
+        // If editing an existing award, subtract its current quantity from the awarded total
+        // so we don't count it twice
+        if ($this->id) {
+            $currentAward = $this->repository->getaward($this->id);
+            if ($currentAward) {
+                $awardedQuantity -= $currentAward->quantity;
+            }
+        }
+
+        return max(0, $prQuantity - $awardedQuantity);
     }
 
-    public function approve()
+    public function approve(): void
     {
+        // Check if there are any awards before approving
+        if (! $this->purchaserequisition || $this->purchaserequisition->awards->count() === 0) {
+            $this->error('Cannot approve purchase requisition without any awards. Please add at least one award first.');
+
+            return;
+        }
+
         $response = $this->repository->approveaward($this->purchaserequisition->id);
         if ($response['status'] == 'success') {
             $this->success($response['message']);

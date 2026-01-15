@@ -511,12 +511,18 @@ class _purchaserequisitionRepository implements ipurchaseerequisitionInterface
             $award->delivered_by = Auth::user()->id;
             $award->save();
 
-            // Calculate payment eligible quantity (delivered - paid)
-            $paymentEligibleQuantity = $newTotalDelivered - $currentPaid;
+            // Only auto-create payment requisition if delivery is complete (not partial)
+            // For partial deliveries, user must manually create payment requisition
+            $isCompleteDelivery = $newTotalDelivered >= $award->quantity;
 
-            // If there's payment eligible quantity, create payment requisition immediately
-            if ($paymentEligibleQuantity > 0) {
-                $this->createPaymentRequisitionForDeliveredQuantities($award, $paymentEligibleQuantity, $deliveryRecord);
+            if ($isCompleteDelivery) {
+                // Calculate payment eligible quantity (delivered - paid)
+                $paymentEligibleQuantity = $newTotalDelivered - $currentPaid;
+
+                // If there's payment eligible quantity, create payment requisition immediately
+                if ($paymentEligibleQuantity > 0) {
+                    $this->createPaymentRequisitionForDeliveredQuantities($award, $paymentEligibleQuantity, $deliveryRecord);
+                }
             }
 
             // Check if all awards for this requisition are fully delivered
@@ -546,6 +552,11 @@ class _purchaserequisitionRepository implements ipurchaseerequisitionInterface
     private function createPaymentRequisitionForDeliveredQuantities($award, int $paymentEligibleQuantity, $deliveryRecord)
     {
         try {
+            // Ensure customer relationship is loaded
+            if (! $award->relationLoaded('customer')) {
+                $award->load('customer');
+            }
+
             $requisition = $award->purchaserequisition;
             $pr = $requisition->load('budgetitem', 'department', 'requestedby');
 
@@ -577,6 +588,17 @@ class _purchaserequisitionRepository implements ipurchaseerequisitionInterface
                 ? $deliveryRecord->delivery_date->format('Y-m-d')
                 : Carbon::parse($deliveryRecord->delivery_date)->format('Y-m-d');
 
+            // Auto-populate payee information from award customer
+            $payeeType = null;
+            $payeeRegnumber = null;
+            $payeeName = null;
+
+            if ($award->customer) {
+                $payeeType = 'CUSTOMER';
+                $payeeRegnumber = $award->customer->regnumber;
+                $payeeName = $award->customer->name;
+            }
+
             // Create payment requisition data
             $paymentRequisitionData = [
                 'source_type' => 'PURCHASE_REQUISITION',
@@ -588,6 +610,9 @@ class _purchaserequisitionRepository implements ipurchaseerequisitionInterface
                 'currency_id' => $currencyId,
                 'status' => 'HOD_RECOMMENDED', // Skip DRAFT, SUBMITTED - enter at HOD_RECOMMENDED
                 'created_by' => $pr->requested_by,
+                'payee_type' => $payeeType,
+                'payee_regnumber' => $payeeRegnumber,
+                'payee_name' => $payeeName,
                 'line_items' => [
                     [
                         'quantity' => $paymentEligibleQuantity,
@@ -611,6 +636,43 @@ class _purchaserequisitionRepository implements ipurchaseerequisitionInterface
         } catch (Exception $e) {
             // Log error but don't fail the delivery process
             \Log::error('Failed to auto-create payment requisition for delivered quantities: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Manually create payment requisition for an award with partial or complete delivery
+     * This is called when user clicks "Create PR" button for partial deliveries
+     */
+    public function createPaymentRequisitionForAward($awardId)
+    {
+        try {
+            $award = $this->purchaserequisitionaward->with('purchaserequisition.budgetitem', 'purchaserequisition.department', 'purchaserequisition.requestedby', 'customer', 'deliveries')->find($awardId);
+
+            if (! $award) {
+                return ['status' => 'error', 'message' => 'Award not found'];
+            }
+
+            $quantityDelivered = $award->quantity_delivered ?? 0;
+            $quantityPaid = $award->quantity_paid ?? 0;
+            $paymentEligibleQuantity = $quantityDelivered - $quantityPaid;
+
+            if ($paymentEligibleQuantity <= 0) {
+                return ['status' => 'error', 'message' => 'No payment eligible quantity available. All delivered quantities have been paid.'];
+            }
+
+            // Get the most recent delivery record for documents
+            $latestDelivery = $award->deliveries()->latest('delivery_date')->first();
+
+            if (! $latestDelivery) {
+                return ['status' => 'error', 'message' => 'No delivery record found for this award'];
+            }
+
+            // Create payment requisition using the existing method
+            $this->createPaymentRequisitionForDeliveredQuantities($award, $paymentEligibleQuantity, $latestDelivery);
+
+            return ['status' => 'success', 'message' => 'Payment requisition created successfully'];
+        } catch (Exception $e) {
+            return ['status' => 'error', 'message' => $e->getMessage()];
         }
     }
 
@@ -664,6 +726,19 @@ class _purchaserequisitionRepository implements ipurchaseerequisitionInterface
             // Get currency from budget item or first award
             $currencyId = $pr->budgetitem->currency_id ?? $pr->awards->first()?->currency_id ?? 1;
 
+            // Auto-populate payee information from first award's customer
+            // If multiple awards with different customers, use the first one
+            $payeeType = null;
+            $payeeRegnumber = null;
+            $payeeName = null;
+
+            $firstAwardWithCustomer = $pr->awards->firstWhere('customer_id', '!=', null);
+            if ($firstAwardWithCustomer && $firstAwardWithCustomer->customer) {
+                $payeeType = 'CUSTOMER';
+                $payeeRegnumber = $firstAwardWithCustomer->customer->regnumber;
+                $payeeName = $firstAwardWithCustomer->customer->name;
+            }
+
             // Create payment requisition data
             $paymentRequisitionData = [
                 'source_type' => 'PURCHASE_REQUISITION',
@@ -675,6 +750,9 @@ class _purchaserequisitionRepository implements ipurchaseerequisitionInterface
                 'currency_id' => $currencyId,
                 'status' => 'HOD_RECOMMENDED', // Skip DRAFT, SUBMITTED - enter at HOD_RECOMMENDED
                 'created_by' => $pr->requested_by,
+                'payee_type' => $payeeType,
+                'payee_regnumber' => $payeeRegnumber,
+                'payee_name' => $payeeName,
                 'line_items' => $lineItems,
             ];
 

@@ -19,7 +19,17 @@
             <div class="flex items-center justify-between">
                 <div>
                     <div class="text-sm text-gray-600">Total Amount</div>
-                    <div class="text-2xl font-bold text-green-600">${{ number_format($summaryStats['total_amount'], 2) }}</div>
+                    @if(isset($summaryStats['total_amounts_by_currency']) && count($summaryStats['total_amounts_by_currency']) > 0)
+                        <div class="space-y-1">
+                            @foreach($summaryStats['total_amounts_by_currency'] as $currency => $amount)
+                                <div class="text-lg font-bold {{ $currency === 'USD' ? 'text-green-600' : ($currency === 'ZiG' ? 'text-orange-600' : 'text-gray-600') }}">
+                                    {{ $currency }} {{ number_format($amount, 2) }}
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="text-2xl font-bold text-green-600">${{ number_format($summaryStats['total_amount'], 2) }}</div>
+                    @endif
                 </div>
                 <x-icon name="o-currency-dollar" class="w-12 h-12 text-green-400" />
             </div>
@@ -28,9 +38,19 @@
         <x-card class="border-2 border-purple-200">
             <div class="flex items-center justify-between">
                 <div>
-                    <div class="text-sm text-gray-600">Paid Vouchers</div>
-                    <div class="text-2xl font-bold text-purple-600">${{ number_format($summaryStats['amount_paid'], 2) }}</div>
-                    <div class="text-xs text-gray-500">{{ $summaryStats['paid_vouchers'] }} voucher(s)</div>
+                    <div class="text-sm text-gray-600">Approved - Payment Processed</div>
+                    @if(isset($summaryStats['approved_amounts_by_currency']) && count($summaryStats['approved_amounts_by_currency']) > 0)
+                        <div class="space-y-1">
+                            @foreach($summaryStats['approved_amounts_by_currency'] as $currency => $amount)
+                                <div class="text-lg font-bold {{ $currency === 'USD' ? 'text-purple-600' : ($currency === 'ZiG' ? 'text-orange-600' : 'text-gray-600') }}">
+                                    {{ $currency }} {{ number_format($amount, 2) }}
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="text-2xl font-bold text-purple-600">${{ number_format($summaryStats['amount_approved_payment_processed'], 2) }}</div>
+                    @endif
+                    <div class="text-xs text-gray-500 mt-1">{{ $summaryStats['approved_payment_processed'] }} voucher(s)</div>
                 </div>
                 <x-icon name="o-banknotes" class="w-12 h-12 text-purple-400" />
             </div>
@@ -46,8 +66,16 @@
                     <x-icon name="o-pencil-square" class="w-5 h-5 text-gray-500" />
                     <span class="text-sm font-semibold text-gray-600">Draft</span>
                 </div>
-                <div class="text-xl font-bold text-gray-700">${{ number_format($summaryStats['amount_draft'], 2) }}</div>
-                <div class="text-xs text-gray-500">{{ $summaryStats['draft_vouchers'] }} voucher(s)</div>
+                @if(isset($summaryStats['amounts_by_stage_and_currency']['DRAFT']) && count($summaryStats['amounts_by_stage_and_currency']['DRAFT']) > 0)
+                    <div class="space-y-1">
+                        @foreach($summaryStats['amounts_by_stage_and_currency']['DRAFT'] as $currency => $amount)
+                            <div class="text-sm font-bold text-gray-700">{{ $currency }} {{ number_format($amount, 2) }}</div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="text-xl font-bold text-gray-700">${{ number_format($summaryStats['amount_draft'], 2) }}</div>
+                @endif
+                <div class="text-xs text-gray-500 mt-1">{{ $summaryStats['draft_vouchers'] }} voucher(s)</div>
             </div>
 
             <!-- Prepared -->
@@ -56,8 +84,16 @@
                     <x-icon name="o-clock" class="w-5 h-5 text-yellow-600" />
                     <span class="text-sm font-semibold text-yellow-700">Prepared</span>
                 </div>
-                <div class="text-xl font-bold text-yellow-700">${{ number_format($summaryStats['amount_prepared'], 2) }}</div>
-                <div class="text-xs text-yellow-600">{{ $summaryStats['prepared_vouchers'] }} voucher(s)</div>
+                @if(isset($summaryStats['amounts_by_stage_and_currency']['PREPARED']) && count($summaryStats['amounts_by_stage_and_currency']['PREPARED']) > 0)
+                    <div class="space-y-1">
+                        @foreach($summaryStats['amounts_by_stage_and_currency']['PREPARED'] as $currency => $amount)
+                            <div class="text-sm font-bold text-yellow-700">{{ $currency }} {{ number_format($amount, 2) }}</div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="text-xl font-bold text-yellow-700">${{ number_format($summaryStats['amount_prepared'], 2) }}</div>
+                @endif
+                <div class="text-xs text-yellow-600 mt-1">{{ $summaryStats['prepared_vouchers'] }} voucher(s)</div>
             </div>
 
             <!-- Verified -->
@@ -66,35 +102,95 @@
                     <x-icon name="o-check-circle" class="w-5 h-5 text-blue-600" />
                     <span class="text-sm font-semibold text-blue-700">Verified</span>
                 </div>
-                <div class="text-xl font-bold text-blue-700">${{ number_format($summaryStats['amount_verified'], 2) }}</div>
-                <div class="text-xs text-blue-600">{{ $summaryStats['verified_vouchers'] }} voucher(s)</div>
+                @if(isset($summaryStats['amounts_by_stage_and_currency']['VERIFIED']) && count($summaryStats['amounts_by_stage_and_currency']['VERIFIED']) > 0)
+                    <div class="space-y-1">
+                        @foreach($summaryStats['amounts_by_stage_and_currency']['VERIFIED'] as $currency => $amount)
+                            <div class="text-sm font-bold text-blue-700">{{ $currency }} {{ number_format($amount, 2) }}</div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="text-xl font-bold text-blue-700">${{ number_format($summaryStats['amount_verified'], 2) }}</div>
+                @endif
+                <div class="text-xs text-blue-600 mt-1">{{ $summaryStats['verified_vouchers'] }} voucher(s)</div>
             </div>
 
-            <!-- CEO Approved -->
+            <!-- Checked -->
+            <div class="p-4 rounded-lg bg-indigo-50 border-2 border-indigo-300">
+                <div class="flex items-center gap-2 mb-2">
+                    <x-icon name="o-check-circle" class="w-5 h-5 text-indigo-600" />
+                    <span class="text-sm font-semibold text-indigo-700">Checked</span>
+                </div>
+                @if(isset($summaryStats['amounts_by_stage_and_currency']['CHECKED']) && count($summaryStats['amounts_by_stage_and_currency']['CHECKED']) > 0)
+                    <div class="space-y-1">
+                        @foreach($summaryStats['amounts_by_stage_and_currency']['CHECKED'] as $currency => $amount)
+                            <div class="text-sm font-bold text-indigo-700">{{ $currency }} {{ number_format($amount, 2) }}</div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="text-xl font-bold text-indigo-700">${{ number_format($summaryStats['amount_checked'], 2) }}</div>
+                @endif
+                <div class="text-xs text-indigo-600 mt-1">{{ $summaryStats['checked_vouchers'] }} voucher(s)</div>
+            </div>
+
+            <!-- Finance Approved -->
+            <div class="p-4 rounded-lg bg-teal-50 border-2 border-teal-300">
+                <div class="flex items-center gap-2 mb-2">
+                    <x-icon name="o-check-badge" class="w-5 h-5 text-teal-600" />
+                    <span class="text-sm font-semibold text-teal-700">Finance Approved</span>
+                </div>
+                @if(isset($summaryStats['amounts_by_stage_and_currency']['FINANCE_APPROVED']) && count($summaryStats['amounts_by_stage_and_currency']['FINANCE_APPROVED']) > 0)
+                    <div class="space-y-1">
+                        @foreach($summaryStats['amounts_by_stage_and_currency']['FINANCE_APPROVED'] as $currency => $amount)
+                            <div class="text-sm font-bold text-teal-700">{{ $currency }} {{ number_format($amount, 2) }}</div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="text-xl font-bold text-teal-700">${{ number_format($summaryStats['amount_finance_approved'], 2) }}</div>
+                @endif
+                <div class="text-xs text-teal-600 mt-1">{{ $summaryStats['finance_approved'] }} voucher(s)</div>
+            </div>
+
+            <!-- Approved - Payment Processed -->
             <div class="p-4 rounded-lg bg-green-50 border-2 border-green-300">
                 <div class="flex items-center gap-2 mb-2">
                     <x-icon name="o-check-badge" class="w-5 h-5 text-green-600" />
-                    <span class="text-sm font-semibold text-green-700">CEO Approved</span>
+                    <span class="text-sm font-semibold text-green-700">Approved - Payment Processed</span>
                 </div>
-                <div class="text-xl font-bold text-green-700">${{ number_format($summaryStats['amount_ceo_approved'], 2) }}</div>
-                <div class="text-xs text-green-600">{{ $summaryStats['ceo_approved'] }} voucher(s)</div>
+                @if(isset($summaryStats['amounts_by_stage_and_currency']['APPROVED_PAYMENT_PROCESSED']) && count($summaryStats['amounts_by_stage_and_currency']['APPROVED_PAYMENT_PROCESSED']) > 0)
+                    <div class="space-y-1">
+                        @foreach($summaryStats['amounts_by_stage_and_currency']['APPROVED_PAYMENT_PROCESSED'] as $currency => $amount)
+                            <div class="text-sm font-bold text-green-700">{{ $currency }} {{ number_format($amount, 2) }}</div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="text-xl font-bold text-green-700">${{ number_format($summaryStats['amount_approved_payment_processed'], 2) }}</div>
+                @endif
+                <div class="text-xs text-green-600 mt-1">{{ $summaryStats['approved_payment_processed'] }} voucher(s)</div>
             </div>
 
-            <!-- Paid -->
-            <div class="p-4 rounded-lg bg-indigo-50 border-2 border-indigo-300">
+            <!-- Rejected -->
+            <div class="p-4 rounded-lg bg-red-50 border-2 border-red-300">
                 <div class="flex items-center gap-2 mb-2">
-                    <x-icon name="o-banknotes" class="w-5 h-5 text-indigo-600" />
-                    <span class="text-sm font-semibold text-indigo-700">Paid</span>
+                    <x-icon name="o-x-circle" class="w-5 h-5 text-red-600" />
+                    <span class="text-sm font-semibold text-red-700">Rejected</span>
                 </div>
-                <div class="text-xl font-bold text-indigo-700">${{ number_format($summaryStats['amount_paid'], 2) }}</div>
-                <div class="text-xs text-indigo-600">{{ $summaryStats['paid_vouchers'] }} voucher(s)</div>
+                @if(isset($summaryStats['amounts_by_stage_and_currency']['REJECTED']) && count($summaryStats['amounts_by_stage_and_currency']['REJECTED']) > 0)
+                    <div class="space-y-1">
+                        @foreach($summaryStats['amounts_by_stage_and_currency']['REJECTED'] as $currency => $amount)
+                            <div class="text-sm font-bold text-red-700">{{ $currency }} {{ number_format($amount, 2) }}</div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="text-xl font-bold text-red-700">${{ number_format($summaryStats['amount_rejected'], 2) }}</div>
+                @endif
+                <div class="text-xs text-red-600 mt-1">{{ $summaryStats['rejected_vouchers'] }} voucher(s)</div>
             </div>
         </div>
     </x-card>
 
     <!-- Vouchers by Currency Breakdown -->
     @if($vouchersByCurrency->count() > 0)
-        <x-card title="Vouchers by Currency (Paid)" separator class="mt-5 border-2 border-indigo-200">
+        <x-card title="Vouchers by Currency (Payment Processed)" separator class="mt-5 border-2 border-indigo-200">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 @foreach($vouchersByCurrency as $currencyData)
                     <div class="p-4 rounded-lg border-2 {{ $currencyData['currency_name'] === 'USD' ? 'bg-green-50 border-green-300' : 'bg-orange-50 border-orange-300' }}">
@@ -191,8 +287,7 @@
                                             'VERIFIED' => 'badge-info',
                                             'CHECKED' => 'badge-info',
                                             'FINANCE_APPROVED' => 'badge-success',
-                                            'CEO_APPROVED' => 'badge-success',
-                                            'PAID' => 'badge-success',
+                                            'APPROVED_PAYMENT_PROCESSED' => 'badge-success',
                                             'REJECTED' => 'badge-error',
                                             default => 'badge-ghost',
                                         };
@@ -222,10 +317,14 @@
                                                         <tr>
                                                             <th>#</th>
                                                             <th>Source Type</th>
+                                                            <th>Payee Reg Number</th>
+                                                            <th>Payee Name</th>
                                                             <th>Description</th>
                                                             <th>Original Currency</th>
                                                             <th>Original Amount</th>
                                                             <th>Edited Amount</th>
+                                                            <th>Partial Payment</th>
+                                                            <th>Partial Amount</th>
                                                             <th>Exchange Rate</th>
                                                             <th>Payable Amount</th>
                                                             <th>Account Type</th>
@@ -239,6 +338,8 @@
                                                                 <td>
                                                                     <x-badge :value="$item->source_type" class="badge-info badge-sm" />
                                                                 </td>
+                                                                <td>{{ $item->payee_regnumber ?? 'N/A' }}</td>
+                                                                <td>{{ $item->payee_name ?? 'N/A' }}</td>
                                                                 <td>
                                                                     <div class="max-w-xs">{{ \Illuminate\Support\Str::limit($item->description, 50) }}</div>
                                                                     @if ($item->amount_change_comment)
@@ -262,6 +363,49 @@
                                                                         N/A
                                                                     @endif
                                                                 </td>
+                                                                <td>
+                                                                    @php
+                                                                        // Determine if this is a partial payment
+                                                                        $baseAmount = $item->edited_amount ?? $item->original_amount ?? 0;
+                                                                        $isPartial = false;
+                                                                        
+                                                                        if ($baseAmount > 0 && $item->payable_amount > 0) {
+                                                                            if ($item->exchange_rate && $item->exchange_rate > 0) {
+                                                                                // Convert payable_amount back to original currency for comparison
+                                                                                $convertedPayable = $item->payable_amount / $item->exchange_rate;
+                                                                                // Allow small floating point differences (0.01)
+                                                                                $isPartial = $convertedPayable < ($baseAmount - 0.01);
+                                                                            } else {
+                                                                                // Same currency, direct comparison
+                                                                                $isPartial = $item->payable_amount < ($baseAmount - 0.01);
+                                                                            }
+                                                                        }
+                                                                    @endphp
+                                                                    @if($isPartial)
+                                                                        <x-badge value="Yes" class="badge-warning badge-xs" />
+                                                                    @else
+                                                                        <x-badge value="No" class="badge-ghost badge-xs" />
+                                                                    @endif
+                                                                </td>
+                                                                <td class="text-right">
+                                                                    @php
+                                                                        // Calculate partial amount in original currency
+                                                                        if ($isPartial && $item->payable_amount > 0) {
+                                                                            if ($item->exchange_rate && $item->exchange_rate > 0) {
+                                                                                $partialAmount = $item->payable_amount / $item->exchange_rate;
+                                                                            } else {
+                                                                                $partialAmount = $item->payable_amount;
+                                                                            }
+                                                                        } else {
+                                                                            $partialAmount = null;
+                                                                        }
+                                                                    @endphp
+                                                                    @if($partialAmount !== null)
+                                                                        {{ $item->original_currency ?? 'N/A' }} {{ number_format($partialAmount, 2) }}
+                                                                    @else
+                                                                        N/A
+                                                                    @endif
+                                                                </td>
                                                                 <td class="text-right">
                                                                     @if ($item->exchange_rate)
                                                                         {{ number_format($item->exchange_rate, 4) }}
@@ -270,7 +414,7 @@
                                                                     @endif
                                                                 </td>
                                                                 <td class="text-right font-semibold">
-                                                                    ${{ number_format($item->payable_amount, 2) }}
+                                                                    {{ $voucher->currency ?? 'USD' }} {{ number_format($item->payable_amount, 2) }}
                                                                 </td>
                                                                 <td>{{ $item->account_type ?? 'N/A' }}</td>
                                                                 <td>{{ $item->gl_code ?? 'N/A' }}</td>
@@ -279,9 +423,9 @@
                                                     </tbody>
                                                     <tfoot>
                                                         <tr class="font-bold bg-gray-100">
-                                                            <td colspan="7" class="text-right">Total:</td>
-                                                            <td class="text-right">${{ number_format($voucher->items->sum('payable_amount'), 2) }}</td>
-                                                            <td colspan="2"></td>
+                                                            <td colspan="12" class="text-right">Total:</td>
+                                                            <td class="text-right">{{ $voucher->currency ?? 'USD' }} {{ number_format($voucher->items->sum('payable_amount'), 2) }}</td>
+                                                            <td colspan="1"></td>
                                                         </tr>
                                                     </tfoot>
                                                 </table>

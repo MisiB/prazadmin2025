@@ -44,7 +44,11 @@
             <x-slot:menu>
                 @if($purchaserequisition?->status == "AWAITING_PMU")
                 @can("procurement.approve")
+                    @if($purchaserequisition?->awards->count() > 0)
                 <x-button icon="o-check" class="btn-success" label="Approve" @click="$wire.approve" wire:confirm="Are you sure you want to approve this purchase requisition?"/>
+                    @else
+                        <x-button icon="o-check" class="btn-success btn-disabled" label="Approve" disabled title="Cannot approve without awards"/>
+                    @endif
                 @endcan
                 @endif
             </x-slot:menu>
@@ -166,7 +170,14 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <x-input label="Tender Number" placeholder="Tender Number" wire:model="tendernumber"/>
            
-            <x-input label="Quantity" placeholder="Quantity" min="1" type="number" wire:model="quantity"/>
+            <x-input 
+                label="Quantity" 
+                placeholder="Quantity" 
+                min="1" 
+                type="number" 
+                wire:model="quantity"
+                max="{{ $this->availableQuantity }}"
+                hint="Available: {{ $this->availableQuantity }} of {{ $this->purchaseRequisitionQuantity }}" />
              
             <x-input label="Amount" placeholder="Amount" min="1" type="number" wire:model="amount"/>
            
@@ -174,10 +185,10 @@
             </div>
 
             {{-- Currency for Payment Section --}}
-            <x-card title="Currency for Payment" separator class="mt-5 border-2 border-gray-200">
+            <x-card title="Award Currency" separator class="mt-5 border-2 border-gray-200">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <x-select 
-                        label="Currency for Payment" 
+                        label="Award Currency" 
                         wire:model.live="payment_currency_id" 
                         placeholder="Select Currency"
                         :options="$currencies->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->toArray()" />
@@ -199,8 +210,8 @@
                     </div>
                 @endif
 
-                {{-- ZiG Prevailing Rate Checkbox --}}
-                @if($this->isZigCurrency)
+                {{-- Prevailing Rate Checkbox for ZiG and USD --}}
+                @if($this->showPrevailingRate)
                     <div class="mt-4 pt-4 border-t border-gray-200">
                         <x-checkbox 
                             label="Pay at prevailing bank rate of the day" 

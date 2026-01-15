@@ -5,7 +5,7 @@
     
     @if($voucher)
         <x-card title="Payment Voucher Details" separator class="mt-5 border-2 border-gray-200">
-            <x-tabs>
+            <x-tabs wire:model="selectedTab">
                 <!-- Details Tab -->
                 <x-tab name="details" label="Details" icon="o-document-text">
                     <div class="space-y-4 mt-4">
@@ -16,6 +16,9 @@
                                 <x-input label="Voucher Number" value="{{ $voucher->voucher_number }}" readonly />
                                 <x-input label="Voucher Date" value="{{ $voucher->voucher_date->format('Y-m-d') }}" readonly />
                                 <x-input label="Currency" value="{{ $voucher->currency }}" readonly />
+                                @if($voucher->bankAccount)
+                                    <x-input label="Bank Account" value="{{ $voucher->bankAccount->account_number ?? 'N/A' }} - {{ $voucher->bankAccount->currency->name ?? 'N/A' }} ({{ $voucher->bankAccount->account_type ?? 'N/A' }})" readonly />
+                                @endif
                                 @if($voucher->exchange_rate)
                                     <x-input label="Exchange Rate" value="{{ number_format($voucher->exchange_rate, 4) }}" readonly />
                                 @endif
@@ -38,7 +41,7 @@
                                         'VERIFIED' => 'badge-info',
                                         'CHECKED' => 'badge-info',
                                         'FINANCE_RECOMMENDED' => 'badge-success',
-                                        'CEO_APPROVED' => 'badge-success',
+                                        'APPROVED_PAYMENT_PROCESSED' => 'badge-success',
                                         'REJECTED' => 'badge-error',
                                         default => 'badge-ghost',
                                     };
@@ -55,7 +58,15 @@
                         @if($voucher->items && $voucher->items->count() > 0)
                             <div class="bg-white p-4 rounded-lg border">
                                 <h3 class="text-lg font-semibold mb-3 text-gray-700">Voucher Items ({{ $voucher->items->count() }})</h3>
-                                <x-table :headers="[['key' => 'source_type', 'label' => 'Source'], ['key' => 'description', 'label' => 'Description'], ['key' => 'original_currency', 'label' => 'Currency'], ['key' => 'original_amount', 'label' => 'Original Amount'], ['key' => 'payable_amount', 'label' => 'Payable Amount']]" :rows="$voucher->items" class="table-xs">
+                                <x-table :headers="[['key' => 'source_type', 'label' => 'Source'], ['key' => 'description', 'label' => 'Description'], ['key' => 'gl_code', 'label' => 'GL Code'], ['key' => 'view_history', 'label' => 'View Line History'], ['key' => 'original_currency', 'label' => 'Currency'], ['key' => 'original_amount', 'label' => 'Original Amount'], ['key' => 'payable_amount', 'label' => 'Payable Amount']]" :rows="$voucher->items" class="table-xs">
+                                    @scope('cell_view_history', $item)
+                                        <x-button 
+                                            icon="o-eye" 
+                                            class="btn-info btn-xs"
+                                            wire:click="viewItemDetails({{ $item->id }})"
+                                            label="View"
+                                        />
+                                    @endscope
                                     @scope('cell_original_amount', $item)
                                         <div>{{ $item->original_currency }} {{ number_format($item->original_amount, 2) }}</div>
                                     @endscope
@@ -125,5 +136,25 @@
                 </x-tab>
             </x-tabs>
         </x-card>
+
+        <!-- View Item Details Modal -->
+        <x-modal title="Item Details" wire:model="viewItemModal" box-class="max-w-6xl" separator>
+            @if($viewedItemDetails)
+                @if($viewedItemSourceType === 'PAYMENT_REQUISITION')
+                    @include('livewire.admin.workflows.partials.payment-requisition-details', [
+                        'requisitionDetails' => $viewedItemDetails,
+                        'viewedLineItemId' => $viewedItemLineId
+                    ])
+                @elseif($viewedItemSourceType === 'TNS')
+                    @include('livewire.admin.workflows.partials.ts-allowance-details', ['allowanceDetails' => $viewedItemDetails])
+                @elseif($viewedItemSourceType === 'STAFF_WELFARE')
+                    @include('livewire.admin.workflows.partials.staff-welfare-details', ['loanDetails' => $viewedItemDetails])
+                @endif
+            @endif
+
+            <x-slot:actions>
+                <x-button label="Close" @click="$wire.closeViewItemModal()" />
+            </x-slot:actions>
+        </x-modal>
     @endif
 </div>

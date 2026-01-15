@@ -49,4 +49,6 @@ interface ipurchaseerequisitionInterface
     public function getawarddocuments($id);
 
     public function recorddelivery($awardId, $data);
+
+    public function createPaymentRequisitionForAward($awardId);
 }
