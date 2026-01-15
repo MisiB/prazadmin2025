@@ -105,8 +105,7 @@
         .status-verified { background: #dbeafe; color: #1e40af; }
         .status-checked { background: #dbeafe; color: #1e40af; }
         .status-finance_approved { background: #d1fae5; color: #065f46; }
-        .status-ceo_approved { background: #d1fae5; color: #065f46; }
-        .status-paid { background: #a7f3d0; color: #047857; }
+        .status-approved_payment_processed { background: #d1fae5; color: #065f46; }
         .status-rejected { background: #fee2e2; color: #991b1b; }
         .footer {
             margin-top: 20px;
@@ -158,12 +157,8 @@
                 <div class="value">{{ $summaryStats['finance_approved'] }}</div>
             </div>
             <div class="summary-item">
-                <div class="label">CEO Approved</div>
-                <div class="value">{{ $summaryStats['ceo_approved'] }}</div>
-            </div>
-            <div class="summary-item">
-                <div class="label">Paid</div>
-                <div class="value">{{ $summaryStats['paid_vouchers'] }}</div>
+                <div class="label">Approved - Payment Processed</div>
+                <div class="value">{{ $summaryStats['approved_payment_processed'] }}</div>
             </div>
             <div class="summary-item">
                 <div class="label">Rejected</div>
@@ -178,19 +173,39 @@
         <div class="summary-grid">
             <div class="summary-item">
                 <div class="label">Total Amount</div>
-                <div class="value">${{ number_format($summaryStats['total_amount'], 2) }}</div>
+                @if(isset($summaryStats['total_amounts_by_currency']) && count($summaryStats['total_amounts_by_currency']) > 0)
+                    <div class="value" style="font-size: 10px;">
+                        @foreach($summaryStats['total_amounts_by_currency'] as $currency => $amount)
+                            <div>{{ $currency }} {{ number_format($amount, 2) }}</div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="value">${{ number_format($summaryStats['total_amount'], 2) }}</div>
+                @endif
             </div>
             <div class="summary-item">
-                <div class="label">Paid Amount</div>
-                <div class="value">${{ number_format($summaryStats['amount_paid'], 2) }}</div>
-            </div>
-            <div class="summary-item">
-                <div class="label">CEO Approved</div>
-                <div class="value">${{ number_format($summaryStats['amount_ceo_approved'], 2) }}</div>
+                <div class="label">Approved - Payment Processed</div>
+                @if(isset($summaryStats['approved_amounts_by_currency']) && count($summaryStats['approved_amounts_by_currency']) > 0)
+                    <div class="value" style="font-size: 10px;">
+                        @foreach($summaryStats['approved_amounts_by_currency'] as $currency => $amount)
+                            <div>{{ $currency }} {{ number_format($amount, 2) }}</div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="value">${{ number_format($summaryStats['amount_approved_payment_processed'], 2) }}</div>
+                @endif
             </div>
             <div class="summary-item">
                 <div class="label">Finance Approved</div>
-                <div class="value">${{ number_format($summaryStats['amount_finance_approved'], 2) }}</div>
+                @if(isset($summaryStats['amounts_by_stage_and_currency']['FINANCE_APPROVED']) && count($summaryStats['amounts_by_stage_and_currency']['FINANCE_APPROVED']) > 0)
+                    <div class="value" style="font-size: 10px;">
+                        @foreach($summaryStats['amounts_by_stage_and_currency']['FINANCE_APPROVED'] as $currency => $amount)
+                            <div>{{ $currency }} {{ number_format($amount, 2) }}</div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="value">${{ number_format($summaryStats['amount_finance_approved'], 2) }}</div>
+                @endif
             </div>
         </div>
     </div>
@@ -252,8 +267,7 @@
                                     'VERIFIED' => 'status-verified',
                                     'CHECKED' => 'status-checked',
                                     'FINANCE_APPROVED' => 'status-finance_approved',
-                                    'CEO_APPROVED' => 'status-ceo_approved',
-                                    'PAID' => 'status-paid',
+                                    'APPROVED_PAYMENT_PROCESSED' => 'status-approved_payment_processed',
                                     'REJECTED' => 'status-rejected',
                                     default => '',
                                 };
@@ -274,12 +288,18 @@
                             <tr>
                                 <th>#</th>
                                 <th>Source Type</th>
+                                <th>Payee Reg Number</th>
+                                <th>Payee Name</th>
+                                <th>Source ID</th>
                                 <th>Description</th>
                                 <th>Original Currency</th>
                                 <th>Original Amount</th>
                                 <th>Edited Amount</th>
+                                <th>Partial Payment</th>
+                                <th>Partial Amount</th>
                                 <th>Exchange Rate</th>
                                 <th>Payable Amount</th>
+                                <th>Currency</th>
                                 <th>Account Type</th>
                                 <th>GL Code</th>
                             </tr>
@@ -289,18 +309,61 @@
                                 <tr>
                                     <td>{{ $index + 1 }}</td>
                                     <td>{{ $item->source_type }}</td>
+                                    <td>{{ $item->payee_regnumber ?? 'N/A' }}</td>
+                                    <td>{{ $item->payee_name ?? 'N/A' }}</td>
+                                    <td>{{ $item->source_id ?? 'N/A' }}</td>
                                     <td style="max-width: 150px;">{{ \Illuminate\Support\Str::limit($item->description, 40) }}</td>
                                     <td>{{ $item->original_currency ?? 'N/A' }}</td>
                                     <td class="amount">{{ $item->original_amount ? number_format($item->original_amount, 2) : 'N/A' }}</td>
                                     <td class="amount">{{ $item->edited_amount ? number_format($item->edited_amount, 2) : 'N/A' }}</td>
+                                    <td>
+                                        @php
+                                            // Determine if this is a partial payment
+                                            $baseAmount = $item->edited_amount ?? $item->original_amount ?? 0;
+                                            $isPartial = false;
+                                            
+                                            if ($baseAmount > 0 && $item->payable_amount > 0) {
+                                                if ($item->exchange_rate && $item->exchange_rate > 0) {
+                                                    // Convert payable_amount back to original currency for comparison
+                                                    $convertedPayable = $item->payable_amount / $item->exchange_rate;
+                                                    // Allow small floating point differences (0.01)
+                                                    $isPartial = $convertedPayable < ($baseAmount - 0.01);
+                                                } else {
+                                                    // Same currency, direct comparison
+                                                    $isPartial = $item->payable_amount < ($baseAmount - 0.01);
+                                                }
+                                            }
+                                        @endphp
+                                        {{ $isPartial ? 'Yes' : 'No' }}
+                                    </td>
+                                    <td class="amount">
+                                        @php
+                                            // Calculate partial amount in original currency
+                                            if ($isPartial && $item->payable_amount > 0) {
+                                                if ($item->exchange_rate && $item->exchange_rate > 0) {
+                                                    $partialAmount = $item->payable_amount / $item->exchange_rate;
+                                                } else {
+                                                    $partialAmount = $item->payable_amount;
+                                                }
+                                            } else {
+                                                $partialAmount = null;
+                                            }
+                                        @endphp
+                                        @if($partialAmount !== null)
+                                            {{ number_format($partialAmount, 2) }} {{ $item->original_currency ?? '' }}
+                                        @else
+                                            N/A
+                                        @endif
+                                    </td>
                                     <td class="amount">{{ $item->exchange_rate ? number_format($item->exchange_rate, 4) : 'N/A' }}</td>
-                                    <td class="amount"><strong>${{ number_format($item->payable_amount, 2) }}</strong></td>
+                                    <td class="amount"><strong>{{ number_format($item->payable_amount, 2) }}</strong></td>
+                                    <td>{{ $voucher->currency ?? 'N/A' }}</td>
                                     <td>{{ $item->account_type ?? 'N/A' }}</td>
                                     <td>{{ $item->gl_code ?? 'N/A' }}</td>
                                 </tr>
                                 @if($item->amount_change_comment)
                                     <tr style="background: #f8f9fa;">
-                                        <td colspan="10" style="font-size: 7px; padding: 3px;">
+                                        <td colspan="16" style="font-size: 7px; padding: 3px;">
                                             <strong>Note:</strong> {{ $item->amount_change_comment }}
                                         </td>
                                     </tr>
@@ -309,8 +372,9 @@
                         </tbody>
                         <tfoot>
                             <tr style="font-weight: bold; background: #e2e8f0;">
-                                <td colspan="7" style="text-align: right;">Total:</td>
-                                <td class="amount"><strong>${{ number_format($voucher->items->sum('payable_amount'), 2) }}</strong></td>
+                                <td colspan="12" style="text-align: right;">Total:</td>
+                                <td class="amount"><strong>{{ number_format($voucher->items->sum('payable_amount'), 2) }}</strong></td>
+                                <td>{{ $voucher->currency ?? 'N/A' }}</td>
                                 <td colspan="2"></td>
                             </tr>
                         </tfoot>

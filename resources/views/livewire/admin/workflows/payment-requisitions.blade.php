@@ -74,6 +74,89 @@
                 <x-input wire:model="purpose" label="Purpose" />
             </div>
 
+            <x-card title="{{ $payee_type === 'CUSTOMER' ? 'Customer' : 'Staff/User' }}" subtitle="Payee Information (Mandatory)" separator class="mt-5 border-2 border-gray-200">
+                <x-slot:menu>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" wire:model.live="payee_type" value="CUSTOMER" class="radio radio-primary" />
+                            <span class="font-semibold">Customer</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" wire:model.live="payee_type" value="USER" class="radio radio-primary" />
+                            <span class="font-semibold">Staff/User</span>
+                        </label>
+                    </div>
+                </x-slot:menu>
+                
+                @if($payee_type === 'CUSTOMER')
+                    <x-input 
+                        label="Registration Number" 
+                        wire:model.live="payee_search" 
+                        placeholder="Enter customer registration number to search"
+                    />
+                    @error('payee_id') <span class="text-error text-sm">{{ $message }}</span> @enderror
+                    
+                    @if($selectedCustomer != null)
+                        <table class="table table-xs table-zebra mt-3">
+                            <thead>
+                                <tr>
+                                    <th>Customer</th>
+                                    <th>Registration Number</th>
+                                    <th>Country</th>
+                                    <th>Type</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>{{ $selectedCustomer->name }}</td>
+                                    <td>{{ $selectedCustomer->regnumber }}</td>
+                                    <td>{{ $selectedCustomer->country ?? 'N/A' }}</td>
+                                    <td>{{ $selectedCustomer->type ?? 'N/A' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    @else
+                        @if($payee_search)
+                            <x-alert class="alert-error mt-3" title="No customer found. Please enter a valid registration number to search."/>
+                        @else
+                            <x-alert class="alert-info mt-3" title="Please enter registration number to search for customer."/>
+                        @endif
+                    @endif
+                @elseif($payee_type === 'USER')
+                    <x-input 
+                        label="User Name" 
+                        wire:model.live="payee_search" 
+                        placeholder="Enter user name to search"
+                    />
+                    @error('payee_id') <span class="text-error text-sm">{{ $message }}</span> @enderror
+                    
+                    @if($selectedUser != null)
+                        <table class="table table-xs table-zebra mt-3">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>User Identifier</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>{{ $selectedUser->name }}</td>
+                                    <td>{{ $selectedUser->email ?? 'N/A' }}</td>
+                                    <td>{{ $selectedUser->name }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    @else
+                        @if($payee_search)
+                            <x-alert class="alert-error mt-3" title="No user found. Please enter a valid user name to search."/>
+                        @else
+                            <x-alert class="alert-info mt-3" title="Please enter user name to search for staff/user."/>
+                        @endif
+                    @endif
+                @endif
+            </x-card>
+
             <div class="divider">Line Items</div>
             
             <div class="space-y-3">

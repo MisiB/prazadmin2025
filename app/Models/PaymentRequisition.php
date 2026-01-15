@@ -87,4 +87,14 @@ class PaymentRequisition extends Model
     {
         return $this->hasMany(PaymentRequisitionDocument::class, 'paymentrequisition_id');
     }
+
+    public function payeeCustomer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class, 'payee_regnumber', 'regnumber');
+    }
+
+    public function payeeUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'payee_regnumber', 'name');
+    }
 }

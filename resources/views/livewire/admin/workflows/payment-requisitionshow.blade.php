@@ -42,6 +42,18 @@
                                     </x-slot:value>
                                 </x-input>
                             </div>
+                            
+                            @if($paymentrequisition->payee_type && $paymentrequisition->payee_name)
+                                <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                    <h4 class="text-md font-semibold mb-2 text-blue-800 dark:text-blue-300">Payee Information</h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                        <x-input label="Payee Type" value="{{ $paymentrequisition->payee_type }}" readonly />
+                                        <x-input label="Payee Registration Number" value="{{ $paymentrequisition->payee_regnumber ?? 'N/A' }}" readonly />
+                                        <x-input label="Payee Name" value="{{ $paymentrequisition->payee_name ?? 'N/A' }}" readonly />
+                                    </div>
+                                </div>
+                            @endif
+                            
                             <div class="mt-3">
                                 <x-textarea label="Purpose" readonly rows="3">{{ $paymentrequisition->purpose }}</x-textarea>
                             </div>

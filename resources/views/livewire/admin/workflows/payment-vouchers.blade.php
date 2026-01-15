@@ -30,7 +30,7 @@
                     'VERIFIED' => 'badge-info',
                     'CHECKED' => 'badge-info',
                     'FINANCE_RECOMMENDED' => 'badge-success',
-                    'CEO_APPROVED' => 'badge-success',
+                    'APPROVED_PAYMENT_PROCESSED' => 'badge-success',
                     'REJECTED' => 'badge-error',
                 ];
                 $color = $statusColors[$voucher->status] ?? 'badge-ghost';
@@ -89,17 +89,22 @@
             <div class="divider">Select Items for Payment</div>
 
             @if(count($eligibleItems) > 0)
-                <div class="max-h-96 overflow-y-auto border rounded-lg p-4">
+                <div class="max-h-96 overflow-y-auto border rounded-lg p-4 relative">
                     <table class="table table-xs table-zebra">
-                        <thead>
+                        <thead class="sticky top-0 bg-base-100 z-10">
                             <tr>
-                                <th>Select</th>
-                                <th>Source</th>
-                                <th>Reference</th>
-                                <th>Description</th>
-                                <th>Currency</th>
-                                <th>Amount</th>
-                                <th>Department</th>
+                                <th class="bg-base-100">Select</th>
+                                <th class="bg-base-100">Source</th>
+                                <th class="bg-base-100">Action</th>
+                                <th class="bg-base-100">Reference</th>
+                                <th class="bg-base-100">Description</th>
+                                <th class="bg-base-100">Currency</th>
+                                <th class="bg-base-100">Original Amount</th>
+                                <th class="bg-base-100">Remaining Balance</th>
+                                <th class="bg-base-100">Payee Reg Number</th>
+                                <th class="bg-base-100">Payee Name</th>
+                                <th class="bg-base-100">Department</th>
+                                {{-- <th class="bg-base-100">Action</th> --}}
                             </tr>
                         </thead>
                         <tbody>
@@ -109,10 +114,33 @@
                                         <x-checkbox wire:click="toggleItem({{ $index }})" :checked="$this->isItemSelected($item)" />
                                     </td>
                                     <td>{{ $item['source_type'] }}</td>
+                                    <td>
+                                        <x-button 
+                                            icon="o-eye" 
+                                            class="btn-xs btn-info btn-outline" 
+                                            wire:click="viewItemDetails({{ $index }})"
+                                            spinner="viewItemDetails({{ $index }})"
+                                        />
+                                    </td>
                                     <td>{{ $item['reference'] }}</td>
                                     <td class="max-w-xs truncate" title="{{ $item['description'] }}">{{ $item['description'] }}</td>
                                     <td>{{ $item['original_currency'] }}</td>
-                                    <td>{{ number_format($item['original_amount'], 2) }}</td>
+                                    <td>
+                                        <div class="text-xs">
+                                            <div>{{ number_format($item['original_amount'], 2) }}</div>
+                                            @if(isset($item['total_paid']) && $item['total_paid'] > 0)
+                                                <div class="text-gray-500">Paid: {{ number_format($item['total_paid'], 2) }}</div>
+                                            @endif
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @php
+                                            $remainingBalance = $item['remaining_balance'] ?? $item['original_amount'] ?? 0;
+                                        @endphp
+                                        <span class="text-green-600 font-semibold">{{ number_format($remainingBalance, 2) }}</span>
+                                    </td>
+                                    <td>{{ $item['payee_regnumber'] ?? '-' }}</td>
+                                    <td>{{ $item['payee_name'] ?? '-' }}</td>
                                     <td>{{ $item['department'] }}</td>
                                 </tr>
                             @endforeach
@@ -130,11 +158,17 @@
                         <thead>
                             <tr>
                                 <th>Source</th>
+                                <th>Payee Reg Number</th>
+                                <th>Payee Name</th>
                                 <th>Description</th>
+                                @if($currency === 'ZiG' && $exchange_rate)
+                                    <th>Apply Rate to ZiG</th>
+                                @endif
                                 <th>Currency</th>
-                                <th>Original Amount</th>
-                                <th>Edited Amount</th>
+                                <th>Amount Details</th>
+                                <th>Amount Change</th>
                                 <th>Comment (if changed)</th>
+                                <th>Partial Amount</th>
                                 <th>Account Type</th>
                                 <th>GL Code</th>
                             </tr>
@@ -142,24 +176,67 @@
                         <tbody>
                             @foreach($selectedItems as $index => $item)
                                 @php
-                                    $editedAmount = $item['edited_amount'] ?? null;
-                                    $isAmountChanged = $editedAmount !== null && $editedAmount != $item['original_amount'];
+                                    $originalAmount = (float) ($item['original_amount'] ?? 0);
+                                    $amountChange = $item['amount_change'] ?? null;
+                                    $partialAmount = $item['partial_amount'] ?? null;
+                                    $remainingBalance = (float) ($item['remaining_balance'] ?? $originalAmount);
+                                    
+                                    // Amount is changed if it differs from original amount
+                                    $isAmountChanged = false;
+                                    if ($amountChange !== null && $amountChange !== '' && is_numeric($amountChange)) {
+                                        $isAmountChanged = abs((float) $amountChange - $originalAmount) > 0.01;
+                                    }
+                                    
+                                    // Calculate the effective amount (changed amount if set, otherwise original)
+                                    $effectiveAmount = $amountChange !== null && is_numeric($amountChange) ? (float) $amountChange : $remainingBalance;
+                                    
+                                    $isZiGItem = strtoupper($item['original_currency'] ?? '') === 'ZIG';
+                                    $showApplyRateOption = $currency === 'ZiG' && $exchange_rate && $isZiGItem;
                                 @endphp
                                 <tr wire:key="selected-item-{{ $index }}">
                                     <td>{{ $item['source_type'] }}</td>
+                                    <td>{{ $item['payee_regnumber'] ?? '-' }}</td>
+                                    <td>{{ $item['payee_name'] ?? '-' }}</td>
                                     <td class="max-w-xs truncate" title="{{ $item['description'] }}">{{ $item['description'] }}</td>
+                                    @if($currency === 'ZiG' && $exchange_rate)
+                                        <td>
+                                            @if($isZiGItem)
+                                                <x-checkbox 
+                                                    wire:model.live="selectedItems.{{ $index }}.apply_rate_to_zig" 
+                                                    label="Apply Rate"
+                                                    class="checkbox-xs"
+                                                />
+                                            @else
+                                                <span class="text-xs text-gray-400">-</span>
+                                            @endif
+                                        </td>
+                                    @endif
                                     <td>{{ $item['original_currency'] }}</td>
-                                    <td>{{ number_format($item['original_amount'], 2) }}</td>
+                                    <td>
+                                        <div class="text-xs">
+                                            <div>{{ number_format($item['original_amount'], 2) }}</div>
+                                            @if(isset($item['total_paid']) && $item['total_paid'] > 0)
+                                                <div class="text-gray-500">Paid: {{ number_format($item['total_paid'], 2) }}</div>
+                                            @endif
+                                            @if(isset($item['remaining_balance']))
+                                                <div class="text-green-600 font-semibold">Remaining: {{ number_format($item['remaining_balance'], 2) }}</div>
+                                            @endif
+                                        </div>
+                                    </td>
                                     <td>
                                         <x-input 
-                                            wire:model.live="selectedItems.{{ $index }}.edited_amount" 
+                                            wire:model.live="selectedItems.{{ $index }}.amount_change" 
                                             type="number" 
                                             step="0.01" 
                                             min="0"
                                             class="input-xs w-24"
-                                            placeholder="{{ number_format($item['original_amount'], 2) }}"
+                                            placeholder="{{ number_format($originalAmount, 2) }}"
                                         />
+                                        <div class="text-xs text-gray-500 mt-1">
+                                            Optional: Change from {{ number_format($originalAmount, 2) }}
+                                        </div>
                                     </td>
+                                    
                                     <td>
                                         @if($isAmountChanged)
                                             <x-textarea 
@@ -172,6 +249,21 @@
                                         @else
                                             <span class="text-xs text-gray-400">-</span>
                                         @endif
+                                    </td>
+                                    
+                                    <td>
+                                        <x-input 
+                                            wire:model.live="selectedItems.{{ $index }}.partial_amount" 
+                                            type="number" 
+                                            step="0.01" 
+                                            min="0"
+                                            :max="$effectiveAmount"
+                                            class="input-xs w-24"
+                                            placeholder="{{ number_format($effectiveAmount, 2) }}"
+                                        />
+                                        <div class="text-xs text-gray-500 mt-1">
+                                            Optional: Leave empty to pay {{ number_format($effectiveAmount, 2) }}
+                                        </div>
                                     </td>
                                     <td>
                                         <x-input 
@@ -221,5 +313,25 @@
                 <x-button type="submit" label="{{ $id ? 'Update' : 'Create' }}" class="btn-primary" spinner="save" />
             </x-slot:actions>
         </x-form>
+    </x-modal>
+
+    <!-- View Item Details Modal -->
+    <x-modal title="Item Details" wire:model="viewItemModal" box-class="max-w-6xl" separator>
+        @if($viewedItemDetails)
+            @if($viewedItemSourceType === 'PAYMENT_REQUISITION')
+                @include('livewire.admin.workflows.partials.payment-requisition-details', [
+                    'requisitionDetails' => $viewedItemDetails,
+                    'viewedLineItemId' => $viewedItemLineId
+                ])
+            @elseif($viewedItemSourceType === 'TNS')
+                @include('livewire.admin.workflows.partials.ts-allowance-details', ['allowanceDetails' => $viewedItemDetails])
+            @elseif($viewedItemSourceType === 'STAFF_WELFARE')
+                @include('livewire.admin.workflows.partials.staff-welfare-details', ['loanDetails' => $viewedItemDetails])
+            @endif
+        @endif
+
+        <x-slot:actions>
+            <x-button label="Close" @click="$wire.closeViewItemModal()" />
+        </x-slot:actions>
     </x-modal>
 </div>

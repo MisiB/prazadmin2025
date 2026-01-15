@@ -4,6 +4,8 @@ namespace App\Livewire\Admin\Workflows;
 
 use App\Interfaces\repositories\ibudgetInterface;
 use App\Interfaces\repositories\icurrencyInterface;
+use App\Interfaces\repositories\icustomerInterface;
+use App\Interfaces\repositories\iuserInterface;
 use App\Interfaces\services\ipaymentrequisitionService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -53,17 +55,37 @@ class PaymentRequisitions extends Component
 
     public $other_attachments = [];
 
+    public $payee_type = 'CUSTOMER';
+
+    public $payee_id;
+
+    public $payee_regnumber;
+
+    public $payee_name;
+
+    public $payee_search = '';
+
+    public $selectedCustomer = null;
+
+    public $selectedUser = null;
+
     protected $paymentrequisitionService;
 
     protected $budgetrepo;
 
     protected $currencyrepo;
 
-    public function boot(ipaymentrequisitionService $paymentrequisitionService, ibudgetInterface $budgetrepo, icurrencyInterface $currencyrepo)
+    protected $customerrepo;
+
+    protected $userrepo;
+
+    public function boot(ipaymentrequisitionService $paymentrequisitionService, ibudgetInterface $budgetrepo, icurrencyInterface $currencyrepo, icustomerInterface $customerrepo, iuserInterface $userrepo)
     {
         $this->paymentrequisitionService = $paymentrequisitionService;
         $this->budgetrepo = $budgetrepo;
         $this->currencyrepo = $currencyrepo;
+        $this->customerrepo = $customerrepo;
+        $this->userrepo = $userrepo;
     }
 
     public function mount()
@@ -105,6 +127,57 @@ class PaymentRequisitions extends Component
         return $this->currencyrepo->getcurrencies()->filter(function ($currency) {
             return strtoupper($currency->status) === 'ACTIVE';
         })->values();
+    }
+
+    public function updatedPayeeType($value): void
+    {
+        $this->payee_id = null;
+        $this->payee_regnumber = null;
+        $this->payee_name = null;
+        $this->payee_search = '';
+        $this->selectedCustomer = null;
+        $this->selectedUser = null;
+    }
+
+    public function updatedPayeeSearch($value): void
+    {
+        if (empty($value)) {
+            $this->selectedCustomer = null;
+            $this->selectedUser = null;
+            $this->payee_id = null;
+            $this->payee_regnumber = null;
+            $this->payee_name = null;
+
+            return;
+        }
+
+        if ($this->payee_type === 'CUSTOMER') {
+            $customer = $this->customerrepo->getCustomerByRegnumber($value);
+            if ($customer) {
+                $this->selectedCustomer = $customer;
+                $this->payee_id = $customer->id;
+                $this->payee_regnumber = $customer->regnumber;
+                $this->payee_name = $customer->name;
+            } else {
+                $this->selectedCustomer = null;
+                $this->payee_id = null;
+                $this->payee_regnumber = null;
+                $this->payee_name = null;
+            }
+        } elseif ($this->payee_type === 'USER') {
+            $user = $this->userrepo->getusers($value)->first();
+            if ($user) {
+                $this->selectedUser = $user;
+                $this->payee_id = $user->id;
+                $this->payee_regnumber = $user->name;
+                $this->payee_name = $user->name;
+            } else {
+                $this->selectedUser = null;
+                $this->payee_id = null;
+                $this->payee_regnumber = null;
+                $this->payee_name = null;
+            }
+        }
     }
 
     public function getpaymentrequisitions()
@@ -199,6 +272,20 @@ class PaymentRequisitions extends Component
         $this->department_id = $paymentrequisition->department_id;
         $this->currency_id = $paymentrequisition->currency_id;
         $this->total_amount = $paymentrequisition->total_amount;
+        $this->payee_type = $paymentrequisition->payee_type ?? 'CUSTOMER';
+        $this->payee_regnumber = $paymentrequisition->payee_regnumber;
+        $this->payee_name = $paymentrequisition->payee_name;
+
+        // Set payee search and selected objects based on type
+        if ($this->payee_type === 'CUSTOMER' && $paymentrequisition->payeeCustomer) {
+            $this->selectedCustomer = $paymentrequisition->payeeCustomer;
+            $this->payee_id = $paymentrequisition->payeeCustomer->id;
+            $this->payee_search = $paymentrequisition->payee_regnumber;
+        } elseif ($this->payee_type === 'USER' && $paymentrequisition->payeeUser) {
+            $this->selectedUser = $paymentrequisition->payeeUser;
+            $this->payee_id = $paymentrequisition->payeeUser->id;
+            $this->payee_search = $paymentrequisition->payee_regnumber;
+        }
 
         $this->lineItems = $paymentrequisition->lineItems->map(function ($item) {
             return [
@@ -219,6 +306,9 @@ class PaymentRequisitions extends Component
             'budget_line_item_id' => 'required',
             'purpose' => 'required|string',
             'currency_id' => 'required',
+            'payee_type' => 'required|in:CUSTOMER,USER',
+            'payee_regnumber' => 'required|string',
+            'payee_name' => 'required|string',
             'lineItems' => 'required|array|min:1',
             'lineItems.*.quantity' => 'required|numeric|min:1',
             'lineItems.*.description' => 'required|string',
@@ -229,11 +319,27 @@ class PaymentRequisitions extends Component
         ];
 
         $validationMessages = [
+            'payee_type.required' => 'Payee type is required',
+            'payee_regnumber.required' => 'Please search and select a payee',
+            'payee_name.required' => 'Please search and select a payee',
             'lineItems.required' => 'At least one line item is required',
             'lineItems.min' => 'At least one line item is required',
             'invoice_file.required' => 'Invoice file is required',
             'tax_clearance_file.required' => 'Tax clearance file is required',
         ];
+
+        // Validate payee selection
+        if ($this->payee_type === 'CUSTOMER' && ! $this->selectedCustomer) {
+            $this->error('Please search and select a customer');
+
+            return;
+        }
+
+        if ($this->payee_type === 'USER' && ! $this->selectedUser) {
+            $this->error('Please search and select a user/staff');
+
+            return;
+        }
 
         $this->validate($validationRules, $validationMessages);
 
@@ -291,6 +397,9 @@ class PaymentRequisitions extends Component
             'purpose' => $this->purpose,
             'department_id' => $this->department_id,
             'currency_id' => $this->currency_id,
+            'payee_type' => $this->payee_type,
+            'payee_regnumber' => $this->payee_regnumber,
+            'payee_name' => $this->payee_name,
             'line_items' => $this->lineItems,
             'attachments' => $attachments,
         ]);
@@ -312,6 +421,9 @@ class PaymentRequisitions extends Component
             'purpose' => $this->purpose,
             'department_id' => $this->department_id,
             'currency_id' => $this->currency_id,
+            'payee_type' => $this->payee_type,
+            'payee_regnumber' => $this->payee_regnumber,
+            'payee_name' => $this->payee_name,
             'line_items' => $this->lineItems,
         ]);
 
@@ -346,7 +458,10 @@ class PaymentRequisitions extends Component
 
     public function resetForm()
     {
-        $this->reset(['id', 'source_id', 'budget_line_item_id', 'purpose', 'currency_id', 'total_amount', 'lineItems', 'maxbudget', 'availableQuantity', 'invoice_file', 'tax_clearance_file', 'other_attachments']);
+        $this->reset(['id', 'source_id', 'budget_line_item_id', 'purpose', 'currency_id', 'total_amount', 'lineItems', 'maxbudget', 'availableQuantity', 'invoice_file', 'tax_clearance_file', 'other_attachments', 'payee_id', 'payee_regnumber', 'payee_name', 'payee_search']);
+        $this->payee_type = 'CUSTOMER';
+        $this->selectedCustomer = null;
+        $this->selectedUser = null;
         $this->other_attachments = [];
         $this->addLineItem();
     }

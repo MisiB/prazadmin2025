@@ -48,14 +48,16 @@ class _paymentrequisitionRepository implements ipaymentrequisitionInterface
 
     public function getpaymentrequisitions($year, $search = null)
     {
-        $query = $this->paymentrequisition->with('budgetLineItem.currency', 'budget', 'department', 'createdBy', 'currency', 'workflow.workflowparameters.permission')
+        $query = $this->paymentrequisition->with('budgetLineItem.currency', 'budget', 'department', 'createdBy', 'currency', 'workflow.workflowparameters.permission', 'payeeCustomer', 'payeeUser')
             ->where('year', $year)
             ->whereNotIn('status', ['DRAFT']);
 
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('reference_number', 'like', "%{$search}%")
-                    ->orWhere('purpose', 'like', "%{$search}%");
+                    ->orWhere('purpose', 'like', "%{$search}%")
+                    ->orWhere('payee_name', 'like', "%{$search}%")
+                    ->orWhere('payee_regnumber', 'like', "%{$search}%");
             });
         }
 
@@ -64,14 +66,16 @@ class _paymentrequisitionRepository implements ipaymentrequisitionInterface
 
     public function getpaymentrequisitionsbyapplicant($userId, $year, $search = null)
     {
-        $query = $this->paymentrequisition->with('budgetLineItem.currency', 'budget', 'department', 'createdBy', 'currency', 'workflow.workflowparameters.permission')
+        $query = $this->paymentrequisition->with('budgetLineItem.currency', 'budget', 'department', 'createdBy', 'currency', 'workflow.workflowparameters.permission', 'payeeCustomer', 'payeeUser')
             ->where('year', $year)
             ->where('created_by', $userId);
 
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('reference_number', 'like', "%{$search}%")
-                    ->orWhere('purpose', 'like', "%{$search}%");
+                    ->orWhere('purpose', 'like', "%{$search}%")
+                    ->orWhere('payee_name', 'like', "%{$search}%")
+                    ->orWhere('payee_regnumber', 'like', "%{$search}%");
             });
         }
 
@@ -80,25 +84,48 @@ class _paymentrequisitionRepository implements ipaymentrequisitionInterface
 
     public function getpaymentrequisition($id)
     {
-        return $this->paymentrequisition->with('budgetLineItem.currency', 'budget', 'department', 'createdBy', 'currency', 'lineItems', 'workflow.workflowparameters.permission', 'approvals.user')->find($id);
+        return $this->paymentrequisition->with('budgetLineItem.currency', 'budget', 'department', 'createdBy', 'currency', 'lineItems', 'workflow.workflowparameters.permission', 'approvals.user', 'payeeCustomer', 'payeeUser')->find($id);
     }
 
     public function getpaymentrequisitionbyuuid($uuid)
     {
-        return $this->paymentrequisition->with('budgetLineItem.currency', 'budget', 'department', 'createdBy', 'currency', 'lineItems', 'documents', 'workflow.workflowparameters.permission', 'approvals.user')->where('uuid', $uuid)->first();
+        $requisition = $this->paymentrequisition->with('budgetLineItem.currency', 'budget', 'department', 'createdBy', 'currency', 'lineItems', 'documents', 'workflow.workflowparameters.permission', 'approvals.user', 'payeeCustomer', 'payeeUser')->where('uuid', $uuid)->first();
+
+        // If source type is PURCHASE_REQUISITION, eager load purchase requisition with awards and their documents
+        if ($requisition && $requisition->source_type === 'PURCHASE_REQUISITION' && $requisition->source_id) {
+            $requisition->load([
+                'purchaseRequisition.awards' => function ($query) {
+                    $query->with([
+                        'customer',
+                        'paymentcurrency',
+                        'secondpaymentcurrency',
+                        'documents',
+                        'deliveries' => function ($q) {
+                            $q->latest('delivery_date');
+                        },
+                    ]);
+                },
+                'purchaseRequisition.budgetitem',
+                'purchaseRequisition.department',
+            ]);
+        }
+
+        return $requisition;
     }
 
     public function getpaymentrequisitionbydepartment($year, $department_id, $search = null)
     {
         $query = $this->paymentrequisition
-            ->with('budgetLineItem.currency', 'budget', 'department', 'createdBy', 'currency')
+            ->with('budgetLineItem.currency', 'budget', 'department', 'createdBy', 'currency', 'payeeCustomer', 'payeeUser')
             ->where('year', $year)
             ->where('department_id', $department_id);
 
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('reference_number', 'like', "%{$search}%")
-                    ->orWhere('purpose', 'like', "%{$search}%");
+                    ->orWhere('purpose', 'like', "%{$search}%")
+                    ->orWhere('payee_name', 'like', "%{$search}%")
+                    ->orWhere('payee_regnumber', 'like', "%{$search}%");
             });
         }
 
@@ -140,6 +167,9 @@ class _paymentrequisitionRepository implements ipaymentrequisitionInterface
                 'workflow_id' => $workflow->id,
                 'year' => date('Y'),
                 'reference_number' => 'PAYREQ'.date('Y').random_int(1000, 9999999),
+                'payee_type' => $data['payee_type'] ?? null,
+                'payee_regnumber' => $data['payee_regnumber'] ?? null,
+                'payee_name' => $data['payee_name'] ?? null,
             ];
 
             $paymentrequisition = $this->paymentrequisition->create($paymentRequisitionData);
@@ -263,7 +293,7 @@ class _paymentrequisitionRepository implements ipaymentrequisitionInterface
 
     public function getpaymentrequisitionbystatus($year, $status)
     {
-        return $this->paymentrequisition->with('budgetLineItem.currency', 'budget', 'department', 'createdBy', 'currency', 'approvals.user')
+        return $this->paymentrequisition->with('budgetLineItem.currency', 'budget', 'department', 'createdBy', 'currency', 'approvals.user', 'payeeCustomer', 'payeeUser')
             ->where('year', $year)
             ->where('status', $status)
             ->paginate(10);
@@ -279,7 +309,7 @@ class _paymentrequisitionRepository implements ipaymentrequisitionInterface
             }
 
             // Validate required fields
-            $requiredFields = ['budget_line_item_id', 'purpose', 'department_id', 'currency_id'];
+            $requiredFields = ['budget_line_item_id', 'purpose', 'department_id', 'currency_id', 'payee_type', 'payee_regnumber', 'payee_name'];
             foreach ($requiredFields as $field) {
                 if (empty($record->$field)) {
                     return ['status' => 'error', 'message' => "Field {$field} is required"];

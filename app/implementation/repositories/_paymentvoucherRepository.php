@@ -136,23 +136,32 @@ class _paymentvoucherRepository implements ipaymentvoucherInterface
 
         foreach ($paymentRequisitions as $pr) {
             foreach ($pr->lineItems as $lineItem) {
-                // Check if this line item is already on a voucher
-                $exists = $this->paymentvoucheritem
+                // Calculate total paid amount for this line item across all vouchers
+                $totalPaid = $this->paymentvoucheritem
                     ->where('source_type', 'PAYMENT_REQUISITION')
                     ->where('source_id', $pr->id)
                     ->where('source_line_id', $lineItem->id)
-                    ->exists();
+                    ->sum('payable_amount'); // Use payable_amount as it's the actual amount paid
 
-                if (! $exists) {
+                // Calculate remaining balance
+                $originalAmount = (float) $lineItem->line_total;
+                $remainingBalance = $originalAmount - $totalPaid;
+
+                // Only include line items that have remaining balance
+                if ($remainingBalance > 0) {
                     $items->push([
                         'source_type' => 'PAYMENT_REQUISITION',
                         'source_id' => $pr->id,
                         'source_line_id' => $lineItem->id,
                         'description' => $pr->purpose.' - '.$lineItem->description,
                         'original_currency' => $pr->currency->name ?? 'USD',
-                        'original_amount' => $lineItem->line_total,
+                        'original_amount' => $originalAmount,
+                        'total_paid' => $totalPaid,
+                        'remaining_balance' => $remainingBalance,
                         'reference' => $pr->reference_number,
                         'department' => $pr->department->name ?? '',
+                        'payee_regnumber' => $pr->payee_regnumber ?? null,
+                        'payee_name' => $pr->payee_name ?? null,
                     ]);
                 }
             }
@@ -166,14 +175,19 @@ class _paymentvoucherRepository implements ipaymentvoucherInterface
             ->get();
 
         foreach ($tsAllowances as $ts) {
-            // Check if already on a voucher
-            $exists = $this->paymentvoucheritem
+            // Calculate total paid amount for this TNS allowance across all vouchers
+            $totalPaid = $this->paymentvoucheritem
                 ->where('source_type', 'TNS')
                 ->where('source_id', $ts->id)
                 ->whereNull('source_line_id')
-                ->exists();
+                ->sum('payable_amount');
 
-            if (! $exists) {
+            // Calculate remaining balance
+            $originalAmount = (float) ($ts->balance_due ?? 0);
+            $remainingBalance = $originalAmount - $totalPaid;
+
+            // Only include TNS allowances that have remaining balance
+            if ($remainingBalance > 0) {
                 $applicantName = $ts->full_name ?? ($ts->applicant->name ?? 'N/A');
                 $description = 'T&S: '.$ts->reason_for_allowances.' - '.$applicantName.' ('.$ts->trip_start_date->format('Y-m-d').' to '.$ts->trip_end_date->format('Y-m-d').')';
                 $items->push([
@@ -182,7 +196,9 @@ class _paymentvoucherRepository implements ipaymentvoucherInterface
                     'source_line_id' => null,
                     'description' => $description,
                     'original_currency' => 'USD', // T&S typically in USD
-                    'original_amount' => $ts->balance_due ?? 0,
+                    'original_amount' => $originalAmount,
+                    'total_paid' => $totalPaid,
+                    'remaining_balance' => $remainingBalance,
                     'reference' => $ts->application_number,
                     'department' => $ts->department->name ?? '',
                 ]);
@@ -197,14 +213,19 @@ class _paymentvoucherRepository implements ipaymentvoucherInterface
             ->get();
 
         foreach ($staffWelfareLoans as $swl) {
-            // Check if already on a voucher
-            $exists = $this->paymentvoucheritem
+            // Calculate total paid amount for this staff welfare loan across all vouchers
+            $totalPaid = $this->paymentvoucheritem
                 ->where('source_type', 'STAFF_WELFARE')
                 ->where('source_id', $swl->id)
                 ->whereNull('source_line_id')
-                ->exists();
+                ->sum('payable_amount');
 
-            if (! $exists) {
+            // Calculate remaining balance
+            $originalAmount = (float) ($swl->loan_amount_requested ?? 0);
+            $remainingBalance = $originalAmount - $totalPaid;
+
+            // Only include staff welfare loans that have remaining balance
+            if ($remainingBalance > 0) {
                 $applicantName = $swl->applicant->name ?? 'N/A';
                 $description = 'Staff Welfare Loan #'.$swl->loan_number.': '.$swl->loan_purpose.' - '.$applicantName;
                 $items->push([
@@ -213,7 +234,9 @@ class _paymentvoucherRepository implements ipaymentvoucherInterface
                     'source_line_id' => null,
                     'description' => $description,
                     'original_currency' => 'USD', // Staff Welfare typically in USD
-                    'original_amount' => $swl->loan_amount_requested,
+                    'original_amount' => $originalAmount,
+                    'total_paid' => $totalPaid,
+                    'remaining_balance' => $remainingBalance,
                     'reference' => $swl->loan_number,
                     'department' => $swl->department->name ?? '',
                 ]);
@@ -255,14 +278,65 @@ class _paymentvoucherRepository implements ipaymentvoucherInterface
             $totalAmount = 0;
             if (isset($data['items']) && is_array($data['items'])) {
                 foreach ($data['items'] as $itemData) {
-                    // Use edited amount if provided, otherwise use original amount
-                    $itemAmount = $itemData['edited_amount'] ?? $itemData['original_amount'];
+                    // Handle amount change and partial payment separately
+                    $remainingBalance = (float) ($itemData['remaining_balance'] ?? $itemData['original_amount'] ?? 0);
+                    $originalAmount = (float) ($itemData['original_amount'] ?? 0);
+                    $amountChange = null;
+                    $partialAmount = null;
+
+                    // Get amount change (changes the original amount)
+                    if (isset($itemData['amount_change']) && $itemData['amount_change'] !== null && $itemData['amount_change'] !== '') {
+                        $amountChange = is_numeric($itemData['amount_change']) ? (float) $itemData['amount_change'] : null;
+                    }
+
+                    // Get partial payment amount
+                    if (isset($itemData['partial_amount']) && $itemData['partial_amount'] !== null && $itemData['partial_amount'] !== '') {
+                        $partialAmount = is_numeric($itemData['partial_amount']) ? (float) $itemData['partial_amount'] : null;
+                    }
+
+                    // Determine the payment amount:
+                    // 1. If amount change is set, use it as base (unless partial amount is also set)
+                    // 2. If partial amount is set, use it (must be <= changed amount or remaining balance)
+                    // 3. Otherwise, use remaining balance
+                    $itemAmount = $remainingBalance;
+
+                    if ($amountChange !== null) {
+                        // Amount has been changed
+                        if ($partialAmount !== null) {
+                            // Partial payment on the changed amount
+                            $itemAmount = min($partialAmount, $amountChange);
+                        } else {
+                            // Full payment of the changed amount
+                            $itemAmount = $amountChange;
+                        }
+                    } elseif ($partialAmount !== null) {
+                        // Partial payment without amount change
+                        $itemAmount = min($partialAmount, $remainingBalance);
+                    }
 
                     $payableAmount = $itemAmount;
-                    // Only apply exchange rate if currency is ZiG and exchange rate is provided
-                    // and the item currency is different from voucher currency
-                    if ($data['currency'] === 'ZiG' && isset($data['exchange_rate']) && $itemData['original_currency'] !== 'ZiG') {
-                        $payableAmount = $itemAmount * $data['exchange_rate'];
+                    $exchangeRate = isset($data['exchange_rate']) && is_numeric($data['exchange_rate']) ? (float) $data['exchange_rate'] : 0;
+
+                    // Apply exchange rate logic for ZiG voucher currency
+                    if ($data['currency'] === 'ZiG' && $exchangeRate > 0) {
+                        $itemCurrency = strtoupper($itemData['original_currency'] ?? '');
+
+                        // If item currency is USD, always apply exchange rate
+                        if ($itemCurrency === 'USD') {
+                            $payableAmount = $itemAmount * $exchangeRate;
+                        }
+                        // If item currency is ZiG, apply rate only if user selected to apply it
+                        elseif ($itemCurrency === 'ZIG') {
+                            $applyRate = $itemData['apply_rate_to_zig'] ?? false;
+                            if ($applyRate) {
+                                $payableAmount = $itemAmount * $exchangeRate;
+                            }
+                            // Otherwise use amount as is (already set above)
+                        }
+                        // For other currencies, apply exchange rate
+                        else {
+                            $payableAmount = $itemAmount * $exchangeRate;
+                        }
                     }
 
                     $this->paymentvoucheritem->create([
@@ -273,10 +347,12 @@ class _paymentvoucherRepository implements ipaymentvoucherInterface
                         'description' => $itemData['description'],
                         'original_currency' => $itemData['original_currency'],
                         'original_amount' => $itemData['original_amount'],
-                        'edited_amount' => $itemData['edited_amount'] ?? null,
+                        'edited_amount' => $amountChange ?? null, // Store amount_change as edited_amount in database
                         'amount_change_comment' => $itemData['amount_change_comment'] ?? null,
                         'account_type' => $itemData['account_type'] ?? null,
                         'gl_code' => $itemData['gl_code'] ?? null,
+                        'payee_regnumber' => $itemData['payee_regnumber'] ?? null,
+                        'payee_name' => $itemData['payee_name'] ?? null,
                         'exchange_rate' => $data['exchange_rate'] ?? null,
                         'payable_amount' => $payableAmount,
                     ]);
@@ -336,14 +412,65 @@ class _paymentvoucherRepository implements ipaymentvoucherInterface
                 // Add new items
                 $totalAmount = 0;
                 foreach ($data['items'] as $itemData) {
-                    // Use edited amount if provided, otherwise use original amount
-                    $itemAmount = $itemData['edited_amount'] ?? $itemData['original_amount'];
+                    // Handle amount change and partial payment separately
+                    $remainingBalance = (float) ($itemData['remaining_balance'] ?? $itemData['original_amount'] ?? 0);
+                    $originalAmount = (float) ($itemData['original_amount'] ?? 0);
+                    $amountChange = null;
+                    $partialAmount = null;
+
+                    // Get amount change (changes the original amount)
+                    if (isset($itemData['amount_change']) && $itemData['amount_change'] !== null && $itemData['amount_change'] !== '') {
+                        $amountChange = is_numeric($itemData['amount_change']) ? (float) $itemData['amount_change'] : null;
+                    }
+
+                    // Get partial payment amount
+                    if (isset($itemData['partial_amount']) && $itemData['partial_amount'] !== null && $itemData['partial_amount'] !== '') {
+                        $partialAmount = is_numeric($itemData['partial_amount']) ? (float) $itemData['partial_amount'] : null;
+                    }
+
+                    // Determine the payment amount:
+                    // 1. If amount change is set, use it as base (unless partial amount is also set)
+                    // 2. If partial amount is set, use it (must be <= changed amount or remaining balance)
+                    // 3. Otherwise, use remaining balance
+                    $itemAmount = $remainingBalance;
+
+                    if ($amountChange !== null) {
+                        // Amount has been changed
+                        if ($partialAmount !== null) {
+                            // Partial payment on the changed amount
+                            $itemAmount = min($partialAmount, $amountChange);
+                        } else {
+                            // Full payment of the changed amount
+                            $itemAmount = $amountChange;
+                        }
+                    } elseif ($partialAmount !== null) {
+                        // Partial payment without amount change
+                        $itemAmount = min($partialAmount, $remainingBalance);
+                    }
 
                     $payableAmount = $itemAmount;
-                    // Only apply exchange rate if currency is ZiG and exchange rate is provided
-                    // and the item currency is different from voucher currency
-                    if ($voucher->currency === 'ZiG' && $voucher->exchange_rate && $itemData['original_currency'] !== 'ZiG') {
-                        $payableAmount = $itemAmount * $voucher->exchange_rate;
+                    $exchangeRate = $voucher->exchange_rate && is_numeric($voucher->exchange_rate) ? (float) $voucher->exchange_rate : 0;
+
+                    // Apply exchange rate logic for ZiG voucher currency
+                    if ($voucher->currency === 'ZiG' && $exchangeRate > 0) {
+                        $itemCurrency = strtoupper($itemData['original_currency'] ?? '');
+
+                        // If item currency is USD, always apply exchange rate
+                        if ($itemCurrency === 'USD') {
+                            $payableAmount = $itemAmount * $exchangeRate;
+                        }
+                        // If item currency is ZiG, apply rate only if user selected to apply it
+                        elseif ($itemCurrency === 'ZIG') {
+                            $applyRate = $itemData['apply_rate_to_zig'] ?? false;
+                            if ($applyRate) {
+                                $payableAmount = $itemAmount * $exchangeRate;
+                            }
+                            // Otherwise use amount as is (already set above)
+                        }
+                        // For other currencies, apply exchange rate
+                        else {
+                            $payableAmount = $itemAmount * $exchangeRate;
+                        }
                     }
 
                     $this->paymentvoucheritem->create([
@@ -354,10 +481,12 @@ class _paymentvoucherRepository implements ipaymentvoucherInterface
                         'description' => $itemData['description'],
                         'original_currency' => $itemData['original_currency'],
                         'original_amount' => $itemData['original_amount'],
-                        'edited_amount' => $itemData['edited_amount'] ?? null,
+                        'edited_amount' => $amountChange ?? null, // Store amount_change as edited_amount in database
                         'amount_change_comment' => $itemData['amount_change_comment'] ?? null,
                         'account_type' => $itemData['account_type'] ?? null,
                         'gl_code' => $itemData['gl_code'] ?? null,
+                        'payee_regnumber' => $itemData['payee_regnumber'] ?? null,
+                        'payee_name' => $itemData['payee_name'] ?? null,
                         'exchange_rate' => $voucher->exchange_rate,
                         'payable_amount' => $payableAmount,
                     ]);
@@ -514,12 +643,12 @@ class _paymentvoucherRepository implements ipaymentvoucherInterface
                 // Move to next workflow parameter status
                 $voucher->status = $nextParameter->status;
             } else {
-                // All approvals complete - set to CEO_APPROVED (final status)
-                $voucher->status = 'CEO_APPROVED';
+                // All approvals complete - set to APPROVED_PAYMENT_PROCESSED (final status)
+                $voucher->status = 'APPROVED_PAYMENT_PROCESSED';
 
-                // Mark all source items as PAID
+                // Mark all source items as PAYMENT_PROCESSED
                 foreach ($voucher->items as $item) {
-                    $this->updatesourcestatus($item->source_type, $item->source_id, $item->source_line_id, 'PAID');
+                    $this->updatesourcestatus($item->source_type, $item->source_id, $item->source_line_id, 'PAYMENT_PROCESSED');
                 }
             }
 

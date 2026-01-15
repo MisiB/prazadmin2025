@@ -21,6 +21,8 @@ class PaymentVoucherItem extends Model
         'amount_change_comment',
         'account_type',
         'gl_code',
+        'payee_regnumber',
+        'payee_name',
         'exchange_rate',
         'payable_amount',
     ];

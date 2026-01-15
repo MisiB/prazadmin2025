@@ -151,9 +151,11 @@ class Purchaserequisitions extends Component
         $this->total = $budgetitem->unitprice * $this->quantity;
     }
 
-    public function UpdatedQuantity($value)
+    public function UpdatedQuantity($value): void
     {
-        $this->total = (int) $this->unitprice * $value;
+        $quantity = is_numeric($value) && $value !== '' ? (float) $value : 0;
+        $unitprice = is_numeric($this->unitprice) ? (float) $this->unitprice : 0;
+        $this->total = $unitprice * $quantity;
     }
 
     public function save()

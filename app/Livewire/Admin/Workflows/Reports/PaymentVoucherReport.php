@@ -112,9 +112,8 @@ class PaymentVoucherReport extends Component
             ['id' => 'VERIFIED', 'name' => 'Verified'],
             ['id' => 'CHECKED', 'name' => 'Checked'],
             ['id' => 'FINANCE_APPROVED', 'name' => 'Finance Approved'],
-            ['id' => 'CEO_APPROVED', 'name' => 'CEO Approved'],
+            ['id' => 'APPROVED_PAYMENT_PROCESSED', 'name' => 'Approved - Payment Processed'],
             ['id' => 'REJECTED', 'name' => 'Rejected'],
-            ['id' => 'PAID', 'name' => 'Paid'],
         ];
     }
 
@@ -124,32 +123,73 @@ class PaymentVoucherReport extends Component
             return \App\Models\PaymentVoucher::whereBetween('created_at', [$this->start_date, $this->end_date.' 23:59:59']);
         };
 
+        // Get all vouchers to calculate currency breakdowns
+        $allVouchers = $baseQuery()->get();
+        $totalAmountsByCurrency = [];
+        $approvedAmountsByCurrency = [];
+        $amountsByStageAndCurrency = [
+            'DRAFT' => [],
+            'PREPARED' => [],
+            'VERIFIED' => [],
+            'CHECKED' => [],
+            'FINANCE_APPROVED' => [],
+            'APPROVED_PAYMENT_PROCESSED' => [],
+            'REJECTED' => [],
+        ];
+
+        foreach ($allVouchers as $voucher) {
+            $currency = $voucher->currency ?? 'USD';
+            
+            // Total amounts by currency
+            if (!isset($totalAmountsByCurrency[$currency])) {
+                $totalAmountsByCurrency[$currency] = 0;
+            }
+            $totalAmountsByCurrency[$currency] += $voucher->total_amount ?? 0;
+
+            // Approved amounts by currency
+            if ($voucher->status === 'APPROVED_PAYMENT_PROCESSED') {
+                if (!isset($approvedAmountsByCurrency[$currency])) {
+                    $approvedAmountsByCurrency[$currency] = 0;
+                }
+                $approvedAmountsByCurrency[$currency] += $voucher->total_amount ?? 0;
+            }
+
+            // Amounts by stage and currency
+            if (isset($amountsByStageAndCurrency[$voucher->status])) {
+                if (!isset($amountsByStageAndCurrency[$voucher->status][$currency])) {
+                    $amountsByStageAndCurrency[$voucher->status][$currency] = 0;
+                }
+                $amountsByStageAndCurrency[$voucher->status][$currency] += $voucher->total_amount ?? 0;
+            }
+        }
+
         return [
             'total_vouchers' => $baseQuery()->count(),
             'total_amount' => $baseQuery()->sum('total_amount'),
+            'total_amounts_by_currency' => $totalAmountsByCurrency,
             'draft_vouchers' => $baseQuery()->where('status', 'DRAFT')->count(),
             'prepared_vouchers' => $baseQuery()->where('status', 'PREPARED')->count(),
             'verified_vouchers' => $baseQuery()->where('status', 'VERIFIED')->count(),
             'checked_vouchers' => $baseQuery()->where('status', 'CHECKED')->count(),
             'finance_approved' => $baseQuery()->where('status', 'FINANCE_APPROVED')->count(),
-            'ceo_approved' => $baseQuery()->where('status', 'CEO_APPROVED')->count(),
-            'paid_vouchers' => $baseQuery()->where('status', 'PAID')->count(),
+            'approved_payment_processed' => $baseQuery()->where('status', 'APPROVED_PAYMENT_PROCESSED')->count(),
+            'approved_amounts_by_currency' => $approvedAmountsByCurrency,
             'rejected_vouchers' => $baseQuery()->where('status', 'REJECTED')->count(),
             'amount_draft' => $baseQuery()->where('status', 'DRAFT')->sum('total_amount'),
             'amount_prepared' => $baseQuery()->where('status', 'PREPARED')->sum('total_amount'),
             'amount_verified' => $baseQuery()->where('status', 'VERIFIED')->sum('total_amount'),
             'amount_checked' => $baseQuery()->where('status', 'CHECKED')->sum('total_amount'),
             'amount_finance_approved' => $baseQuery()->where('status', 'FINANCE_APPROVED')->sum('total_amount'),
-            'amount_ceo_approved' => $baseQuery()->where('status', 'CEO_APPROVED')->sum('total_amount'),
-            'amount_paid' => $baseQuery()->where('status', 'PAID')->sum('total_amount'),
+            'amount_approved_payment_processed' => $baseQuery()->where('status', 'APPROVED_PAYMENT_PROCESSED')->sum('total_amount'),
             'amount_rejected' => $baseQuery()->where('status', 'REJECTED')->sum('total_amount'),
+            'amounts_by_stage_and_currency' => $amountsByStageAndCurrency,
         ];
     }
 
     public function getVouchersByCurrencyProperty()
     {
         $vouchers = \App\Models\PaymentVoucher::whereBetween('created_at', [$this->start_date, $this->end_date.' 23:59:59'])
-            ->where('status', 'PAID')
+            ->where('status', 'APPROVED_PAYMENT_PROCESSED')
             ->get();
 
         // Group by currency and sum amounts

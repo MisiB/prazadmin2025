@@ -23,7 +23,7 @@
                             <!-- Stage Header -->
                             <div class="p-4 bg-gray-50 rounded-t-lg cursor-pointer hover:bg-gray-100 transition-colors"
                                 wire:click="toggleStage('{{ $workflowparameter->status }}')">
-                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center justify-between">
                                     <div class="flex items-center gap-4">
                                         <x-icon name="o-chevron-{{ $isExpanded ? 'down' : 'right' }}" class="w-5 h-5" />
                                         <div>
@@ -31,23 +31,65 @@
                                             <div class="text-sm text-gray-600">{{ $workflowparameter->status }}</div>
                                         </div>
                                     </div>
-                                    <x-badge value="{{ $voucherCount }}" class="badge-secondary badge-lg" />
+                                    <div class="flex items-center gap-4">
+                                        <x-badge value="{{ $voucherCount }}" class="badge-secondary badge-lg" />
+                                        @if ($voucherCount > 0)
+                                            @can($workflowparameter->permission->name)
+                                                @php
+                                                    $stageUuids = $stageVouchers->pluck('uuid')->toArray();
+                                                    $selectedInStage = array_intersect($selectedForBulk ?? [], $stageUuids);
+                                                @endphp
+                                                <x-button icon="o-check-circle" class="btn-success btn-sm" 
+                                                    label="Bulk Approve ({{ count($selectedInStage) }})"
+                                                    wire:click.stop="openBulkApprovalModal('{{ $workflowparameter->status }}')"
+                                                    :disabled="count($selectedInStage) == 0" />
+                                            @endcan
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
 
                             <!-- Stage Content - Vouchers List -->
                             @if ($isExpanded)
                                 <div class="p-4 space-y-3">
+                                    <!-- Select All / Clear Selection for this stage -->
+                                    @if ($stageVouchers->count() > 0)
+                                        @can($workflowparameter->permission->name)
+                                            <div class="flex items-center gap-3 pb-3 border-b border-gray-200">
+                                                @php
+                                                    $stageUuids = $stageVouchers->pluck('uuid')->toArray();
+                                                    $selectedInStage = array_intersect($selectedForBulk ?? [], $stageUuids);
+                                                    $allSelectedInStage = count($selectedInStage) == count($stageUuids) && count($stageUuids) > 0;
+                                                @endphp
+                                                <x-checkbox 
+                                                    :checked="$allSelectedInStage"
+                                                    wire:click="selectAllForBulk('{{ $workflowparameter->status }}')"
+                                                    label="Select All ({{ count($stageUuids) }})" />
+                                                @if (count($selectedInStage) > 0)
+                                                    <x-button icon="o-x-mark" class="btn-ghost btn-xs" 
+                                                        label="Clear Selection ({{ count($selectedInStage) }})"
+                                                        wire:click="clearBulkSelection" />
+                                                @endif
+                                            </div>
+                                        @endcan
+                                    @endif
                                     @forelse ($stageVouchers as $voucher)
                                         @php
                                             $isVoucherExpanded = $this->isVoucherExpanded($voucher->uuid);
+                                            $isSelected = in_array($voucher->uuid, $selectedForBulk ?? []);
                                         @endphp
-                                        <div class="border border-gray-200 rounded-lg shadow-sm">
+                                        <div class="border border-gray-200 rounded-lg shadow-sm {{ $isSelected ? 'ring-2 ring-primary ring-offset-2' : '' }}">
                                             <!-- Voucher Header -->
                                             <div class="p-3 bg-white rounded-t-lg cursor-pointer hover:bg-gray-50 transition-colors"
                                                 wire:click="toggleVoucher('{{ $voucher->uuid }}')">
                                                 <div class="flex items-center justify-between">
                                                     <div class="flex items-center gap-4">
+                                                        @can($workflowparameter->permission->name)
+                                                            <x-checkbox 
+                                                                :checked="$isSelected"
+                                                                wire:click.stop="toggleBulkSelection('{{ $voucher->uuid }}')"
+                                                                class="checkbox-sm" />
+                                                        @endcan
                                                         <x-icon name="o-chevron-{{ $isVoucherExpanded ? 'down' : 'right' }}" class="w-4 h-4" />
                                                         <div>
                                                             <div class="font-semibold">{{ $voucher->voucher_number }}</div>
@@ -56,7 +98,7 @@
                                                         </div>
                                                     </div>
                                                     <div class="flex items-center gap-2">
-                                                        @if($voucher->status !== 'CEO_APPROVED' && $voucher->status !== 'REJECTED')
+                                                        @if($voucher->status !== 'APPROVED_PAYMENT_PROCESSED' && $voucher->status !== 'REJECTED')
                                                             <x-button icon="o-check-circle" class="btn-xs btn-primary" 
                                                                 wire:click.stop="openDecisionModal('{{ $voucher->uuid }}', {{ $voucher->id }})" 
                                                                 label="Make Decision" />
@@ -108,7 +150,7 @@
                                                                                 'VERIFIED' => 'badge-info',
                                                                                 'CHECKED' => 'badge-info',
                                                                                 'FINANCE_RECOMMENDED' => 'badge-success',
-                                                                                'CEO_APPROVED' => 'badge-success',
+                                                                                'APPROVED_PAYMENT_PROCESSED' => 'badge-success',
                                                                                 'REJECTED' => 'badge-error',
                                                                                 default => 'badge-ghost',
                                                                             };
@@ -142,7 +184,7 @@
                                                                                                 class="w-4 h-4 mt-1 flex-shrink-0" 
                                                                                             />
                                                                                         
-                                                                                            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 text-sm w-full">
+                                                                                            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-4 text-sm w-full">
                                                                                                 
                                                                                                 <!-- Source -->
                                                                                                 <div>
@@ -202,6 +244,74 @@
                                                                                                     <div class="font-semibold break-words">
                                                                                                         {{ $item->gl_code ?? 'N/A' }}
                                                                                                     </div>
+                                                                                                </div>
+                                                                                                
+                                                                                                <!-- Amount Change / Partial Payment -->
+                                                                                                <div>
+                                                                                                    <div class="text-xs text-gray-500">Amount Status</div>
+                                                                                                    <div class="font-semibold break-words space-y-1">
+                                                                                                        @php
+                                                                                                            // Check if amount was changed (edited_amount exists and differs from original)
+                                                                                                            $hasAmountChange = $item->edited_amount !== null && abs((float)$item->edited_amount - (float)$item->original_amount) > 0.01;
+                                                                                                            
+                                                                                                            // Check if it's a partial payment
+                                                                                                            // payable_amount is in voucher currency, original_amount/edited_amount are in original currency
+                                                                                                            $isPartialPayment = false;
+                                                                                                            $partialAmountOriginalCurrency = null;
+                                                                                                            $baseAmount = $item->edited_amount ?? $item->original_amount;
+                                                                                                            
+                                                                                                            if ($voucherDetails) {
+                                                                                                                $payableInOriginalCurrency = (float)$item->payable_amount;
+                                                                                                                
+                                                                                                                // If voucher currency differs from original currency, convert payable amount back to original currency
+                                                                                                                if (strtoupper($voucherDetails->currency) !== strtoupper($item->original_currency) && $item->exchange_rate && $item->exchange_rate > 0) {
+                                                                                                                    $payableInOriginalCurrency = (float)$item->payable_amount / (float)$item->exchange_rate;
+                                                                                                                }
+                                                                                                                
+                                                                                                                // Check if payable is less than base amount (with small tolerance for rounding)
+                                                                                                                $tolerance = 0.01;
+                                                                                                                $isPartialPayment = abs($payableInOriginalCurrency - (float)$baseAmount) > $tolerance && $payableInOriginalCurrency < (float)$baseAmount;
+                                                                                                                
+                                                                                                                if ($isPartialPayment) {
+                                                                                                                    $partialAmountOriginalCurrency = $payableInOriginalCurrency;
+                                                                                                                }
+                                                                                                            }
+                                                                                                        @endphp
+                                                                                                        @if($hasAmountChange || $isPartialPayment)
+                                                                                                            <div class="flex flex-col gap-1 text-xs">
+                                                                                                                @if($hasAmountChange)
+                                                                                                                    <div class="flex items-center gap-1">
+                                                                                                                        <span class="badge badge-warning badge-xs">Amount Changed</span>
+                                                                                                                        <span class="text-gray-600">→ {{ $item->original_currency }} {{ number_format((float)$item->edited_amount, 2) }}</span>
+                                                                                                                    </div>
+                                                                                                                @endif
+                                                                                                                @if($isPartialPayment)
+                                                                                                                    <div class="flex items-center gap-1">
+                                                                                                                        <span class="badge badge-info badge-xs">Partial Payment</span>
+                                                                                                                        <span class="text-gray-600">{{ $item->original_currency }} {{ number_format($partialAmountOriginalCurrency, 2) }}</span>
+                                                                                                                    </div>
+                                                                                                                @endif
+                                                                                                                @if($voucherDetails && strtoupper($voucherDetails->currency) !== strtoupper($item->original_currency) && $item->exchange_rate)
+                                                                                                                    <div class="text-gray-500 text-xs mt-1">
+                                                                                                                        Rate: {{ number_format((float)$item->exchange_rate, 4) }}
+                                                                                                                    </div>
+                                                                                                                @endif
+                                                                                                            </div>
+                                                                                                        @else
+                                                                                                            <span class="text-gray-400 text-xs">Not Applicable</span>
+                                                                                                        @endif
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                
+                                                                                                <!-- View Line History -->
+                                                                                                <div>
+                                                                                                    <div class="text-xs text-gray-500">View Line History</div>
+                                                                                                    <x-button 
+                                                                                                        icon="o-eye" 
+                                                                                                        class="btn-info btn-xs"
+                                                                                                        wire:click.stop="viewItemDetails({{ $item->id }})"
+                                                                                                        label="View"
+                                                                                                    />
                                                                                                 </div>
                                                                                         
                                                                                             </div>
@@ -505,6 +615,43 @@
             <x-slot:actions>
                 <x-button class="btn-outline btn-error" label="Close" wire:click="$wire.decisionmodal = false" />
                 <x-button icon="o-check" class="btn-primary" label="Submit" type="submit" spinner="savedecision" />
+            </x-slot:actions>
+        </x-form>
+    </x-modal>
+
+    <!-- View Item Details Modal -->
+    <x-modal title="Item Line History" wire:model="viewItemModal" box-class="max-w-6xl" separator>
+        @if($viewedItemDetails)
+            @if($viewedItemSourceType === 'PAYMENT_REQUISITION')
+                @include('livewire.admin.workflows.partials.payment-requisition-details', [
+                    'requisitionDetails' => $viewedItemDetails,
+                    'viewedLineItemId' => $viewedItemLineId
+                ])
+            @elseif($viewedItemSourceType === 'TNS')
+                @include('livewire.admin.workflows.partials.ts-allowance-details', ['allowanceDetails' => $viewedItemDetails])
+            @elseif($viewedItemSourceType === 'STAFF_WELFARE')
+                @include('livewire.admin.workflows.partials.staff-welfare-details', ['loanDetails' => $viewedItemDetails])
+            @endif
+        @endif
+
+        <x-slot:actions>
+            <x-button label="Close" @click="$wire.closeViewItemModal()" />
+        </x-slot:actions>
+    </x-modal>
+
+    <!-- Bulk Approval Modal -->
+    <x-modal wire:model="bulkapprovalmodal" title="Bulk {{ $this->bulkDecisionLabel ?? 'Approve' }} - {{ $bulkStepName ?? '' }}">
+        <x-form wire:submit="executeBulkApproval">
+            <div class="space-y-4">
+                <x-alert class="alert-info">
+                    <span>You are about to {{ strtolower($this->bulkDecisionLabel ?? 'approve') }} {{ count($selectedForBulk ?? []) }} voucher(s).</span>
+                </x-alert>
+                <x-textarea label="Comment (Optional)" wire:model="bulkComment" placeholder="Enter a comment for this bulk approval" rows="3" />
+                <x-pin label="Approval Code" wire:model="bulkApprovalCode" size="6" hide />
+            </div>
+            <x-slot:actions>
+                <x-button class="btn-outline btn-error" label="Close" wire:click="$wire.bulkapprovalmodal = false" />
+                <x-button icon="o-check" class="btn-primary" label="Bulk {{ $this->bulkDecisionLabel ?? 'Approve' }}" type="submit" spinner="executeBulkApproval" />
             </x-slot:actions>
         </x-form>
     </x-modal>

@@ -105,14 +105,19 @@ class PaymentVoucherReportExport implements FromCollection, ShouldAutoSize, With
             'Workflow',
             'Item #',
             'Source Type',
+            'Payee Registration Number',
+            'Payee Name',
             'Source ID',
             'Description',
             'Original Currency',
             'Original Amount',
             'Edited Amount',
+            'Partial Payment',
+            'Partial Amount',
             'Amount Change Comment',
             'Item Exchange Rate',
             'Payable Amount',
+            'Payable Amount Currency',
             'Account Type',
             'GL Code',
             'Created At',
@@ -142,19 +147,82 @@ class PaymentVoucherReportExport implements FromCollection, ShouldAutoSize, With
             $voucher->workflow?->name ?? 'N/A',
             $row->item_index ?? 'N/A',
             $item?->source_type ?? 'N/A',
+            $item?->payee_regnumber ?? 'N/A',
+            $item?->payee_name ?? 'N/A',
             $item?->source_id ?? 'N/A',
             $item?->description ?? 'N/A',
             $item?->original_currency ?? 'N/A',
             $item?->original_amount ?? 'N/A',
             $item?->edited_amount ?? 'N/A',
+            $this->isPartialPayment($item),
+            $this->getPartialAmount($item),
             $item?->amount_change_comment ?? 'N/A',
             $item?->exchange_rate ?? 'N/A',
             $item?->payable_amount ?? 'N/A',
+            $voucher->currency ?? 'N/A',
             $item?->account_type ?? 'N/A',
             $item?->gl_code ?? 'N/A',
             $voucher->created_at->format('Y-m-d H:i:s'),
             $voucher->updated_at->format('Y-m-d H:i:s'),
         ];
+    }
+
+    protected function isPartialPayment($item)
+    {
+        if (! $item) {
+            return 'N/A';
+        }
+
+        $baseAmount = $item->edited_amount ?? $item->original_amount ?? 0;
+        
+        if ($baseAmount <= 0 || ! $item->payable_amount || $item->payable_amount <= 0) {
+            return 'No';
+        }
+
+        // Check if payable amount is less than base amount
+        if ($item->exchange_rate && $item->exchange_rate > 0) {
+            // Convert payable_amount back to original currency for comparison
+            $convertedPayable = $item->payable_amount / $item->exchange_rate;
+            // Allow small floating point differences (0.01)
+            return ($convertedPayable < ($baseAmount - 0.01)) ? 'Yes' : 'No';
+        } else {
+            // Same currency, direct comparison
+            return ($item->payable_amount < ($baseAmount - 0.01)) ? 'Yes' : 'No';
+        }
+    }
+
+    protected function getPartialAmount($item)
+    {
+        if (! $item) {
+            return 'N/A';
+        }
+
+        $baseAmount = $item->edited_amount ?? $item->original_amount ?? 0;
+        $isPartial = false;
+        
+        if ($baseAmount > 0 && $item->payable_amount > 0) {
+            if ($item->exchange_rate && $item->exchange_rate > 0) {
+                $convertedPayable = $item->payable_amount / $item->exchange_rate;
+                $isPartial = $convertedPayable < ($baseAmount - 0.01);
+            } else {
+                $isPartial = $item->payable_amount < ($baseAmount - 0.01);
+            }
+        }
+
+        if (! $isPartial) {
+            return 'N/A';
+        }
+
+        // Calculate partial amount in original currency
+        if ($item->exchange_rate && $item->exchange_rate > 0) {
+            $partialAmount = $item->payable_amount / $item->exchange_rate;
+        } else {
+            $partialAmount = $item->payable_amount;
+        }
+
+        $currency = $item->original_currency ?? 'N/A';
+
+        return $currency !== 'N/A' ? $currency.' '.number_format($partialAmount, 2) : number_format($partialAmount, 2);
     }
 
     public function styles(Worksheet $sheet)
