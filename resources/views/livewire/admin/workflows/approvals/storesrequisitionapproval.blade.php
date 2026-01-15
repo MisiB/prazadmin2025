@@ -74,7 +74,7 @@
                         wire:click="$set('isapproved', false)"
                         type="submit"
                         spinner="approverequisition"
-                        class="text-red-600 hover:bg-red-700 px-6 py-2 rounded-lg font-semibold transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md"
+                        class="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg font-semibold transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md"
                         :disabled="$approvalrecord->decision !=null && $approvalrecord->decision == true"
                     />
 
@@ -84,7 +84,7 @@
                         wire:click="$set('isapproved', true)"
                         type="submit"
                         spinner="approverequisition"
-                        class="text-blue-600 hover:text-blue-700 px-6 py-2 rounded-lg font-semibold transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md"
+                        class="bg-blue-600 hover:text-blue-700 px-6 py-2 rounded-lg font-semibold transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md"
                         :disabled="$approvalrecord->decision !=null && $approvalrecord->decision == false"
                     />
                 </div>

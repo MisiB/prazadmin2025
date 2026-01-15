@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin\Workflows\Approvals;
 
+use App\Interfaces\repositories\iroleRepository;
 use App\Interfaces\services\istoresrequisitionService;
 use App\Notifications\StoresrequisitionapprovalNotify;
 use Livewire\Attributes\Layout;
@@ -12,6 +13,8 @@ class Storesrequisitionapproval extends Component
 {
     Use Toast;
     protected $storesrequisitionService;
+    protected $rolerepo;
+    
     public $storesrequisitionuuid, $approvalrecordid, $storesrequisitionitems=[];
     public $approver;
     public $employee;
@@ -19,9 +22,10 @@ class Storesrequisitionapproval extends Component
     public $comment, $isapproved;
     public $departmentid, $departmentname;
 
-    public function boot(istoresrequisitionService $storesrequisitionService)
+    public function boot(istoresrequisitionService $storesrequisitionService, iroleRepository $rolerepo)
     {
         $this->storesrequisitionService=$storesrequisitionService;
+        $this->rolerepo=$rolerepo;
     }
     public function mount($approvalrecordid, $approvalitemuuid)
     {
