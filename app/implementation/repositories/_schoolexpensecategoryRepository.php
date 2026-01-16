@@ -28,7 +28,7 @@ class _schoolexpensecategoryRepository implements ischoolexpensecategoryInterfac
             return ["status"=>"error", "message"=>$e->getMessage()];
         }
     }
-    public function getexpensecategories():Collection
+    public function getexpensecategories()
     {
         return $this->model->orderBy("name","asc")->get();
     }

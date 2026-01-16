@@ -5,7 +5,6 @@ namespace App\implementation\repositories;
 use App\Interfaces\repositories\ischoolmonthlyreturnInterface;
 use App\Models\Schoolmonthlyreturn;
 use Carbon\Carbon;
-use Illuminate\Support\Collection;
 
 class _schoolmonthlyreturnRepository implements ischoolmonthlyreturnInterface
 {
@@ -26,7 +25,7 @@ class _schoolmonthlyreturnRepository implements ischoolmonthlyreturnInterface
         }
     }
     
-    public function getmonthlyreturns($status, $year=null, $month=null):Collection
+    public function getmonthlyreturns($status, $year=null, $month=null)
     {
         if($year==null)
         {
@@ -42,7 +41,7 @@ class _schoolmonthlyreturnRepository implements ischoolmonthlyreturnInterface
     {
         return $this->model->with('schoolmonthlyreturndatas')->where("id", $id)->first();
     }
-    public function getmonthlyreturnsbyschoolnumber($schoolnumber, $status, $year=null, $month=null):Collection
+    public function getmonthlyreturnsbyschoolnumber($schoolnumber, $status, $year=null, $month=null, $perpage=null)
     {
         if($year==null)
         {
@@ -52,17 +51,21 @@ class _schoolmonthlyreturnRepository implements ischoolmonthlyreturnInterface
         {
             $month = Carbon::now()->englishMonth;
         }
+        if($perpage==null)
+        {
+            $perpage=10;
+        }
         /**
          * Note that 'school_id === 'school_number'
          * */
-        return $this->model->where("school_id", $schoolnumber)->where('status', $status)->where('year', $year)->where('month', $month)->get();
+        return $this->model->with('schoolexpensecategory')->where("school_id", $schoolnumber)->where('status', $status)->where('year', $year)->where('month', $month)->paginate($perpage);
     }
 
     public function getmonthlyreturnbyexpensecategory($categoryid)
     {
         return $this->model->where("school_id", $categoryid)->first();
     }
-    public function getmonthlyreturnbycurrency($ccurrencyid)
+    public function getmonthlyreturnbycurrency($currencyid)
     {
         return [];
     }

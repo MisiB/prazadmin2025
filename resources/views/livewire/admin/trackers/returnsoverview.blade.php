@@ -9,7 +9,7 @@
 
     <!-- Page Header -->
     <div class="relative my-10">
-        <h1 class="text-3xl font-semibold tracking-tight text-slate-900 ">Monthly Returns Overview</h1>
+        <h1 class="text-3xl font-semibold  text-slate-900 ">Monthly Returns Overview</h1>
         <p class="mt-1 max-w-2xl text-slate-600 ">
             Monitor monthly procurement return records in style transparently.
         </p>
@@ -90,10 +90,13 @@
 
             <!-- Returns Table -->
             <x-table  wire:loading.remove :headers="$headers" :rows="$monthlyreturns" separator show-empty-text empty-text="No procurement records found">
+                @scope('cell_schoolexpensecategory', $row)
+                    <span>{{ $row['schoolexpensecategory']['name'] }}</span>
+                @endscope
                 @scope('cell_data', $row)
                     <!-- View Expenditure Button -->
                     <x-button icon="o-eye"
-                        wire:click="openviewexpendituremodal({{$row->id}})" 
+                        wire:click="openviewexpendituremodal({{$row['id']}})" 
                         class="mb-4 rounded-xl bg-blue-500 px-3 py-2 text-sm font-medium 
                             text-white hover:from-indigo-400 hover:to-violet-400 
                             transition hover:scale-[1.05]"
@@ -104,7 +107,7 @@
                     <x-alert class="alert-error" title="No monthly returns found" />
                 </x-slot:empty>
             </x-table>
-
+            {{ $monthlyreturns->links() }}
         </x-card> 
         
     @else
@@ -163,22 +166,12 @@
     </x-modal>
 
 
-    @if($currentmonthlyreturn)
+    @if($currentmonthlyreturn != null)
     <x-modal wire:model="viewexpendituremodal" title="View of {{$currentmonthlyreturn->month}} {{$currentmonthlyreturn->year}} {{$currentmonthlyreturn->schoolexpensecategory->name}} Expenditure"  box-class="max-w-4xl">
         <div class="overflow-hidden rounded-2xl border border-slate-200 ">
-            @if($monthlyreturndata)
-                @forelse($monthlyreturndata as $returnsdata)
-                <x-card class="bg-gray-200  mb-2" title="Expenditure Record #{{$returnsdata->id}}" subtitle="Recorded on {{$returnsdata->created_at->format('d M, Y')}}" separator>
-                    <div class="grid grid-flow-cols grid-cols-2">
-                        <div>Source of fund: {{$returnsdata->sourceoffund}}</div>
-                        <div>Currency name: {{$returnsdata->currency->name}}</div>
-                        <div>Amount: {{$returnsdata->amount}}</div>
-                    </div>
-                </x-card>
-                @empty
-                    <x-alert title="No returns expenditure" description="No expenditure records found" class="rounded-2xl bg-red-500 text-rose-900 border border-rose-200 shadow-lg"/>
-                @endforelse
-            @endif
+            <x-table :headers="$monthlyreturnheaders" :rows="$monthlyreturndata" separator show-empty-text empty-text="No procurement records found" >
+            </x-table>
+            {{ $monthlyreturndata->links() }}
         </div>    
     </x-modal>
     @endif

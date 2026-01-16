@@ -122,7 +122,7 @@ class Leaverequests extends Component
             $this->validdays=$ceilingdays-$userstatement->daystaken;
             $starttoenddatearray=explode(' to ',$this->starttoenddate);
             $this->startdate=Carbon::parse($starttoenddatearray[0])->format('Y-m-d');
-            $this->enddate=Carbon::parse($starttoenddatearray[1])->format('Y-m-d');
+            $this->enddate=(count($starttoenddatearray) < 2) ? $starttoenddatearray[0] : Carbon::parse($starttoenddatearray[1])->format('Y-m-d') ;
             $this->returndate=Carbon::parse($this->enddate)->copy()->nextWeekday()->format('Y-m-d');
             $leavePeriod=CarbonPeriod::create($this->startdate, $this->enddate);
             //Vacation , Sick, Maternity leaves include weekends

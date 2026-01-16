@@ -3,22 +3,25 @@
 namespace App\Livewire\Admin\Trackers;
 
 use App\Interfaces\services\ischoolService;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Livewire\Component;
+use Livewire\WithPagination;
 use Mary\Traits\Toast;
 
 class Returnsoverview extends Component
 {
 
-    use Toast;
+    use Toast, WithPagination;
 
     protected $schoolService;
+    protected string $pageName= "returnsoverviewpage";
+    public $itemsperpage=10;
     public $record;
     public $schoolexpensecategory;
     public $schoolexpensecategories;
     public $openschoolmodal=false;
     public $viewexpendituremodal=false;
     public $currentmonthlyreturn;
-    public $monthlyreturndata=[];
     public $currentschool=null;
     public $schoolname;
     public $schoolid;
@@ -43,6 +46,14 @@ class Returnsoverview extends Component
         $this->schoolid=null;
     }
 
+    public function updatedPageName()
+    {
+        $this->resetPage($this->pageName);
+    }
+    public function updatedReturnsdatapageName()
+    {
+        $this->resetPage($this->returnsdatapageName);
+    }
     public function getschooltotalapprovedexpenditure()
     {
         if($this->currentschool !==null)
@@ -74,8 +85,6 @@ class Returnsoverview extends Component
     public function openviewexpendituremodal($monthlyreturnid)
     {
         $this->currentmonthlyreturn=$this->schoolService->getmonthlyreturnbyid($monthlyreturnid);
-        $this->monthlyreturndata=$this->schoolService->getmonthlyreturndatabyreturnid($monthlyreturnid);
-        
         $this->viewexpendituremodal=true;
     }
 
@@ -92,7 +101,7 @@ class Returnsoverview extends Component
             'schoolid' => 'sometimes',
         ]);
         $this->currentschool =  $this->schoolService->searchschool( $this->schoolname, $this->schoolid);
-        
+        return is_null($this->currentschool) ? $this->toast('warning', 'School not registered in the system'): $this->toast('success', 'Registered school found') ;    
     }
 
     public function backtoschoolsearch()
@@ -109,12 +118,16 @@ class Returnsoverview extends Component
         );
     }
 
+    
+
     public function render()
     {
         return view('livewire.admin.trackers.returnsoverview', [
             'monthlist' => $this->schoolService->getmonthlist(),
             'headers' => $this->schoolService->getheaders(),
-            'monthlyreturns' =>$this->currentschool!=null ? $this->schoolService->getmonthlyreturns($this->currentschool->school_number, "APPROVED", $this->year, $this->month): [],
+            'monthlyreturnheaders'=>  $this->schoolService->monthlyreturnheaders(),
+            'monthlyreturns' =>$this->currentschool!=null ? $this->schoolService->getmonthlyreturns($this->currentschool->school_number, "APPROVED", $this->year, $this->month, $this->itemsperpage) : new LengthAwarePaginator([],0,2),
+            'monthlyreturndata'=>$this->currentmonthlyreturn!=null ?  $this->schoolService->getmonthlyreturndatabyreturnid($this->currentmonthlyreturn->id, $this->itemsperpage): new LengthAwarePaginator([],0,2),
             'sourceoffunds' => $this->schoolService->getsourceoffunds(),
             'currencies' => $this->schoolService->getcurrenciesbystatus("ACTIVE"),
             'totalpendingreturns'=>$this->currentschool!=null ? $this->schoolService->getmonthlyreturns($this->currentschool->school_number,"PENDING" ,$this->year, $this->month)->count(): 0,

@@ -9,7 +9,7 @@ use App\Interfaces\repositories\ischoolmonthlyreturndataInterface;
 use App\Interfaces\repositories\ischoolmonthlyreturnInterface;
 use App\Interfaces\services\ischoolService;
 use Carbon\Carbon;
-use Illuminate\Support\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class _schoolService implements ischoolService
 {
@@ -90,11 +90,19 @@ class _schoolService implements ischoolService
     public function getheaders()
     {
         return [
-            ['key' => "schoolexpensecategory.name", "label" => "Category"],
+            ['key' => "schoolexpensecategory", "label" => "Category"],
             ['key' => 'year', "label" => "Year"],
             ['key' => 'month', 'label' => 'Month'],
             ['key' => 'status', 'label' => 'Status'],
             ['key' => 'data', 'label' => 'Expenditure', 'sortable' => false]
+        ];
+    }
+    public  function monthlyreturnheaders()
+    {
+        return [
+            ['key' => "sourceoffund", "label" => "Expenditure source of fund"],
+            ['key' => 'currency.name', "label" => "Currency"],
+            ['key' => 'amount', "label" => "Amount"],
         ];
     }
 
@@ -158,9 +166,9 @@ class _schoolService implements ischoolService
 
     }
 
-    public function getmonthlyreturns($schoolnumber, $status, $year=null, $month=null)
+    public function getmonthlyreturns($schoolnumber, $status, $year=null, $month=null, $perpage=null)
     {
-        return $this->schoolmonthlyreturnRepository->getmonthlyreturnsbyschoolnumber($schoolnumber, $status, $year, $month);
+        return $this->schoolmonthlyreturnRepository->getmonthlyreturnsbyschoolnumber($schoolnumber, $status, $year, $month, $perpage);
     }
 
     public function getschoolexpensecategories()
@@ -179,7 +187,7 @@ class _schoolService implements ischoolService
         ];
     }
 
-    public function getcurrenciesbystatus($status):Collection
+    public function getcurrenciesbystatus($status)
     {
         return $this->currencyRepository->getcurrenciesbystatus($status);
     }
@@ -188,9 +196,9 @@ class _schoolService implements ischoolService
     {
         return $this->schoolmonthlyreturnRepository->getmonthlyreturnbyid($monthlyreturnid);
     }
-    public function getmonthlyreturndatabyreturnid($monthlyreturnid):Collection
+    public function getmonthlyreturndatabyreturnid($monthlyreturnid, $perpage=null)
     {
-        return $this->schoolmonthlyreturndataRepository->getmonthlyreturndatabyreturnid($monthlyreturnid) ?? new Collection();
+        return $this->schoolmonthlyreturndataRepository->getmonthlyreturndatabyreturnid($monthlyreturnid, $perpage);
     }
     
     public function getschoolbynameornumber($schoolname=null, $schoolnumber=null)

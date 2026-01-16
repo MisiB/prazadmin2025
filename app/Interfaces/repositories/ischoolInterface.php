@@ -2,12 +2,11 @@
 
 namespace App\Interfaces\repositories;
 
-use Illuminate\Support\Collection;
 
 interface ischoolInterface
 {
     public function createschool($data);
-    public function getschools():Collection;
+    public function getschools();
     public function getschoolbyid($id);
     public function getschoolbynumber($schoolnumber);
     public function getschoolbynameornumber($schoolname=null, $schoolnumber=null);
