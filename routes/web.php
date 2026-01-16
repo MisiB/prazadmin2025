@@ -2,6 +2,7 @@
 
 use App\Livewire\Admin\RecurringTasks;
 use App\Livewire\Admin\TaskTemplates;
+use App\Livewire\Admin\Trackers\Returnsoverview;
 use App\Livewire\Admin\Workflows\Approvals\Emailapproval;
 use App\Livewire\Admin\Workflows\Approvals\Storesrequisitionacceptance;
 use App\Livewire\Admin\Workflows\Approvals\Storesrequisitionapproval;
@@ -106,7 +107,7 @@ Route::middleware('auth')->group(function () {
     Volt::route('/trackers/departmentaldashboard', 'admin.trackers.departmentaldashboard')->name('admin.trackers.departmentaldashboard');
     Volt::route('/trackers/organisationdashboard', 'admin.trackers.organisationdashboard')->name('admin.trackers.organisationdashboard');
     // M'n'e admin dashboard routes
-    Volt::route('/trackers/returnsoverview', 'admin.trackers.returnsoverview')->name('admin.trackers.returnsoverview');
+    Route::get('/trackers/returnsoverview', Returnsoverview::class)->name('admin.trackers.returnsoverview');
     
     Volt::route('/calendar', 'admin.weekday-calendar')->name('admin.calendar');
     Volt::route('/issues', 'admin.issues')->name('admin.issues');

@@ -1,6 +1,4 @@
 <div>
-    <x-modulewelcomebanner :breadcrumbs="$breadcrumbs"/>
- 
     <!--Leave Balance Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-10">
 
@@ -74,7 +72,7 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 my-8">
-        <div class="shadow-md bg-gradient-to-b from-gray-200 to-white rounded-xl py-5 pl-4">
+        <div class="shadow-md rounded-xl py-5 pl-4">
             <div class="grid justify-items-center">
                 <div class="grid grid-flow-row gap-2">
                     <div class="grid grid-flow-col gap-5">
@@ -89,7 +87,7 @@
             </div>
         </div>
 
-        <div class="shadow-md bg-gradient-to-b from-gray-200 to-white rounded-xl py-5 pl-4">
+        <div class="shadow-md rounded-xl py-5 pl-4">
             <div class="grid justify-items-center">
                 <div class="grid grid-flow-row gap-2">
                     <div class="grid grid-flow-col gap-5">
@@ -104,7 +102,7 @@
             </div>
         </div>
 
-        <div class="shadow-md bg-gradient-to-b from-gray-200 to-white rounded-xl py-5 pl-4">
+        <div class="shadow-md rounded-xl py-5 pl-4">
             <div class="grid justify-items-center">
                 <div class="grid grid-flow-row gap-2">
                     <div class="grid grid-flow-col gap-5">
@@ -119,7 +117,7 @@
             </div>
         </div>
 
-        <div class="shadow-md bg-gradient-to-b from-gray-200 to-white rounded-xl py-5 pl-4">
+        <div class="shadow-md rounded-xl py-5 pl-4">
             <div class="grid justify-items-center ">
                 <div class="grid grid-flow-row gap-2">
                     <div class="grid grid-flow-col gap-5">

@@ -4,7 +4,6 @@ namespace App\implementation\repositories;
 
 use App\Interfaces\repositories\ischoolInterface;
 use App\Models\School;
-use Illuminate\Support\Collection;
 
 class _schoolRepository implements ischoolInterface
 {
@@ -30,7 +29,7 @@ class _schoolRepository implements ischoolInterface
             return ["status"=>"error", "message"=>$e->getMessage()];
         }
     }
-    public function getschools():Collection
+    public function getschools()
     {
         return $this->model->orderBy("name","asc")->get();
     }

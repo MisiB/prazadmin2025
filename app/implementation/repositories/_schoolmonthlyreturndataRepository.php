@@ -4,7 +4,6 @@ namespace App\implementation\repositories;
 
 use App\Interfaces\repositories\ischoolmonthlyreturndataInterface;
 use App\Models\Schoolmonthlyreturndata;
-use Illuminate\Support\Collection;
 
 class _schoolmonthlyreturndataRepository implements ischoolmonthlyreturndataInterface
 {    protected $model;
@@ -18,7 +17,7 @@ class _schoolmonthlyreturndataRepository implements ischoolmonthlyreturndataInte
         {
             $this->model->create($data);
             return ["status"=>"success", "message"=>"Monthly return data saved successfully"];
-        }catch(\Exception $e)
+        }catch(\Exception $e) 
         {
             return ["status"=>"error", "message"=>$e->getMessage()];
         }
@@ -28,9 +27,13 @@ class _schoolmonthlyreturndataRepository implements ischoolmonthlyreturndataInte
         return $this->model->where("id", $id)->first();
     }
     
-    public function getmonthlyreturndatabyreturnid($monthlyreturnid):Collection
+    public function getmonthlyreturndatabyreturnid($monthlyreturnid, $perPage=null)
     {
-        return $this->model->where("schoolmonthlyretun_id", $monthlyreturnid)->get();
+        if($perPage==null)
+        {
+            $perPage=10;
+        }
+        return $this->model->where("schoolmonthlyretun_id", $monthlyreturnid)->paginate($perPage);
     }
 
     public function getmonthlyreturndatabysourceoffund($sourceoffund)
